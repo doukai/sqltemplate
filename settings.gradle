@@ -1,0 +1,6 @@
+rootProject.name = 'sqltemplate'
+include 'sqltemplate-core'
+include 'sqltemplate-spi'
+include 'sqltemplate-annotation-processor'
+include 'sqltemplate-showcase'
+
