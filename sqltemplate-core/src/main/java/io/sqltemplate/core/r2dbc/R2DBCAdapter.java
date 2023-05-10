@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 import static io.sqltemplate.core.utils.TemplateInstanceUtil.TEMPLATE_INSTANCE_UTIL;
 
-public abstract class R2DBCAdapter<T> {
+public class R2DBCAdapter<T> {
 
     private final String templateName;
 
@@ -60,6 +60,14 @@ public abstract class R2DBCAdapter<T> {
                 .map(this::map);
     }
 
+    public Mono<Number> update() {
+        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(templateName, instanceName, paramsMap);
+        return connectionProvider.createConnection()
+                .map(connection -> connection.createStatement(instance.render()))
+                .flatMap(statement -> Mono.from(statement.execute()))
+                .flatMap(this::getUpdateCountFromResult);
+    }
+
     private Mono<Map<String, Object>> getMapFormSegment(Result result) {
         return Mono.from(result.flatMap(this::getMapFormSegment));
     }
@@ -95,7 +103,10 @@ public abstract class R2DBCAdapter<T> {
         }
     }
 
-    protected abstract T map(Map<String, Object> result);
+    @SuppressWarnings("unchecked")
+    protected T map(Map<String, Object> result) {
+        return (T) result;
+    }
 
     private List<T> mapList(List<Map<String, Object>> list) {
         return list.stream().map(this::map).collect(Collectors.toList());

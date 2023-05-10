@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 import static io.sqltemplate.core.utils.TemplateInstanceUtil.TEMPLATE_INSTANCE_UTIL;
 
-public abstract class JDBCAdapter<T> {
+public class JDBCAdapter<T> {
 
     private final String templateName;
 
@@ -68,13 +68,16 @@ public abstract class JDBCAdapter<T> {
         return mapList(list);
     }
 
-    public Integer update() throws SQLException {
+    public Number update() throws SQLException {
         ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(templateName, instanceName, params);
         Statement statement = connectionProvider.createConnection().createStatement();
         return statement.executeUpdate(instance.render());
     }
 
-    protected abstract T map(Map<String, Object> result);
+    @SuppressWarnings("unchecked")
+    protected T map(Map<String, Object> result) {
+        return (T) result;
+    }
 
     private List<T> mapList(List<Map<String, Object>> list) {
         return list.stream().map(this::map).collect(Collectors.toList());

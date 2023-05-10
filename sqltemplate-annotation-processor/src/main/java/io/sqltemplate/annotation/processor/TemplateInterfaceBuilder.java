@@ -1,84 +1,43 @@
-import com.google.auto.service.AutoService;
+package io.sqltemplate.annotation.processor;
+
 import com.google.common.base.CaseFormat;
-import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.CodeBlock;
-import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.ParameterSpec;
-import com.squareup.javapoet.ParameterizedTypeName;
-import com.squareup.javapoet.TypeName;
-import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.*;
 import io.sqltemplate.core.jdbc.JDBCAdapter;
 import io.sqltemplate.core.r2dbc.R2DBCAdapter;
 import io.sqltemplate.spi.annotation.Instance;
+import io.sqltemplate.spi.annotation.InstanceType;
 import io.sqltemplate.spi.annotation.Param;
 import io.sqltemplate.spi.annotation.Template;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Filer;
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.annotation.processing.Processor;
-import javax.annotation.processing.RoundEnvironment;
-import javax.annotation.processing.SupportedAnnotationTypes;
-import javax.annotation.processing.SupportedSourceVersion;
-import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Modifier;
-import javax.lang.model.element.PackageElement;
-import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.*;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
-import javax.tools.Diagnostic;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static javax.lang.model.SourceVersion.RELEASE_8;
+public class TemplateInterfaceBuilder {
 
-@SupportedAnnotationTypes("io.sqltemplate.spi.annotation.Template")
-@SupportedSourceVersion(RELEASE_8)
-@AutoService(Processor.class)
-public class TemplateProcessor extends AbstractProcessor {
+    private final Filer filer;
+    private final Elements elementUtils;
+    private final Types typeUtils;
 
-    private Filer filer;
-    private Elements elementUtils;
-    private Types typeUtils;
-
-    @Override
-    public synchronized void init(ProcessingEnvironment processingEnv) {
-        super.init(processingEnv);
+    public TemplateInterfaceBuilder(ProcessingEnvironment processingEnv) {
         filer = processingEnv.getFiler();
         elementUtils = processingEnv.getElementUtils();
         typeUtils = processingEnv.getTypeUtils();
     }
 
-    @Override
-    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        if (annotations.isEmpty()) {
-            return false;
-        }
-
-        roundEnv.getElementsAnnotatedWith(Template.class).stream()
-                .filter(element -> element.getKind().equals(ElementKind.INTERFACE))
-                .map(element -> (TypeElement) element)
-                .map(this::buildTemplateInterface)
-                .forEach(javaFile -> {
-                            try {
-                                javaFile.writeTo(filer);
-                            } catch (IOException e) {
-                                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.getMessage());
-                            }
-                        }
-                );
-        return false;
+    public void write(TypeElement typeElement) throws IOException {
+        buildTemplateInterface(typeElement).writeTo(filer);
     }
 
     private JavaFile buildTemplateInterface(TypeElement typeElement) {
@@ -104,8 +63,10 @@ public class TemplateProcessor extends AbstractProcessor {
 
         String instanceName = executableElement.getSimpleName().toString();
         Instance instanceAnnotation = executableElement.getAnnotation(Instance.class);
+        InstanceType type = InstanceType.QUERY;
         if (instanceAnnotation != null) {
             instanceName = instanceAnnotation.value();
+            type = instanceAnnotation.type();
         }
 
         TypeName returnTypeName = ClassName.get(executableElement.getReturnType());
@@ -138,28 +99,37 @@ public class TemplateProcessor extends AbstractProcessor {
         List<? extends TypeMirror> returnTypeArguments = returnType.getTypeArguments();
 
         if (returnTypeArguments == null || returnTypeArguments.isEmpty()) {
-            CodeBlock.Builder returnBuilder = CodeBlock.builder()
-                    .add("return new $T($S, $S, params) {\n",
-                            ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeElement)),
-                            templateName,
-                            instanceName
-                    )
-                    .indent()
-                    .add("@$T\n", ClassName.get(Override.class))
-                    .add("protected $T map($T<String, Object> result) {\n", ClassName.get(returnTypeElement), ClassName.get(Map.class))
-                    .indent()
-                    .add("$T entity = new $T();\n", ClassName.get(returnTypeElement), ClassName.get(returnTypeElement));
+            if (type.equals(InstanceType.QUERY)) {
+                CodeBlock.Builder returnBuilder = CodeBlock.builder()
+                        .add("return new $T($S, $S, params) {\n",
+                                ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeElement)),
+                                templateName,
+                                instanceName
+                        )
+                        .indent()
+                        .add("@$T\n", ClassName.get(Override.class))
+                        .add("protected $T map($T<String, Object> result) {\n", ClassName.get(returnTypeElement), ClassName.get(Map.class))
+                        .indent();
 
-            entityBuilderCodeBlockList(returnTypeElement).forEach(returnBuilder::add);
+                entityBuilderCodeBlockList(returnTypeElement).forEach(returnBuilder::add);
 
-            returnBuilder
-                    .add("return entity;\n", ClassName.get(returnTypeElement), ClassName.get(returnTypeElement))
-                    .unindent()
-                    .add("}\n")
-                    .unindent()
-                    .add("}.query();\n");
-            builder.addCode(returnBuilder.build())
-                    .addException(ClassName.get(SQLException.class));
+                returnBuilder
+                        .unindent()
+                        .add("}\n")
+                        .unindent()
+                        .add("}.query();\n");
+                builder.addCode(returnBuilder.build())
+                        .addException(ClassName.get(SQLException.class));
+            } else {
+                CodeBlock.Builder returnBuilder = CodeBlock.builder()
+                        .add("return new $T($S, $S, params).update();\n",
+                                ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeElement)),
+                                templateName,
+                                instanceName
+                        );
+                builder.addCode(returnBuilder.build())
+                        .addException(ClassName.get(SQLException.class));
+            }
         } else {
             TypeMirror returnTypeArgumentTypeMirror = returnTypeArguments.get(0);
             TypeElement returnTypeArgumentTypeElement = (TypeElement) typeUtils.asElement(returnTypeArgumentTypeMirror);
@@ -173,13 +143,11 @@ public class TemplateProcessor extends AbstractProcessor {
                         .indent()
                         .add("@$T\n", ClassName.get(Override.class))
                         .add("protected $T map($T<String, Object> result) {\n", ClassName.get(returnTypeArgumentTypeElement), ClassName.get(Map.class))
-                        .indent()
-                        .add("$T entity = new $T();\n", ClassName.get(returnTypeArgumentTypeElement), ClassName.get(returnTypeArgumentTypeElement));
+                        .indent();
 
                 entityBuilderCodeBlockList(returnTypeArgumentTypeElement).forEach(returnBuilder::add);
 
                 returnBuilder
-                        .add("return entity;\n", ClassName.get(returnTypeArgumentTypeElement), ClassName.get(returnTypeArgumentTypeElement))
                         .unindent()
                         .add("}\n")
                         .unindent()
@@ -200,40 +168,46 @@ public class TemplateProcessor extends AbstractProcessor {
                             .indent()
                             .add("@$T\n", ClassName.get(Override.class))
                             .add("protected $T map($T<String, Object> result) {\n", ClassName.get(returnTypeArgumentArgumentTypeElement), ClassName.get(Map.class))
-                            .indent()
-                            .add("$T entity = new $T();\n", ClassName.get(returnTypeArgumentArgumentTypeElement), ClassName.get(returnTypeArgumentArgumentTypeElement));
+                            .indent();
 
                     entityBuilderCodeBlockList(returnTypeArgumentArgumentTypeElement).forEach(returnBuilder::add);
 
                     returnBuilder
-                            .add("return entity;\n", ClassName.get(returnTypeArgumentArgumentTypeElement), ClassName.get(returnTypeArgumentArgumentTypeElement))
                             .unindent()
                             .add("}\n")
                             .unindent()
                             .add("}.queryList();\n");
                     builder.addCode(returnBuilder.build());
                 } else {
-                    CodeBlock.Builder returnBuilder = CodeBlock.builder()
-                            .add("return new $T($S, $S, params) {\n",
-                                    ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
-                                    templateName,
-                                    instanceName
-                            )
-                            .indent()
-                            .add("@$T\n", ClassName.get(Override.class))
-                            .add("protected $T map($T<String, Object> result) {\n", ClassName.get(returnTypeArgumentTypeElement), ClassName.get(Map.class))
-                            .indent()
-                            .add("$T entity = new $T();\n", ClassName.get(returnTypeArgumentTypeElement), ClassName.get(returnTypeArgumentTypeElement));
+                    if (type.equals(InstanceType.QUERY)) {
+                        CodeBlock.Builder returnBuilder = CodeBlock.builder()
+                                .add("return new $T($S, $S, params) {\n",
+                                        ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
+                                        templateName,
+                                        instanceName
+                                )
+                                .indent()
+                                .add("@$T\n", ClassName.get(Override.class))
+                                .add("protected $T map($T<String, Object> result) {\n", ClassName.get(returnTypeArgumentTypeElement), ClassName.get(Map.class))
+                                .indent();
 
-                    entityBuilderCodeBlockList(returnTypeArgumentTypeElement).forEach(returnBuilder::add);
+                        entityBuilderCodeBlockList(returnTypeArgumentTypeElement).forEach(returnBuilder::add);
 
-                    returnBuilder
-                            .add("return entity;\n", ClassName.get(returnTypeArgumentTypeElement), ClassName.get(returnTypeArgumentTypeElement))
-                            .unindent()
-                            .add("}\n")
-                            .unindent()
-                            .add("}.query();\n");
-                    builder.addCode(returnBuilder.build());
+                        returnBuilder
+                                .unindent()
+                                .add("}\n")
+                                .unindent()
+                                .add("}.query();\n");
+                        builder.addCode(returnBuilder.build());
+                    } else {
+                        CodeBlock.Builder returnBuilder = CodeBlock.builder()
+                                .add("return new $T($S, $S, params).update();\n",
+                                        ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
+                                        templateName,
+                                        instanceName
+                                );
+                        builder.addCode(returnBuilder.build());
+                    }
                 }
             } else if (typeUtils.isAssignable(returnTypeElement.asType(), elementUtils.getTypeElement(Flux.class.getCanonicalName()).asType())) {
                 CodeBlock.Builder returnBuilder = CodeBlock.builder()
@@ -245,13 +219,11 @@ public class TemplateProcessor extends AbstractProcessor {
                         .indent()
                         .add("@$T\n", ClassName.get(Override.class))
                         .add("protected $T map($T<String, Object> result) {\n", ClassName.get(returnTypeArgumentTypeElement), ClassName.get(Map.class))
-                        .indent()
-                        .add("$T entity = new $T();\n", ClassName.get(returnTypeArgumentTypeElement), ClassName.get(returnTypeArgumentTypeElement));
+                        .indent();
 
                 entityBuilderCodeBlockList(returnTypeArgumentTypeElement).forEach(returnBuilder::add);
 
                 returnBuilder
-                        .add("return entity;\n", ClassName.get(returnTypeArgumentTypeElement), ClassName.get(returnTypeArgumentTypeElement))
                         .unindent()
                         .add("}\n")
                         .unindent()
@@ -262,19 +234,41 @@ public class TemplateProcessor extends AbstractProcessor {
         return builder.build();
     }
 
-    private List<CodeBlock> entityBuilderCodeBlockList(TypeElement typeElement) {
-        return typeElement.getEnclosedElements().stream().filter(element -> element.getKind().equals(ElementKind.METHOD))
-                .map(element -> (ExecutableElement) element)
-                .filter(executableElement -> executableElement.getSimpleName().toString().startsWith("set"))
-                .map(executableElement ->
-                        CodeBlock.of("entity.$L(result.get($S) != null ? ($T) result.get($S) : null);\n",
-                                executableElement.getSimpleName().toString(),
-                                getFiledNameBySetterName(executableElement.getSimpleName().toString()),
-                                ClassName.get(executableElement.getParameters().get(0).asType()),
-                                getFiledNameBySetterName(executableElement.getSimpleName().toString())
-                        )
-                )
-                .collect(Collectors.toList());
+    private Stream<CodeBlock> entityBuilderCodeBlockList(TypeElement typeElement) {
+        if (typeElement.asType().getKind().isPrimitive() ||
+                typeUtils.isAssignable(typeElement.asType(), elementUtils.getTypeElement(Boolean.class.getCanonicalName()).asType()) ||
+                typeUtils.isAssignable(typeElement.asType(), elementUtils.getTypeElement(Character.class.getCanonicalName()).asType()) ||
+                typeUtils.isAssignable(typeElement.asType(), elementUtils.getTypeElement(Number.class.getCanonicalName()).asType()) ||
+                typeUtils.isAssignable(typeElement.asType(), elementUtils.getTypeElement(String.class.getCanonicalName()).asType())) {
+            return Stream.of(
+                    CodeBlock.of("$T<?> iterator = result.values().iterator();\n", ClassName.get(Iterator.class)),
+                    CodeBlock.of("if (iterator.hasNext()) {\n"),
+                    CodeBlock.of("return ($T) iterator.next();\n", ClassName.get(typeElement)),
+                    CodeBlock.of("}\n"),
+                    CodeBlock.of("return null;\n")
+            );
+        } else if (typeUtils.isAssignable(typeElement.asType(), elementUtils.getTypeElement(Map.class.getCanonicalName()).asType())) {
+            return Stream.of(CodeBlock.of("return result;\n"));
+        } else {
+            return Stream.concat(
+                    Stream.of(CodeBlock.of("$T entity = new $T();\n", ClassName.get(typeElement), ClassName.get(typeElement))),
+                    Stream.concat(
+                            typeElement.getEnclosedElements().stream()
+                                    .filter(element -> element.getKind().equals(ElementKind.METHOD))
+                                    .map(element -> (ExecutableElement) element)
+                                    .filter(executableElement -> executableElement.getSimpleName().toString().startsWith("set"))
+                                    .map(executableElement ->
+                                            CodeBlock.of("entity.$L(result.get($S) != null ? ($T) result.get($S) : null);\n",
+                                                    executableElement.getSimpleName().toString(),
+                                                    getFiledNameBySetterName(executableElement.getSimpleName().toString()),
+                                                    ClassName.get(executableElement.getParameters().get(0).asType()),
+                                                    getFiledNameBySetterName(executableElement.getSimpleName().toString())
+                                            )
+                                    ),
+                            Stream.of(CodeBlock.of("return entity;\n", ClassName.get(typeElement), ClassName.get(typeElement)))
+                    )
+            );
+        }
     }
 
     private String getFiledNameBySetterName(String methodName) {

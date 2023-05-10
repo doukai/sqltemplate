@@ -8,4 +8,6 @@ import java.lang.annotation.*;
 public @interface Instance {
 
     String value();
+
+    InstanceType type() default InstanceType.QUERY;
 }
