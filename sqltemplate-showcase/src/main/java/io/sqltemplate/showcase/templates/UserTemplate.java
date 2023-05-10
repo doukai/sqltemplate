@@ -10,13 +10,13 @@ import java.util.List;
 @Template("stg/user")
 public interface UserTemplate {
 
-    User getUser(String name) throws SQLException;
+    User getUser(String id) throws SQLException;
 
-    List<User> getUserList(Sex sex, int age) throws SQLException;
+    List<User> getUserList(String name) throws SQLException;
 
-    Mono<User> getUserMono(String name);
+    Mono<User> getUserMono(String id);
 
-    Mono<List<User>> getUserListMono(Sex sex, int age);
+    Mono<List<User>> getUserListMono(String name);
 
     Flux<User> getUserFlux(String name);
 }

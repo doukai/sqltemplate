@@ -8,6 +8,4 @@ import java.lang.annotation.*;
 public @interface Template {
 
     String value();
-
-    TemplateType type() default TemplateType.DIR;
 }

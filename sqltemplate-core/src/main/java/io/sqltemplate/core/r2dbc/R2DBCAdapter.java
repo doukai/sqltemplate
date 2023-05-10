@@ -4,7 +4,6 @@ import com.google.common.base.CaseFormat;
 import io.r2dbc.spi.Result;
 import io.r2dbc.spi.Row;
 import io.r2dbc.spi.RowMetadata;
-import io.sqltemplate.spi.annotation.TemplateType;
 import org.stringtemplate.v4.ST;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -18,46 +17,23 @@ import static io.sqltemplate.core.utils.TemplateInstanceUtil.TEMPLATE_INSTANCE_U
 
 public abstract class R2DBCAdapter<T> {
 
-    private String templateName;
+    private final String templateName;
 
-    private TemplateType type;
+    private final String instanceName;
 
-    private String instanceName;
-
-    private Map<String, Object> params;
+    private final Map<String, Object> paramsMap;
 
     private final ConnectionProvider connectionProvider;
 
-    public R2DBCAdapter(String templateName, TemplateType type, String instanceName, Map<String, Object> params) {
+    public R2DBCAdapter(String templateName, String instanceName, Map<String, Object> paramsMap) {
         this.templateName = templateName;
-        this.type = type;
         this.instanceName = instanceName;
-        this.params = params;
+        this.paramsMap = paramsMap;
         this.connectionProvider = ConnectionProvider.provider();
     }
 
-    public R2DBCAdapter<T> setTemplateName(String templateName) {
-        this.templateName = templateName;
-        return this;
-    }
-
-    public R2DBCAdapter<T> setType(TemplateType type) {
-        this.type = type;
-        return this;
-    }
-
-    public R2DBCAdapter<T> setInstanceName(String instanceName) {
-        this.instanceName = instanceName;
-        return this;
-    }
-
-    public R2DBCAdapter<T> setParams(Map<String, Object> params) {
-        this.params = params;
-        return this;
-    }
-
     public Mono<T> query() {
-        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(templateName, type, instanceName, params);
+        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(templateName, instanceName, paramsMap);
         return connectionProvider.createConnection()
                 .map(connection -> connection.createStatement(instance.render()))
                 .flatMap(statement -> Mono.from(statement.execute()))
@@ -66,7 +42,7 @@ public abstract class R2DBCAdapter<T> {
     }
 
     public Mono<List<T>> queryList() {
-        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(templateName, type, instanceName, params);
+        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(templateName, instanceName, paramsMap);
         return connectionProvider.createConnection()
                 .map(connection -> connection.createStatement(instance.render()))
                 .flatMapMany(statement -> Flux.from(statement.execute()))
@@ -76,7 +52,7 @@ public abstract class R2DBCAdapter<T> {
     }
 
     public Flux<T> queryFlux() {
-        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(templateName, type, instanceName, params);
+        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(templateName, instanceName, paramsMap);
         return connectionProvider.createConnection()
                 .map(connection -> connection.createStatement(instance.render()))
                 .flatMapMany(statement -> Flux.from(statement.execute()))

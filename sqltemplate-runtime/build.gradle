@@ -11,11 +11,9 @@ repositories {
 
 dependencies {
     compile project(':sqltemplate-core')
-//    compile project(':sqltemplate-runtime')
-    implementation 'org.mariadb:r2dbc-mariadb:1.1.2'
-    compile "com.google.auto.service:auto-service:1.0.1"
+    compile 'net.bytebuddy:byte-buddy:1.14.4'
+    compile 'com.google.auto.service:auto-service:1.0.1'
 
-    annotationProcessor project(':sqltemplate-annotation-processor')
     annotationProcessor "com.google.auto.service:auto-service:1.0.1"
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'

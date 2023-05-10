@@ -1,0 +1,3 @@
+getUserListMono(name) ::= <<
+SELECT u.id, u.name, u.login, u.password FROM user u WHERE u.name = '<name>'
+>>
