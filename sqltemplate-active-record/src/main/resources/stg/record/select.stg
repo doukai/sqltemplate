@@ -1,0 +1,19 @@
+select(table,columns,conditionals,sorts,limit,offset) ::= <<
+SELECT <columns:{column|<column>};separator=", ">
+FROM <table>
+<if(conditionals)>WHERE <conditionals:{conditional|<conditional>};separator=" AND "><endif>
+<if(sorts)>ORDER BY <sorts:{sort|<sort>};separator=", "><endif>
+<if(limit)>LIMIT <limit><endif>
+<if(offset)>OFFSET <offset><endif>
+>>
+selectCount(table,conditionals) ::= <<
+SELECT COUNT(1)
+FROM <table>
+<if(conditionals)>WHERE <conditionals:{conditional|<conditional>};separator=" AND "><endif>
+>>
+>>
+selectExist(table,conditionals) ::= <<
+SELECT 1
+FROM <table>
+<if(conditionals)>WHERE <conditionals:{conditional|<conditional>};separator=" AND "><endif>
+>>

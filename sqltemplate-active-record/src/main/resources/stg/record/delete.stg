@@ -1,0 +1,4 @@
+delete(table,conditionals) ::= <<
+DELETE FROM <table>
+<if(conditionals)>WHERE <conditionals:{conditional|<conditional>};separator=" AND "><endif>
+>>

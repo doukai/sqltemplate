@@ -4,4 +4,5 @@ include 'sqltemplate-spi'
 include 'sqltemplate-annotation-processor'
 include 'sqltemplate-showcase'
 include 'sqltemplate-runtime'
+include 'sqltemplate-active-record'
 

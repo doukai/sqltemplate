@@ -68,10 +68,10 @@ public class JDBCAdapter<T> {
         return mapList(list);
     }
 
-    public Number update() throws SQLException {
+    public Long update() throws SQLException {
         ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(templateName, instanceName, params);
         Statement statement = connectionProvider.createConnection().createStatement();
-        return statement.executeUpdate(instance.render());
+        return (long) statement.executeUpdate(instance.render());
     }
 
     @SuppressWarnings("unchecked")
