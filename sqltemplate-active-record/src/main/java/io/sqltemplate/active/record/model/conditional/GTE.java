@@ -1,23 +1,23 @@
 package io.sqltemplate.active.record.model.conditional;
 
-import io.sqltemplate.active.record.model.expression.Value;
+import io.sqltemplate.active.record.model.expression.Expression;
 
 public class GTE implements Conditional {
 
     private final String columnName;
-    private final Value value;
+    private final Expression expression;
 
-    public GTE(String columnName, Value value) {
+    public GTE(String columnName, Expression expression) {
         this.columnName = columnName;
-        this.value = value;
+        this.expression = expression;
     }
 
-    public static GTE GTE(String columnName, Object value) {
-        return new GTE(columnName, Value.of(value));
+    public static GTE GTE(String columnName, Object expression) {
+        return new GTE(columnName, Expression.of(expression));
     }
 
     @Override
     public String toString() {
-        return columnName + " >= " + value;
+        return columnName + " >= " + expression;
     }
 }

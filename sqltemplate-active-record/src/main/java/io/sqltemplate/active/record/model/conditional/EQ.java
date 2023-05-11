@@ -1,23 +1,23 @@
 package io.sqltemplate.active.record.model.conditional;
 
-import io.sqltemplate.active.record.model.expression.Value;
+import io.sqltemplate.active.record.model.expression.Expression;
 
 public class EQ implements Conditional {
 
     private final String columnName;
-    private final Value value;
+    private final Expression expression;
 
-    public EQ(String columnName, Value value) {
+    public EQ(String columnName, Expression expression) {
         this.columnName = columnName;
-        this.value = value;
+        this.expression = expression;
     }
 
-    public static EQ EQ(String columnName, Object value) {
-        return new EQ(columnName, Value.of(value));
+    public static EQ EQ(String columnName, Object expression) {
+        return new EQ(columnName, Expression.of(expression));
     }
 
     @Override
     public String toString() {
-        return columnName + " = " + value;
+        return columnName + " = " + expression;
     }
 }

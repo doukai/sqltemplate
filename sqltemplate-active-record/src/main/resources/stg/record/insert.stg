@@ -2,5 +2,5 @@ insert(table,columns,values) ::= <<
 INSERT INTO <table> (<columns:{column|<column>};separator=", ">) VALUES (<values:{value|<value>};separator=", ">)
 >>
 insertAll(records) ::= <<
-<records:{record|<insert(record.table,record.columns,records.values)>};separator=";">
+<records:{record|<insert(record.tableName,record.columnNames,records.values)>};separator=";">
 >>

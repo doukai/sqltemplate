@@ -3,5 +3,5 @@ UPDATE <table> SET (<sets:{set|<set.column> = <set.value>};separator=", ">)
 <if(conditionals)>WHERE <conditionals:{conditional|<conditional>};separator=" AND "><endif>
 >>
 updateAll(records) ::= <<
-<records:{record|<update(record.table,record.sets,records.conditionals)>};separator=";">
+<records:{record|<update(record.tableName,record.valueSets,records.conditionals)>};separator=";">
 >>

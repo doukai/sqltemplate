@@ -1,7 +1,7 @@
 package io.sqltemplate.showcase.entity;
 
 import io.sqltemplate.active.record.model.Record;
-import io.sqltemplate.active.record.model.expression.Value;
+import io.sqltemplate.active.record.model.expression.Expression;
 import io.sqltemplate.showcase.templates.Sex;
 
 import java.time.LocalDateTime;
@@ -110,19 +110,19 @@ public class UserRecord extends Record<UserRecord> {
     }
 
     @Override
-    protected List<Value> getValues() {
-        return Arrays.asList(Value.of(getId()), Value.of(getName()), Value.of(getLogin()), Value.of(getPassword()), Value.of(getAge()), Value.of(getSex()));
+    protected List<Expression> getValues() {
+        return Arrays.asList(Expression.of(getId()), Expression.of(getName()), Expression.of(getLogin()), Expression.of(getPassword()), Expression.of(getAge()), Expression.of(getSex()));
     }
 
     @Override
-    protected Map<String, Value> entityToMap() {
+    protected Map<String, Expression> entityToMap() {
         return new HashMap<>() {{
-            put("id", Value.of(getId()));
-            put("name", Value.of(getName()));
-            put("login", Value.of(getLogin()));
-            put("password", Value.of(getPassword()));
-            put("age", Value.of(getAge()));
-            put("sex", Value.of(getSex()));
+            put("id", Expression.of(getId()));
+            put("name", Expression.of(getName()));
+            put("login", Expression.of(getLogin()));
+            put("password", Expression.of(getPassword()));
+            put("age", Expression.of(getAge()));
+            put("sex", Expression.of(getSex()));
         }};
     }
 

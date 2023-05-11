@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-public class StringValue implements Value {
+public class StringValue implements Expression {
 
     private final String value;
 

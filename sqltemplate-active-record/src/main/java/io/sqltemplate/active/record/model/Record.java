@@ -4,7 +4,7 @@ import com.google.common.base.CaseFormat;
 import io.sqltemplate.active.record.annotation.Column;
 import io.sqltemplate.active.record.annotation.Table;
 import io.sqltemplate.active.record.model.conditional.Conditional;
-import io.sqltemplate.active.record.model.expression.Value;
+import io.sqltemplate.active.record.model.expression.Expression;
 import io.sqltemplate.active.record.model.sort.DESC;
 import io.sqltemplate.active.record.model.sort.Sort;
 import io.sqltemplate.active.record.model.update.ValueSet;
@@ -87,22 +87,26 @@ public class Record<T> {
                 .collect(Collectors.toList());
     }
 
-    protected List<Value> getValues() {
+    protected List<Expression> getValues() {
         return Arrays.stream(this.getClass().getFields())
                 .filter(field -> field.isAnnotationPresent(Column.class))
                 .map(field -> getValue(field.getName()))
                 .collect(Collectors.toList());
     }
 
-    private Value getValue(String name) {
+    private Expression getValue(String name) {
         try {
-            return Value.of(this.getClass().getMethod("get" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, name)).invoke(this));
+            return Expression.of(this.getClass().getMethod("get" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, name)).invoke(this));
         } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
     }
 
-    protected Map<String, Value> entityToMap() {
+    protected List<ValueSet> getValueSets() {
+        return entityToMap().entrySet().stream().map(entry -> SET(entry.getKey(), entry.getValue())).collect(Collectors.toList());
+    }
+
+    protected Map<String, Expression> entityToMap() {
         return Arrays.stream(this.getClass().getFields())
                 .filter(field -> field.isAnnotationPresent(Column.class))
                 .map(field -> new AbstractMap.SimpleEntry<>(field.getName(), getValue(field.getName())))
@@ -308,8 +312,7 @@ public class Record<T> {
     }
 
     public T update() {
-        return update(getKeyValue(), entityToMap().entrySet().stream().map(entry -> SET(entry.getKey(), entry.getValue())).toArray(ValueSet[]::new));
-
+        return update(getKeyValue(), getValueSets().toArray(new ValueSet[]{}));
     }
 
     public static <T> T update(Object value, ValueSet... sets) {
@@ -386,19 +389,6 @@ public class Record<T> {
     public static <T> long deleteAll(Record<T>... records) {
         Record<T> record = new Record<>();
         where(record, IN(record.getKeyName(), Arrays.stream(records).map(Record::getKeyValue).collect(Collectors.toList())));
-        Map<String, Object> params = new HashMap<>() {{
-            put("table", record.getTableName());
-            put("conditionals", record.getConditionals());
-        }};
-        try {
-            return new JDBCAdapter<Integer>("stg/record/delete.stg", "delete", params) {
-                @Override
-                protected Integer map(Map<String, Object> result) {
-                    return (Integer) result.values().iterator().next();
-                }
-            }.update();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        return record.deleteAll();
     }
 }

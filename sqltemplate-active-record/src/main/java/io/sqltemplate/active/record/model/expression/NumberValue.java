@@ -1,6 +1,6 @@
 package io.sqltemplate.active.record.model.expression;
 
-public class NumberValue implements Value {
+public class NumberValue implements Expression {
 
     private final Number value;
 

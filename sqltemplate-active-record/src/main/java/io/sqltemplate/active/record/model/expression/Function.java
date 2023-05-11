@@ -6,17 +6,17 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public enum Function implements Value {
+public enum Function implements Expression {
 
     LAST_INSERT_ID;
 
-    private List<Value> arguments;
+    private List<Expression> arguments;
 
-    Function(Value... arguments) {
+    Function(Expression... arguments) {
         this.arguments = Arrays.asList(arguments);
     }
 
-    Function(Collection<Value> arguments) {
+    Function(Collection<Expression> arguments) {
         this.arguments = new ArrayList<>(arguments);
     }
 
