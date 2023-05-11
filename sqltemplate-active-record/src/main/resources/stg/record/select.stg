@@ -11,7 +11,6 @@ SELECT COUNT(1)
 FROM <table>
 <if(conditionals)>WHERE <conditionals:{conditional|<conditional>};separator=" AND "><endif>
 >>
->>
 selectExist(table,conditionals) ::= <<
 SELECT 1
 FROM <table>

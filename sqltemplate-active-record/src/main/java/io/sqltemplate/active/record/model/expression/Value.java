@@ -10,7 +10,7 @@ public interface Value {
         } else if (object instanceof Number) {
             return new NumberValue((Number) object);
         } else if (object instanceof Enum) {
-            return new NumberValue(((Enum<?>) object).ordinal());
+            return new StringValue(((Enum<?>) object).name());
         } else {
             return new StringValue(object);
         }
