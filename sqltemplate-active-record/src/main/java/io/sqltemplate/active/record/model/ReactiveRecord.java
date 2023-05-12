@@ -8,8 +8,9 @@ import io.sqltemplate.active.record.model.expression.Expression;
 import io.sqltemplate.active.record.model.sort.DESC;
 import io.sqltemplate.active.record.model.sort.Sort;
 import io.sqltemplate.active.record.model.update.ValueSet;
-import io.sqltemplate.core.jdbc.JDBCAdapter;
+import io.sqltemplate.core.r2dbc.R2DBCAdapter;
 import jakarta.transaction.Transactional;
+import reactor.core.publisher.Mono;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -24,7 +25,7 @@ import static io.sqltemplate.active.record.model.expression.Function.LAST_INSERT
 import static io.sqltemplate.active.record.model.sort.DESC.DESC;
 import static io.sqltemplate.active.record.model.update.ValueSet.SET;
 
-public class Record<T> {
+public class ReactiveRecord<T> {
 
     private Transactional.TxType txType = Transactional.TxType.REQUIRED;
     private Class<?>[] rollbackOn = {};
@@ -39,7 +40,7 @@ public class Record<T> {
         return txType;
     }
 
-    public Record<T> setTxType(Transactional.TxType txType) {
+    public ReactiveRecord<T> setTxType(Transactional.TxType txType) {
         this.txType = txType;
         return this;
     }
@@ -48,7 +49,7 @@ public class Record<T> {
         return rollbackOn;
     }
 
-    public Record<T> setRollbackOn(Class<?>[] rollbackOn) {
+    public ReactiveRecord<T> setRollbackOn(Class<?>[] rollbackOn) {
         this.rollbackOn = rollbackOn;
         return this;
     }
@@ -57,7 +58,7 @@ public class Record<T> {
         return dontRollbackOn;
     }
 
-    public Record<T> setDontRollbackOn(Class<?>[] dontRollbackOn) {
+    public ReactiveRecord<T> setDontRollbackOn(Class<?>[] dontRollbackOn) {
         this.dontRollbackOn = dontRollbackOn;
         return this;
     }
@@ -66,7 +67,7 @@ public class Record<T> {
         return conditionals;
     }
 
-    public Record<T> setConditionals(List<Conditional> conditionals) {
+    public ReactiveRecord<T> setConditionals(List<Conditional> conditionals) {
         this.conditionals = conditionals;
         return this;
     }
@@ -75,7 +76,7 @@ public class Record<T> {
         return sorts;
     }
 
-    public Record<T> setSorts(List<Sort> sorts) {
+    public ReactiveRecord<T> setSorts(List<Sort> sorts) {
         this.sorts = sorts;
         return this;
     }
@@ -84,7 +85,7 @@ public class Record<T> {
         return limit;
     }
 
-    public Record<T> setLimit(Integer limit) {
+    public ReactiveRecord<T> setLimit(Integer limit) {
         this.limit = limit;
         return this;
     }
@@ -93,7 +94,7 @@ public class Record<T> {
         return offset;
     }
 
-    public Record<T> setOffset(Integer offset) {
+    public ReactiveRecord<T> setOffset(Integer offset) {
         this.offset = offset;
         return this;
     }
@@ -151,7 +152,7 @@ public class Record<T> {
     @SuppressWarnings({"unchecked", "JavaReflectionInvocation"})
     protected T mapToEntity(Map<String, Object> result) {
         try {
-            Record<T> record = new Record<>();
+            ReactiveRecord<T> record = new ReactiveRecord<>();
             for (Field field : Arrays.stream(this.getClass().getFields())
                     .filter(field -> field.isAnnotationPresent(Column.class))
                     .collect(Collectors.toList())) {
@@ -164,7 +165,7 @@ public class Record<T> {
         }
     }
 
-    public Record<T> and(Conditional conditional) {
+    public ReactiveRecord<T> and(Conditional conditional) {
         if (this.conditionals == null) {
             this.conditionals = new ArrayList<>();
         }
@@ -172,17 +173,17 @@ public class Record<T> {
         return this;
     }
 
-    public Record<T> limit(int limit) {
+    public ReactiveRecord<T> limit(int limit) {
         this.limit = limit;
         return this;
     }
 
-    public Record<T> offset(int offset) {
+    public ReactiveRecord<T> offset(int offset) {
         this.offset = offset;
         return this;
     }
 
-    public Record<T> orderBy(Sort sort) {
+    public ReactiveRecord<T> orderBy(Sort sort) {
         if (this.sorts == null) {
             this.sorts = new ArrayList<>();
         }
@@ -190,7 +191,7 @@ public class Record<T> {
         return this;
     }
 
-    public Record<T> orderBy(Collection<Sort> sorts) {
+    public ReactiveRecord<T> orderBy(Collection<Sort> sorts) {
         if (this.sorts == null) {
             this.sorts = new ArrayList<>();
         }
@@ -198,29 +199,29 @@ public class Record<T> {
         return this;
     }
 
-    public static <T> Record<T> where(Conditional conditional) {
-        Record<T> record = new Record<>();
+    public static <T> ReactiveRecord<T> where(Conditional conditional) {
+        ReactiveRecord<T> record = new ReactiveRecord<>();
         return where(record, conditional);
     }
 
-    public static <T> Record<T> where(Record<T> record, Conditional conditional) {
+    public static <T> ReactiveRecord<T> where(ReactiveRecord<T> record, Conditional conditional) {
         record.setConditionals(new ArrayList<>());
         record.getConditionals().add(conditional);
         return record;
     }
 
-    static public <T> T get(Object value) {
-        Record<T> record = new Record<>();
+    static public <T> Mono<T> get(Object value) {
+        ReactiveRecord<T> record = new ReactiveRecord<>();
         where(record, EQ(record.getKeyName(), value));
         return record.first();
     }
 
-    public static <T> List<T> all() {
-        Record<T> record = new Record<>();
+    public static <T> Mono<List<T>> all() {
+        ReactiveRecord<T> record = new ReactiveRecord<>();
         return record.list();
     }
 
-    public List<T> list() {
+    public Mono<List<T>> list() {
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
             put("columns", getColumnNames());
@@ -229,7 +230,7 @@ public class Record<T> {
             put("limit", getLimit());
             put("offset", getOffset());
         }};
-        return new JDBCAdapter<T>("stg/record/select.stg", "select", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
+        return new R2DBCAdapter<T>("stg/record/select.stg", "select", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
             @Override
             protected T map(Map<String, Object> result) {
                 return mapToEntity(result);
@@ -238,44 +239,44 @@ public class Record<T> {
                 .queryList();
     }
 
-    public static <T> T firstOfAll() {
-        Record<T> record = new Record<>();
+    public static <T> Mono<T> firstOfAll() {
+        ReactiveRecord<T> record = new ReactiveRecord<>();
         return record.first();
     }
 
-    public static <T> T lastOfAll(String... fileNames) {
-        Record<T> record = new Record<>();
+    public static <T> Mono<T> lastOfAll(String... fileNames) {
+        ReactiveRecord<T> record = new ReactiveRecord<>();
         return record.last(fileNames);
     }
 
-    public T first() {
+    public Mono<T> first() {
         limit(1);
-        List<T> list = list();
-        return list != null ? list.get(0) : null;
+        Mono<List<T>> list = list();
+        return list.flatMap(item -> Mono.justOrEmpty(item != null ? item.get(0) : null));
     }
 
-    public T last(String... fileNames) {
+    public Mono<T> last(String... fileNames) {
         limit(1);
         if (fileNames == null) {
             orderBy(DESC(getKeyName()));
         } else {
             orderBy(Arrays.stream(fileNames).map(DESC::DESC).collect(Collectors.toList()));
         }
-        List<T> list = list();
-        return list != null ? list.get(0) : null;
+        Mono<List<T>> list = list();
+        return list.flatMap(item -> Mono.justOrEmpty(item != null ? item.get(0) : null));
     }
 
-    public static <T> int allCount() {
-        Record<T> record = new Record<>();
+    public static <T> Mono<Integer> allCount() {
+        ReactiveRecord<T> record = new ReactiveRecord<>();
         return record.count();
     }
 
-    public int count() {
+    public Mono<Integer> count() {
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
             put("conditionals", getConditionals());
         }};
-        return new JDBCAdapter<Integer>("stg/record/select.stg", "selectCount", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
+        return new R2DBCAdapter<Integer>("stg/record/select.stg", "selectCount", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
             @Override
             protected Integer map(Map<String, Object> result) {
                 return (Integer) result.values().iterator().next();
@@ -284,12 +285,12 @@ public class Record<T> {
                 .query();
     }
 
-    public boolean exists() {
+    public Mono<Boolean> exists() {
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
             put("conditionals", getConditionals());
         }};
-        return new JDBCAdapter<Boolean>("stg/record/select.stg", "selectExist", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
+        return new R2DBCAdapter<Boolean>("stg/record/select.stg", "selectExist", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
             @Override
             protected Boolean map(Map<String, Object> result) {
                 return result.values().iterator().hasNext();
@@ -298,97 +299,96 @@ public class Record<T> {
                 .query();
     }
 
-    public T insert() {
+    public Mono<T> insert() {
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
             put("columns", getColumnNames());
             put("values", getValues());
         }};
-        new JDBCAdapter<T>("stg/record/insert.stg", "insert", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
+        return new R2DBCAdapter<T>("stg/record/insert.stg", "insert", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
             @Override
             protected T map(Map<String, Object> result) {
                 return mapToEntity(result);
             }
         }
-                .update();
-        where(this, EQ(getKeyName(), LAST_INSERT_ID));
-        return first();
+                .update()
+                .doOnSuccess(count -> where(this, EQ(getKeyName(), LAST_INSERT_ID)))
+                .then(first());
     }
 
-    public static <T> List<T> insertAll(Record<T>... records) {
-        Record<T> record = new Record<>();
+    public static <T> Mono<List<T>> insertAll(ReactiveRecord<T>... records) {
+        ReactiveRecord<T> record = new ReactiveRecord<>();
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("records", records);
         }};
-        new JDBCAdapter<T>("stg/record/insert.stg", "insertAll", params, record.getTxType(), record.getRollbackOn(), record.getDontRollbackOn()) {
+        return new R2DBCAdapter<T>("stg/record/insert.stg", "insertAll", params, record.getTxType(), record.getRollbackOn(), record.getDontRollbackOn()) {
             @Override
             protected T map(Map<String, Object> result) {
                 return record.mapToEntity(result);
             }
         }
-                .update();
-        where(record, GTE(record.getKeyName(), LAST_INSERT_ID));
-        return record.list();
+                .update()
+                .doOnSuccess(count -> where(record, GTE(record.getKeyName(), LAST_INSERT_ID)))
+                .then(record.list());
     }
 
-    public T update() {
+    public Mono<T> update() {
         return update(getKeyValue(), getValueSets().toArray(new ValueSet[]{}));
     }
 
-    public static <T> T update(Object value, ValueSet... sets) {
-        Record<T> record = new Record<>();
+    public static <T> Mono<T> update(Object value, ValueSet... sets) {
+        ReactiveRecord<T> record = new ReactiveRecord<>();
         where(record, EQ(record.getKeyName(), value));
-        record.updateAll(sets);
-        return record.first();
+        return record.updateAll(sets).then(record.first());
     }
 
-    public boolean updateAll(ValueSet... sets) {
+    public Mono<Boolean> updateAll(ValueSet... sets) {
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
             put("sets", sets);
             put("conditionals", getConditionals());
         }};
-        return new JDBCAdapter<Integer>("stg/record/update.stg", "update", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
+        return new R2DBCAdapter<Integer>("stg/record/update.stg", "update", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
             @Override
             protected Integer map(Map<String, Object> result) {
                 return (Integer) result.values().iterator().next();
             }
         }
-                .update() > 0;
+                .update().map(count -> (long) count > 0);
     }
 
-    public static <T> List<T> updateAll(Record<T>... records) {
-        Record<T> record = new Record<>();
+    public static <T> Mono<List<T>> updateAll(ReactiveRecord<T>... records) {
+        ReactiveRecord<T> record = new ReactiveRecord<>();
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("records", records);
         }};
-        new JDBCAdapter<T>("stg/record/update.stg", "updateAll", params, record.getTxType(), record.getRollbackOn(), record.getDontRollbackOn()) {
+        return new R2DBCAdapter<T>("stg/record/update.stg", "updateAll", params, record.getTxType(), record.getRollbackOn(), record.getDontRollbackOn()) {
             @Override
             protected T map(Map<String, Object> result) {
                 return record.mapToEntity(result);
             }
         }
-                .update();
-        where(record, IN(record.getKeyName(), Arrays.stream(records).map(Record::getKeyValue).collect(Collectors.toList())));
-        return record.list();
+                .update()
+                .doOnSuccess(count -> where(record, IN(record.getKeyName(), Arrays.stream(records).map(ReactiveRecord::getKeyValue).collect(Collectors.toList()))))
+                .then(record.list());
     }
 
-    public boolean delete() {
+    public Mono<Boolean> delete() {
         return delete(getKeyValue());
     }
 
-    public static <T> boolean delete(Object value) {
-        Record<T> record = new Record<>();
+    public static <T> Mono<Boolean> delete(Object value) {
+        ReactiveRecord<T> record = new ReactiveRecord<>();
         where(record, EQ(record.getKeyName(), value));
-        return record.deleteAll() > 0;
+        return record.deleteAll().map(count -> count > 0);
     }
 
-    public long deleteAll() {
+    public Mono<Long> deleteAll() {
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
             put("conditionals", getConditionals());
         }};
-        return new JDBCAdapter<Integer>("stg/record/delete.stg", "delete", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
+        return new R2DBCAdapter<Integer>("stg/record/delete.stg", "delete", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
             @Override
             protected Integer map(Map<String, Object> result) {
                 return (Integer) result.values().iterator().next();
@@ -397,9 +397,9 @@ public class Record<T> {
                 .update();
     }
 
-    public static <T> long deleteAll(Record<T>... records) {
-        Record<T> record = new Record<>();
-        where(record, IN(record.getKeyName(), Arrays.stream(records).map(Record::getKeyValue).collect(Collectors.toList())));
+    public static <T> Mono<Long> deleteAll(ReactiveRecord<T>... records) {
+        ReactiveRecord<T> record = new ReactiveRecord<>();
+        where(record, IN(record.getKeyName(), Arrays.stream(records).map(ReactiveRecord::getKeyValue).collect(Collectors.toList())));
         return record.deleteAll();
     }
 }
