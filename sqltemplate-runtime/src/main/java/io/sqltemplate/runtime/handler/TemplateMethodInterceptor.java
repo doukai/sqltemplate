@@ -55,7 +55,7 @@ public class TemplateMethodInterceptor {
         Type[] returnTypeArguments = ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments();
         if (returnTypeArguments.length == 0) {
             if (instanceType.equals(InstanceType.QUERY)) {
-                return new JDBCAdapter<>(templateName, instanceName, params) {
+                return new JDBCAdapter<Object>(templateName, instanceName, params) {
                     @Override
                     protected Object map(Map<String, Object> result) {
                         return mapToObject(result, returnType);
@@ -66,25 +66,38 @@ public class TemplateMethodInterceptor {
             }
         } else {
             ParameterizedType argumentType = (ParameterizedType) returnTypeArguments[0];
-            if (returnType.isAssignableFrom(List.class)) {
-                return new JDBCAdapter<>(templateName, instanceName, params) {
-                    @Override
-                    protected Object map(Map<String, Object> result) {
-                        return mapToObject(result, (Class<?>) argumentType.getRawType());
-                    }
-                }.queryList();
-            } else if (returnType.isAssignableFrom(Mono.class)) {
-                if (((Class<?>) argumentType.getRawType()).isAssignableFrom(List.class)) {
-                    Class<?> argumentTypeArgumentClass = (Class<?>) argumentType.getActualTypeArguments()[0];
-                    return new R2DBCAdapter<>(templateName, instanceName, params) {
+            if (returnType.isAssignableFrom(Map.class)) {
+                return new JDBCAdapter<>(templateName, instanceName, params).query();
+            } else if (returnType.isAssignableFrom(List.class)) {
+                if (((Class<?>) argumentType.getRawType()).isAssignableFrom(Map.class)) {
+                    return new JDBCAdapter<>(templateName, instanceName, params).queryList();
+                } else {
+                    return new JDBCAdapter<Object>(templateName, instanceName, params) {
                         @Override
                         protected Object map(Map<String, Object> result) {
-                            return mapToObject(result, argumentTypeArgumentClass);
+                            return mapToObject(result, (Class<?>) argumentType.getRawType());
                         }
                     }.queryList();
+                }
+            } else if (returnType.isAssignableFrom(Mono.class)) {
+                if (((Class<?>) argumentType.getRawType()).isAssignableFrom(Map.class)) {
+                    return new R2DBCAdapter<>(templateName, instanceName, params).query();
+                }else  if (((Class<?>) argumentType.getRawType()).isAssignableFrom(List.class)) {
+                    Type argumentTypeArgumentType = argumentType.getActualTypeArguments()[0];
+                    if (argumentTypeArgumentType instanceof ParameterizedType) {
+                        return new R2DBCAdapter<>(templateName, instanceName, params).queryList();
+                    } else {
+                        Class<?> argumentTypeArgumentClass = (Class<?>) argumentTypeArgumentType;
+                        return new R2DBCAdapter<Object>(templateName, instanceName, params) {
+                            @Override
+                            protected Object map(Map<String, Object> result) {
+                                return mapToObject(result, argumentTypeArgumentClass);
+                            }
+                        }.queryList();
+                    }
                 } else {
                     if (instanceType.equals(InstanceType.QUERY)) {
-                        return new R2DBCAdapter<>(templateName, instanceName, params) {
+                        return new R2DBCAdapter<Object>(templateName, instanceName, params) {
                             @Override
                             protected Object map(Map<String, Object> result) {
                                 return mapToObject(result, (Class<?>) argumentType.getRawType());
@@ -95,12 +108,16 @@ public class TemplateMethodInterceptor {
                     }
                 }
             } else if (returnType.isAssignableFrom(Flux.class)) {
-                return new R2DBCAdapter<>(templateName, instanceName, params) {
-                    @Override
-                    protected Object map(Map<String, Object> result) {
-                        return mapToObject(result, (Class<?>) argumentType.getRawType());
-                    }
-                }.queryFlux();
+                if (((Class<?>) argumentType.getRawType()).isAssignableFrom(Map.class)) {
+                    return new R2DBCAdapter<>(templateName, instanceName, params).queryFlux();
+                } else {
+                    return new R2DBCAdapter<Object>(templateName, instanceName, params) {
+                        @Override
+                        protected Object map(Map<String, Object> result) {
+                            return mapToObject(result, (Class<?>) argumentType.getRawType());
+                        }
+                    }.queryFlux();
+                }
             }
         }
         return null;

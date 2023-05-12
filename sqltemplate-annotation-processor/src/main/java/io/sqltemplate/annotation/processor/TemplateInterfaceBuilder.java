@@ -99,8 +99,9 @@ public class TemplateInterfaceBuilder {
         List<? extends TypeMirror> returnTypeArguments = returnType.getTypeArguments();
 
         if (returnTypeArguments == null || returnTypeArguments.isEmpty()) {
+            CodeBlock.Builder returnBuilder;
             if (type.equals(InstanceType.QUERY)) {
-                CodeBlock.Builder returnBuilder = CodeBlock.builder()
+                returnBuilder = CodeBlock.builder()
                         .add("return new $T($S, $S, params) {\n",
                                 ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeElement)),
                                 templateName,
@@ -118,69 +119,107 @@ public class TemplateInterfaceBuilder {
                         .add("}\n")
                         .unindent()
                         .add("}.query();\n");
-                builder.addCode(returnBuilder.build())
-                        .addException(ClassName.get(SQLException.class));
             } else {
-                CodeBlock.Builder returnBuilder = CodeBlock.builder()
+                returnBuilder = CodeBlock.builder()
                         .add("return new $T($S, $S, params).update();\n",
+                                ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeElement)),
+                                templateName,
+                                instanceName
+                        );
+            }
+            builder.addCode(returnBuilder.build())
+                    .addException(ClassName.get(SQLException.class));
+        } else {
+            TypeMirror returnTypeArgumentTypeMirror = returnTypeArguments.get(0);
+            TypeElement returnTypeArgumentTypeElement = (TypeElement) typeUtils.asElement(returnTypeArgumentTypeMirror);
+            if (typeUtils.isAssignable(returnTypeElement.asType(), elementUtils.getTypeElement(Map.class.getCanonicalName()).asType())) {
+                CodeBlock.Builder returnBuilder = CodeBlock.builder()
+                        .add("return new $T($S, $S, params).query();\n",
                                 ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeElement)),
                                 templateName,
                                 instanceName
                         );
                 builder.addCode(returnBuilder.build())
                         .addException(ClassName.get(SQLException.class));
-            }
-        } else {
-            TypeMirror returnTypeArgumentTypeMirror = returnTypeArguments.get(0);
-            TypeElement returnTypeArgumentTypeElement = (TypeElement) typeUtils.asElement(returnTypeArgumentTypeMirror);
-            if (typeUtils.isAssignable(returnTypeElement.asType(), elementUtils.getTypeElement(List.class.getCanonicalName()).asType())) {
-                CodeBlock.Builder returnBuilder = CodeBlock.builder()
-                        .add("return new $T($S, $S, params) {\n",
-                                ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
-                                templateName,
-                                instanceName
-                        )
-                        .indent()
-                        .add("@$T\n", ClassName.get(Override.class))
-                        .add("protected $T map($T<String, Object> result) {\n", ClassName.get(returnTypeArgumentTypeElement), ClassName.get(Map.class))
-                        .indent();
-
-                entityBuilderCodeBlockList(returnTypeArgumentTypeElement).forEach(returnBuilder::add);
-
-                returnBuilder
-                        .unindent()
-                        .add("}\n")
-                        .unindent()
-                        .add("}.queryList();\n");
-                builder.addCode(returnBuilder.build())
-                        .addException(ClassName.get(SQLException.class));
-            } else if (typeUtils.isAssignable(returnTypeElement.asType(), elementUtils.getTypeElement(Mono.class.getCanonicalName()).asType())) {
-                if (typeUtils.isAssignable(returnTypeArgumentTypeElement.asType(), elementUtils.getTypeElement(List.class.getCanonicalName()).asType())) {
-                    List<? extends TypeMirror> returnTypeArgumentArguments = ((DeclaredType) returnTypeArgumentTypeMirror).getTypeArguments();
-                    TypeMirror returnTypeArgumentArgumentTypeMirror = returnTypeArgumentArguments.get(0);
-                    TypeElement returnTypeArgumentArgumentTypeElement = (TypeElement) typeUtils.asElement(returnTypeArgumentArgumentTypeMirror);
+            } else if (typeUtils.isAssignable(returnTypeElement.asType(), elementUtils.getTypeElement(List.class.getCanonicalName()).asType())) {
+                if (typeUtils.isAssignable(returnTypeArgumentTypeElement.asType(), elementUtils.getTypeElement(Map.class.getCanonicalName()).asType())) {
+                    CodeBlock.Builder returnBuilder = CodeBlock.builder()
+                            .add("return new $T($S, $S, params).queryList();\n",
+                                    ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
+                                    templateName,
+                                    instanceName
+                            );
+                    builder.addCode(returnBuilder.build())
+                            .addException(ClassName.get(SQLException.class));
+                } else {
                     CodeBlock.Builder returnBuilder = CodeBlock.builder()
                             .add("return new $T($S, $S, params) {\n",
-                                    ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentArgumentTypeElement)),
+                                    ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
                                     templateName,
                                     instanceName
                             )
                             .indent()
                             .add("@$T\n", ClassName.get(Override.class))
-                            .add("protected $T map($T<String, Object> result) {\n", ClassName.get(returnTypeArgumentArgumentTypeElement), ClassName.get(Map.class))
+                            .add("protected $T map($T<String, Object> result) {\n", ClassName.get(returnTypeArgumentTypeElement), ClassName.get(Map.class))
                             .indent();
 
-                    entityBuilderCodeBlockList(returnTypeArgumentArgumentTypeElement).forEach(returnBuilder::add);
+                    entityBuilderCodeBlockList(returnTypeArgumentTypeElement).forEach(returnBuilder::add);
 
                     returnBuilder
                             .unindent()
                             .add("}\n")
                             .unindent()
                             .add("}.queryList();\n");
+                    builder.addCode(returnBuilder.build())
+                            .addException(ClassName.get(SQLException.class));
+                }
+            } else if (typeUtils.isAssignable(returnTypeElement.asType(), elementUtils.getTypeElement(Mono.class.getCanonicalName()).asType())) {
+                if (typeUtils.isAssignable(returnTypeArgumentTypeElement.asType(), elementUtils.getTypeElement(Map.class.getCanonicalName()).asType())) {
+                    CodeBlock.Builder returnBuilder = CodeBlock.builder()
+                            .add("return new $T($S, $S, params).query();\n",
+                                    ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
+                                    templateName,
+                                    instanceName
+                            );
                     builder.addCode(returnBuilder.build());
-                } else {
-                    if (type.equals(InstanceType.QUERY)) {
+                } else if (typeUtils.isAssignable(returnTypeArgumentTypeElement.asType(), elementUtils.getTypeElement(List.class.getCanonicalName()).asType())) {
+                    List<? extends TypeMirror> returnTypeArgumentArguments = ((DeclaredType) returnTypeArgumentTypeMirror).getTypeArguments();
+                    TypeMirror returnTypeArgumentArgumentTypeMirror = returnTypeArgumentArguments.get(0);
+                    TypeElement returnTypeArgumentArgumentTypeElement = (TypeElement) typeUtils.asElement(returnTypeArgumentArgumentTypeMirror);
+
+                    if (typeUtils.isAssignable(returnTypeArgumentArgumentTypeElement.asType(), elementUtils.getTypeElement(Map.class.getCanonicalName()).asType())) {
                         CodeBlock.Builder returnBuilder = CodeBlock.builder()
+                                .add("return new $T($S, $S, params).queryList();\n",
+                                        ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentArgumentTypeElement)),
+                                        templateName,
+                                        instanceName
+                                );
+                        builder.addCode(returnBuilder.build());
+                    } else {
+                        CodeBlock.Builder returnBuilder = CodeBlock.builder()
+                                .add("return new $T($S, $S, params) {\n",
+                                        ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentArgumentTypeElement)),
+                                        templateName,
+                                        instanceName
+                                )
+                                .indent()
+                                .add("@$T\n", ClassName.get(Override.class))
+                                .add("protected $T map($T<String, Object> result) {\n", ClassName.get(returnTypeArgumentArgumentTypeElement), ClassName.get(Map.class))
+                                .indent();
+
+                        entityBuilderCodeBlockList(returnTypeArgumentArgumentTypeElement).forEach(returnBuilder::add);
+
+                        returnBuilder
+                                .unindent()
+                                .add("}\n")
+                                .unindent()
+                                .add("}.queryList();\n");
+                        builder.addCode(returnBuilder.build());
+                    }
+                } else {
+                    CodeBlock.Builder returnBuilder;
+                    if (type.equals(InstanceType.QUERY)) {
+                        returnBuilder = CodeBlock.builder()
                                 .add("return new $T($S, $S, params) {\n",
                                         ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
                                         templateName,
@@ -198,37 +237,46 @@ public class TemplateInterfaceBuilder {
                                 .add("}\n")
                                 .unindent()
                                 .add("}.query();\n");
-                        builder.addCode(returnBuilder.build());
                     } else {
-                        CodeBlock.Builder returnBuilder = CodeBlock.builder()
+                        returnBuilder = CodeBlock.builder()
                                 .add("return new $T($S, $S, params).update();\n",
                                         ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
                                         templateName,
                                         instanceName
                                 );
-                        builder.addCode(returnBuilder.build());
                     }
+                    builder.addCode(returnBuilder.build());
                 }
             } else if (typeUtils.isAssignable(returnTypeElement.asType(), elementUtils.getTypeElement(Flux.class.getCanonicalName()).asType())) {
-                CodeBlock.Builder returnBuilder = CodeBlock.builder()
-                        .add("return new $T($S, $S, params) {\n",
-                                ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
-                                templateName,
-                                instanceName
-                        )
-                        .indent()
-                        .add("@$T\n", ClassName.get(Override.class))
-                        .add("protected $T map($T<String, Object> result) {\n", ClassName.get(returnTypeArgumentTypeElement), ClassName.get(Map.class))
-                        .indent();
+                if (typeUtils.isAssignable(returnTypeArgumentTypeElement.asType(), elementUtils.getTypeElement(Map.class.getCanonicalName()).asType())) {
+                    CodeBlock.Builder returnBuilder = CodeBlock.builder()
+                            .add("return new $T($S, $S, params).queryFlux();\n",
+                                    ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
+                                    templateName,
+                                    instanceName
+                            );
+                    builder.addCode(returnBuilder.build());
+                } else {
+                    CodeBlock.Builder returnBuilder = CodeBlock.builder()
+                            .add("return new $T($S, $S, params) {\n",
+                                    ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
+                                    templateName,
+                                    instanceName
+                            )
+                            .indent()
+                            .add("@$T\n", ClassName.get(Override.class))
+                            .add("protected $T map($T<String, Object> result) {\n", ClassName.get(returnTypeArgumentTypeElement), ClassName.get(Map.class))
+                            .indent();
 
-                entityBuilderCodeBlockList(returnTypeArgumentTypeElement).forEach(returnBuilder::add);
+                    entityBuilderCodeBlockList(returnTypeArgumentTypeElement).forEach(returnBuilder::add);
 
-                returnBuilder
-                        .unindent()
-                        .add("}\n")
-                        .unindent()
-                        .add("}.queryFlux();\n");
-                builder.addCode(returnBuilder.build());
+                    returnBuilder
+                            .unindent()
+                            .add("}\n")
+                            .unindent()
+                            .add("}.queryFlux();\n");
+                    builder.addCode(returnBuilder.build());
+                }
             }
         }
         return builder.build();

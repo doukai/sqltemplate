@@ -13,7 +13,6 @@ dependencies {
     compile project(':sqltemplate-spi')
 
     compile 'io.projectreactor:reactor-core:3.4.16'
-    compile 'io.r2dbc:r2dbc-spi:1.0.0.RELEASE'
     compile 'com.google.guava:guava:31.1-jre'
     implementation 'org.antlr:ST4:4.3.2'
 

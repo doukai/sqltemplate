@@ -116,7 +116,7 @@ public class UserRecord extends Record<UserRecord> {
 
     @Override
     protected Map<String, Expression> entityToMap() {
-        return new HashMap<>() {{
+        return new HashMap<String, Expression>() {{
             put("id", Expression.of(getId()));
             put("name", Expression.of(getName()));
             put("login", Expression.of(getLogin()));

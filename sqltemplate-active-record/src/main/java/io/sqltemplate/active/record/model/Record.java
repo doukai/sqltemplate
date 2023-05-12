@@ -186,13 +186,13 @@ public class Record<T> {
     }
 
     public List<T> list() {
-        Map<String, Object> params = new HashMap<>() {{
+        Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
             put("columns", getColumnNames());
-            put("conditionals", conditionals);
-            put("sorts", sorts);
-            put("limit", limit);
-            put("offset", offset);
+            put("conditionals", getConditionals());
+            put("sorts", getSorts());
+            put("limit", getLimit());
+            put("offset", getOffset());
         }};
         try {
             return new JDBCAdapter<T>("stg/record/select.stg", "select", params) {
@@ -239,9 +239,9 @@ public class Record<T> {
     }
 
     public int count() {
-        Map<String, Object> params = new HashMap<>() {{
+        Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
-            put("conditionals", conditionals);
+            put("conditionals", getConditionals());
         }};
         try {
             return new JDBCAdapter<Integer>("stg/record/select.stg", "selectCount", params) {
@@ -256,9 +256,9 @@ public class Record<T> {
     }
 
     public boolean exists() {
-        Map<String, Object> params = new HashMap<>() {{
+        Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
-            put("conditionals", conditionals);
+            put("conditionals", getConditionals());
         }};
         try {
             return new JDBCAdapter<Boolean>("stg/record/select.stg", "selectExist", params) {
@@ -273,7 +273,7 @@ public class Record<T> {
     }
 
     public T insert() {
-        Map<String, Object> params = new HashMap<>() {{
+        Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
             put("columns", getColumnNames());
             put("values", getValues());
@@ -294,7 +294,7 @@ public class Record<T> {
 
     public static <T> List<T> insertAll(Record<T>... records) {
         Record<T> record = new Record<>();
-        Map<String, Object> params = new HashMap<>() {{
+        Map<String, Object> params = new HashMap<String, Object>() {{
             put("records", records);
         }};
         try {
@@ -323,10 +323,10 @@ public class Record<T> {
     }
 
     public boolean updateAll(ValueSet... sets) {
-        Map<String, Object> params = new HashMap<>() {{
+        Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
             put("sets", sets);
-            put("conditionals", conditionals);
+            put("conditionals", getConditionals());
         }};
         try {
             return new JDBCAdapter<Integer>("stg/record/update.stg", "update", params) {
@@ -342,7 +342,7 @@ public class Record<T> {
 
     public static <T> List<T> updateAll(Record<T>... records) {
         Record<T> record = new Record<>();
-        Map<String, Object> params = new HashMap<>() {{
+        Map<String, Object> params = new HashMap<String, Object>() {{
             put("records", records);
         }};
         try {
@@ -370,9 +370,9 @@ public class Record<T> {
     }
 
     public long deleteAll() {
-        Map<String, Object> params = new HashMap<>() {{
+        Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
-            put("conditionals", conditionals);
+            put("conditionals", getConditionals());
         }};
         try {
             return new JDBCAdapter<Integer>("stg/record/delete.stg", "delete", params) {
