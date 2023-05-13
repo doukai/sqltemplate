@@ -1,6 +1,7 @@
 package io.sqltemplate.core.jdbc;
 
 import com.google.common.base.CaseFormat;
+import io.sqltemplate.core.adapter.Adapter;
 import jakarta.transaction.InvalidTransactionException;
 import jakarta.transaction.NotSupportedException;
 import jakarta.transaction.TransactionRequiredException;
@@ -12,74 +13,30 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.*;
 
 import static io.sqltemplate.core.utils.TemplateInstanceUtil.TEMPLATE_INSTANCE_UTIL;
 
-public class JDBCAdapter<T> {
+public class JDBCAdapter<T> extends Adapter<T> {
 
-    private Transactional.TxType txType = Transactional.TxType.REQUIRED;
-    private Class<?>[] rollbackOn = {};
-    private Class<?>[] dontRollbackOn = {};
-
-    private final String templateName;
-
-    private final String instanceName;
-
-    private final Map<String, Object> params;
-
-    public JDBCAdapter(String templateName, String instanceName, Map<String, Object> params, Transactional.TxType txType, Class<?>[] rollbackOn, Class<?>[] dontRollbackOn) {
-        this(templateName, instanceName, params);
-        this.txType = txType;
-        this.rollbackOn = rollbackOn;
-        this.dontRollbackOn = dontRollbackOn;
-    }
-
-    public JDBCAdapter(String templateName, String instanceName, Map<String, Object> params, Transactional.TxType txType) {
-        this(templateName, instanceName, params);
-        this.txType = txType;
+    public JDBCAdapter() {
     }
 
     public JDBCAdapter(String templateName, String instanceName, Map<String, Object> params) {
-        this.templateName = templateName;
-        this.instanceName = instanceName;
-        this.params = params;
+        super(templateName, instanceName, params);
     }
 
-    public Transactional.TxType getTxType() {
-        return txType;
+    public JDBCAdapter(String templateName, String instanceName, Map<String, Object> params, Transactional.TxType txType, Class<?>[] rollbackOn, Class<?>[] dontRollbackOn) {
+        super(templateName, instanceName, params, txType, rollbackOn, dontRollbackOn);
     }
 
-    public JDBCAdapter<T> setTxType(Transactional.TxType txType) {
-        this.txType = txType;
-        return this;
-    }
-
-    public Class<?>[] getRollbackOn() {
-        return rollbackOn;
-    }
-
-    public JDBCAdapter<T> setRollbackOn(Class<?>[] rollbackOn) {
-        this.rollbackOn = rollbackOn;
-        return this;
-    }
-
-    public Class<?>[] getDontRollbackOn() {
-        return dontRollbackOn;
-    }
-
-    public JDBCAdapter<T> setDontRollbackOn(Class<?>[] dontRollbackOn) {
-        this.dontRollbackOn = dontRollbackOn;
-        return this;
+    public JDBCAdapter(String templateName, String instanceName, Map<String, Object> params, Transactional transactional) {
+        super(templateName, instanceName, params, transactional);
     }
 
     public T query() {
         try {
-            ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(templateName, instanceName, params);
+            ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
             JDBCTransactionManager.begin(getTxType());
             Connection connection = JDBCTransactionManager.getConnection();
             Statement statement = connection.createStatement();
@@ -104,7 +61,7 @@ public class JDBCAdapter<T> {
 
     public List<T> queryList() {
         try {
-            ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(templateName, instanceName, params);
+            ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
             JDBCTransactionManager.begin(getTxType());
             Connection connection = JDBCTransactionManager.getConnection();
             Statement statement = connection.createStatement();
@@ -130,7 +87,7 @@ public class JDBCAdapter<T> {
 
     public Long update() {
         try {
-            ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(templateName, instanceName, params);
+            ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
             JDBCTransactionManager.begin(getTxType());
             Connection connection = JDBCTransactionManager.getConnection();
             Statement statement = connection.createStatement();
@@ -141,14 +98,5 @@ public class JDBCAdapter<T> {
             JDBCTransactionManager.rollback(e, getRollbackOn(), getDontRollbackOn());
             throw new RuntimeException(e);
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    protected T map(Map<String, Object> result) {
-        return (T) result;
-    }
-
-    private List<T> mapList(List<Map<String, Object>> list) {
-        return list.stream().map(this::map).collect(Collectors.toList());
     }
 }

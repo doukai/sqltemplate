@@ -4,6 +4,7 @@ import com.google.common.base.CaseFormat;
 import io.r2dbc.spi.Result;
 import io.r2dbc.spi.Row;
 import io.r2dbc.spi.RowMetadata;
+import io.sqltemplate.core.adapter.Adapter;
 import jakarta.transaction.Transactional;
 import org.stringtemplate.v4.ST;
 import reactor.core.publisher.Flux;
@@ -16,62 +17,25 @@ import java.util.stream.Collectors;
 
 import static io.sqltemplate.core.utils.TemplateInstanceUtil.TEMPLATE_INSTANCE_UTIL;
 
-public class R2DBCAdapter<T> {
+public class R2DBCAdapter<T> extends Adapter<T> {
 
-    private Transactional.TxType txType = Transactional.TxType.REQUIRED;
-    private Class<?>[] rollbackOn = {};
-    private Class<?>[] dontRollbackOn = {};
+    public R2DBCAdapter() {
+    }
 
-    private final String templateName;
-
-    private final String instanceName;
-
-    private final Map<String, Object> paramsMap;
+    public R2DBCAdapter(String templateName, String instanceName, Map<String, Object> params) {
+        super(templateName, instanceName, params);
+    }
 
     public R2DBCAdapter(String templateName, String instanceName, Map<String, Object> params, Transactional.TxType txType, Class<?>[] rollbackOn, Class<?>[] dontRollbackOn) {
-        this(templateName, instanceName, params);
-        this.txType = txType;
-        this.rollbackOn = rollbackOn;
-        this.dontRollbackOn = dontRollbackOn;
+        super(templateName, instanceName, params, txType, rollbackOn, dontRollbackOn);
     }
 
-    public R2DBCAdapter(String templateName, String instanceName, Map<String, Object> params, Transactional.TxType txType) {
-        this(templateName, instanceName, params);
-        this.txType = txType;
-    }
-
-    public R2DBCAdapter(String templateName, String instanceName, Map<String, Object> paramsMap) {
-        this.templateName = templateName;
-        this.instanceName = instanceName;
-        this.paramsMap = paramsMap;
-    }
-
-    public Transactional.TxType getTxType() {
-        return txType;
-    }
-
-    public void setTxType(Transactional.TxType txType) {
-        this.txType = txType;
-    }
-
-    public Class<?>[] getRollbackOn() {
-        return rollbackOn;
-    }
-
-    public void setRollbackOn(Class<?>[] rollbackOn) {
-        this.rollbackOn = rollbackOn;
-    }
-
-    public Class<?>[] getDontRollbackOn() {
-        return dontRollbackOn;
-    }
-
-    public void setDontRollbackOn(Class<?>[] dontRollbackOn) {
-        this.dontRollbackOn = dontRollbackOn;
+    public R2DBCAdapter(String templateName, String instanceName, Map<String, Object> params, Transactional transactional) {
+        super(templateName, instanceName, params, transactional);
     }
 
     public Mono<T> query() {
-        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(templateName, instanceName, paramsMap);
+        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
         return Mono.usingWhen(
                 R2DBCTransactionManager.begin(getTxType()).then(R2DBCTransactionManager.getConnection()),
                 connection -> Mono.from(connection.createStatement(instance.render()).execute()),
@@ -84,7 +48,7 @@ public class R2DBCAdapter<T> {
     }
 
     public Mono<List<T>> queryList() {
-        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(templateName, instanceName, paramsMap);
+        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
         return Flux.usingWhen(
                 R2DBCTransactionManager.begin(getTxType()).then(R2DBCTransactionManager.getConnection()),
                 connection -> Flux.from(connection.createStatement(instance.render()).execute()),
@@ -98,7 +62,7 @@ public class R2DBCAdapter<T> {
     }
 
     public Flux<T> queryFlux() {
-        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(templateName, instanceName, paramsMap);
+        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
         return Flux.usingWhen(
                 R2DBCTransactionManager.begin(getTxType()).then(R2DBCTransactionManager.getConnection()),
                 connection -> Flux.from(connection.createStatement(instance.render()).execute()),
@@ -111,7 +75,7 @@ public class R2DBCAdapter<T> {
     }
 
     public Mono<Long> update() {
-        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(templateName, instanceName, paramsMap);
+        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
         return Mono.usingWhen(
                 R2DBCTransactionManager.begin(getTxType()).then(R2DBCTransactionManager.getConnection()),
                 connection -> Mono.from(connection.createStatement(instance.render()).execute()),
@@ -155,14 +119,5 @@ public class R2DBCAdapter<T> {
         } else {
             return Mono.empty();
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    protected T map(Map<String, Object> result) {
-        return (T) result;
-    }
-
-    private List<T> mapList(List<Map<String, Object>> list) {
-        return list.stream().map(this::map).collect(Collectors.toList());
     }
 }

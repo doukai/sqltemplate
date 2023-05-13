@@ -1,14 +1,15 @@
 package io.sqltemplate.active.record.model;
 
 import com.google.common.base.CaseFormat;
-import io.sqltemplate.active.record.annotation.Column;
-import io.sqltemplate.active.record.annotation.Table;
 import io.sqltemplate.active.record.model.conditional.Conditional;
 import io.sqltemplate.active.record.model.expression.Expression;
 import io.sqltemplate.active.record.model.sort.DESC;
 import io.sqltemplate.active.record.model.sort.Sort;
 import io.sqltemplate.active.record.model.update.ValueSet;
 import io.sqltemplate.core.r2dbc.R2DBCAdapter;
+import jakarta.persistence.Column;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.transaction.Transactional;
 import reactor.core.publisher.Mono;
 
@@ -100,15 +101,15 @@ public class ReactiveRecord<T> {
     }
 
     protected String getTableName() {
-        return this.getClass().getAnnotation(Table.class).value();
+        return this.getClass().getAnnotation(Table.class).name();
     }
 
     protected String getKeyName() {
         return Arrays.stream(this.getClass().getMethods())
+                .filter(method -> method.isAnnotationPresent(Id.class))
                 .filter(method -> method.isAnnotationPresent(Column.class))
-                .filter(method -> method.getAnnotation(Column.class).key())
                 .findFirst()
-                .map(method -> method.getAnnotation(Column.class).value())
+                .map(method -> method.getAnnotation(Column.class).name())
                 .orElse(null);
     }
 
@@ -119,7 +120,7 @@ public class ReactiveRecord<T> {
     protected List<String> getColumnNames() {
         return Arrays.stream(this.getClass().getFields())
                 .filter(field -> field.isAnnotationPresent(Column.class))
-                .map(field -> field.getAnnotation(Column.class).value())
+                .map(field -> field.getAnnotation(Column.class).name())
                 .collect(Collectors.toList());
     }
 

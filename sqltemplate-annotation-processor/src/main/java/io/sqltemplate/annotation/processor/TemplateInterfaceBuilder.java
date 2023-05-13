@@ -8,6 +8,7 @@ import io.sqltemplate.spi.annotation.Instance;
 import io.sqltemplate.spi.annotation.InstanceType;
 import io.sqltemplate.spi.annotation.Param;
 import io.sqltemplate.spi.annotation.Template;
+import jakarta.transaction.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -69,6 +70,24 @@ public class TemplateInterfaceBuilder {
             type = instanceAnnotation.type();
         }
 
+        Transactional.TxType txType = Transactional.TxType.REQUIRED;
+        Class<?>[] rollbackOn = {};
+        Class<?>[] dontRollbackOn = {};
+        Transactional transactionalAnnotation = executableElement.getAnnotation(Transactional.class);
+        if (transactionalAnnotation != null) {
+            txType = transactionalAnnotation.value();
+            rollbackOn = transactionalAnnotation.rollbackOn();
+            dontRollbackOn = transactionalAnnotation.dontRollbackOn();
+        }
+
+        CodeBlock rollbackOnArray = Arrays.stream(rollbackOn)
+                .map(rollbackOnClass -> CodeBlock.of("$T", rollbackOnClass))
+                .collect(CodeBlock.joining(",", "{", "}"));
+
+        CodeBlock dontRollbackOnArray = Arrays.stream(dontRollbackOn)
+                .map(dontRollbackOnClass -> CodeBlock.of("$T", dontRollbackOnClass))
+                .collect(CodeBlock.joining(",", "{", "}"));
+
         TypeName returnTypeName = ClassName.get(executableElement.getReturnType());
 
         MethodSpec.Builder builder = MethodSpec.methodBuilder(executableElement.getSimpleName().toString())
@@ -102,10 +121,14 @@ public class TemplateInterfaceBuilder {
             CodeBlock.Builder returnBuilder;
             if (type.equals(InstanceType.QUERY)) {
                 returnBuilder = CodeBlock.builder()
-                        .add("return new $T($S, $S, params) {\n",
+                        .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L) {\n",
                                 ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeElement)),
                                 templateName,
-                                instanceName
+                                instanceName,
+                                ClassName.get(Transactional.TxType.class),
+                                txType.name(),
+                                rollbackOnArray,
+                                dontRollbackOnArray
                         )
                         .indent()
                         .add("@$T\n", ClassName.get(Override.class))
@@ -121,10 +144,14 @@ public class TemplateInterfaceBuilder {
                         .add("}.query();\n");
             } else {
                 returnBuilder = CodeBlock.builder()
-                        .add("return new $T($S, $S, params).update();\n",
+                        .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L).update();\n",
                                 ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeElement)),
                                 templateName,
-                                instanceName
+                                instanceName,
+                                ClassName.get(Transactional.TxType.class),
+                                txType.name(),
+                                rollbackOnArray,
+                                dontRollbackOnArray
                         );
             }
             builder.addCode(returnBuilder.build())
@@ -134,29 +161,41 @@ public class TemplateInterfaceBuilder {
             TypeElement returnTypeArgumentTypeElement = (TypeElement) typeUtils.asElement(returnTypeArgumentTypeMirror);
             if (typeUtils.isAssignable(returnTypeElement.asType(), elementUtils.getTypeElement(Map.class.getCanonicalName()).asType())) {
                 CodeBlock.Builder returnBuilder = CodeBlock.builder()
-                        .add("return new $T($S, $S, params).query();\n",
+                        .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L).query();\n",
                                 ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeElement)),
                                 templateName,
-                                instanceName
+                                instanceName,
+                                ClassName.get(Transactional.TxType.class),
+                                txType.name(),
+                                rollbackOnArray,
+                                dontRollbackOnArray
                         );
                 builder.addCode(returnBuilder.build())
                         .addException(ClassName.get(SQLException.class));
             } else if (typeUtils.isAssignable(returnTypeElement.asType(), elementUtils.getTypeElement(List.class.getCanonicalName()).asType())) {
                 if (typeUtils.isAssignable(returnTypeArgumentTypeElement.asType(), elementUtils.getTypeElement(Map.class.getCanonicalName()).asType())) {
                     CodeBlock.Builder returnBuilder = CodeBlock.builder()
-                            .add("return new $T($S, $S, params).queryList();\n",
+                            .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L).queryList();\n",
                                     ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
                                     templateName,
-                                    instanceName
+                                    instanceName,
+                                    ClassName.get(Transactional.TxType.class),
+                                    txType.name(),
+                                    rollbackOnArray,
+                                    dontRollbackOnArray
                             );
                     builder.addCode(returnBuilder.build())
                             .addException(ClassName.get(SQLException.class));
                 } else {
                     CodeBlock.Builder returnBuilder = CodeBlock.builder()
-                            .add("return new $T($S, $S, params) {\n",
+                            .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L) {\n",
                                     ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
                                     templateName,
-                                    instanceName
+                                    instanceName,
+                                    ClassName.get(Transactional.TxType.class),
+                                    txType.name(),
+                                    rollbackOnArray,
+                                    dontRollbackOnArray
                             )
                             .indent()
                             .add("@$T\n", ClassName.get(Override.class))
@@ -176,10 +215,14 @@ public class TemplateInterfaceBuilder {
             } else if (typeUtils.isAssignable(returnTypeElement.asType(), elementUtils.getTypeElement(Mono.class.getCanonicalName()).asType())) {
                 if (typeUtils.isAssignable(returnTypeArgumentTypeElement.asType(), elementUtils.getTypeElement(Map.class.getCanonicalName()).asType())) {
                     CodeBlock.Builder returnBuilder = CodeBlock.builder()
-                            .add("return new $T($S, $S, params).query();\n",
+                            .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L).query();\n",
                                     ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
                                     templateName,
-                                    instanceName
+                                    instanceName,
+                                    ClassName.get(Transactional.TxType.class),
+                                    txType.name(),
+                                    rollbackOnArray,
+                                    dontRollbackOnArray
                             );
                     builder.addCode(returnBuilder.build());
                 } else if (typeUtils.isAssignable(returnTypeArgumentTypeElement.asType(), elementUtils.getTypeElement(List.class.getCanonicalName()).asType())) {
@@ -189,18 +232,26 @@ public class TemplateInterfaceBuilder {
 
                     if (typeUtils.isAssignable(returnTypeArgumentArgumentTypeElement.asType(), elementUtils.getTypeElement(Map.class.getCanonicalName()).asType())) {
                         CodeBlock.Builder returnBuilder = CodeBlock.builder()
-                                .add("return new $T($S, $S, params).queryList();\n",
+                                .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L).queryList();\n",
                                         ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentArgumentTypeElement)),
                                         templateName,
-                                        instanceName
+                                        instanceName,
+                                        ClassName.get(Transactional.TxType.class),
+                                        txType.name(),
+                                        rollbackOnArray,
+                                        dontRollbackOnArray
                                 );
                         builder.addCode(returnBuilder.build());
                     } else {
                         CodeBlock.Builder returnBuilder = CodeBlock.builder()
-                                .add("return new $T($S, $S, params) {\n",
+                                .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L) {\n",
                                         ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentArgumentTypeElement)),
                                         templateName,
-                                        instanceName
+                                        instanceName,
+                                        ClassName.get(Transactional.TxType.class),
+                                        txType.name(),
+                                        rollbackOnArray,
+                                        dontRollbackOnArray
                                 )
                                 .indent()
                                 .add("@$T\n", ClassName.get(Override.class))
@@ -220,10 +271,14 @@ public class TemplateInterfaceBuilder {
                     CodeBlock.Builder returnBuilder;
                     if (type.equals(InstanceType.QUERY)) {
                         returnBuilder = CodeBlock.builder()
-                                .add("return new $T($S, $S, params) {\n",
+                                .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L) {\n",
                                         ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
                                         templateName,
-                                        instanceName
+                                        instanceName,
+                                        ClassName.get(Transactional.TxType.class),
+                                        txType.name(),
+                                        rollbackOnArray,
+                                        dontRollbackOnArray
                                 )
                                 .indent()
                                 .add("@$T\n", ClassName.get(Override.class))
@@ -239,10 +294,14 @@ public class TemplateInterfaceBuilder {
                                 .add("}.query();\n");
                     } else {
                         returnBuilder = CodeBlock.builder()
-                                .add("return new $T($S, $S, params).update();\n",
+                                .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L).update();\n",
                                         ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
                                         templateName,
-                                        instanceName
+                                        instanceName,
+                                        ClassName.get(Transactional.TxType.class),
+                                        txType.name(),
+                                        rollbackOnArray,
+                                        dontRollbackOnArray
                                 );
                     }
                     builder.addCode(returnBuilder.build());
@@ -250,18 +309,26 @@ public class TemplateInterfaceBuilder {
             } else if (typeUtils.isAssignable(returnTypeElement.asType(), elementUtils.getTypeElement(Flux.class.getCanonicalName()).asType())) {
                 if (typeUtils.isAssignable(returnTypeArgumentTypeElement.asType(), elementUtils.getTypeElement(Map.class.getCanonicalName()).asType())) {
                     CodeBlock.Builder returnBuilder = CodeBlock.builder()
-                            .add("return new $T($S, $S, params).queryFlux();\n",
+                            .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L).queryFlux();\n",
                                     ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
                                     templateName,
-                                    instanceName
+                                    instanceName,
+                                    ClassName.get(Transactional.TxType.class),
+                                    txType.name(),
+                                    rollbackOnArray,
+                                    dontRollbackOnArray
                             );
                     builder.addCode(returnBuilder.build());
                 } else {
                     CodeBlock.Builder returnBuilder = CodeBlock.builder()
-                            .add("return new $T($S, $S, params) {\n",
+                            .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L) {\n",
                                     ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
                                     templateName,
-                                    instanceName
+                                    instanceName,
+                                    ClassName.get(Transactional.TxType.class),
+                                    txType.name(),
+                                    rollbackOnArray,
+                                    dontRollbackOnArray
                             )
                             .indent()
                             .add("@$T\n", ClassName.get(Override.class))
@@ -313,7 +380,7 @@ public class TemplateInterfaceBuilder {
                                                     getFiledNameBySetterName(executableElement.getSimpleName().toString())
                                             )
                                     ),
-                            Stream.of(CodeBlock.of("return entity;\n", ClassName.get(typeElement), ClassName.get(typeElement)))
+                            Stream.of(CodeBlock.of("return entity;\n"))
                     )
             );
         }

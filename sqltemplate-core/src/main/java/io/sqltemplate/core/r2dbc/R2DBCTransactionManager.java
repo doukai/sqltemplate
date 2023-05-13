@@ -16,7 +16,7 @@ import java.util.Objects;
 
 public class R2DBCTransactionManager {
 
-    private static final String connectionKey = "connection";
+    private static final String connectionCounterListKey = "connectionCounterList";
 
     private final static R2DBCConnectionProvider connectionProvider = R2DBCConnectionProvider.provider();
 
@@ -26,7 +26,7 @@ public class R2DBCTransactionManager {
                 .transformDeferredContextual(
                         (mono, contextView) ->
                                 Mono.justOrEmpty(
-                                                contextView.getOrEmpty(connectionKey)
+                                                contextView.getOrEmpty(connectionCounterListKey)
                                                         .map(connectionCounterList -> (List<R2DBCConnectionCounter>) connectionCounterList)
                                         )
                                         .switchIfEmpty(
@@ -38,7 +38,7 @@ public class R2DBCTransactionManager {
                                                         )
                                                         .flatMap(connectionCounterList ->
                                                                 mono.thenReturn(connectionCounterList)
-                                                                        .contextWrite(Context.of(connectionKey, connectionCounterList))
+                                                                        .contextWrite(Context.of(connectionCounterListKey, connectionCounterList))
 
                                                         )
                                         )

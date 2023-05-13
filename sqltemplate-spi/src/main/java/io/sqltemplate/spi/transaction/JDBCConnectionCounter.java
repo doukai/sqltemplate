@@ -11,6 +11,7 @@ public class JDBCConnectionCounter {
 
     public JDBCConnectionCounter(Connection connection) {
         this.connection = connection;
+        this.counter = new AtomicInteger(0);
     }
 
     public Connection getConnection() {
