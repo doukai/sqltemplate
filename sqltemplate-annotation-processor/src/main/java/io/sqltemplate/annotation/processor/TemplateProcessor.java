@@ -32,7 +32,6 @@ public class TemplateProcessor extends AbstractProcessor {
         if (annotations.isEmpty()) {
             return false;
         }
-
         TemplateInterfaceBuilder templateInterfaceBuilder = new TemplateInterfaceBuilder(processingEnv);
         roundEnv.getElementsAnnotatedWith(Template.class).stream()
                 .filter(element -> element.getKind().equals(ElementKind.INTERFACE))
@@ -47,6 +46,4 @@ public class TemplateProcessor extends AbstractProcessor {
                 );
         return false;
     }
-
-
 }
