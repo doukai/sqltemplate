@@ -1,10 +1,7 @@
 package io.sqltemplate.runtime.handler;
 
 import com.google.common.base.CaseFormat;
-import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.CodeBlock;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.*;
 import io.sqltemplate.core.adapter.Adapter;
 import io.sqltemplate.core.jdbc.JDBCAdapter;
 import io.sqltemplate.core.r2dbc.R2DBCAdapter;
@@ -12,6 +9,7 @@ import javassist.*;
 
 import javax.lang.model.element.Modifier;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Map;
 
 public class RuntimeAdapterProvider {
@@ -72,22 +70,36 @@ public class RuntimeAdapterProvider {
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(ParameterizedTypeName.get(Map.class, String.class, Object.class), "result")
-                .returns(entityClass)
-                .addStatement("$T entity = new $T()", ClassName.get(entityClass), ClassName.get(entityClass));
+                .returns(entityClass);
 
-        Arrays.stream(entityClass.getMethods())
-                .filter(method -> method.getName().startsWith("set"))
-                .map(method ->
-                        CodeBlock.of("entity.$L(result.get($S) != null ? ($T) result.get($S) : null)",
-                                method.getName(),
-                                getFiledNameBySetterName(method.getName()),
-                                ClassName.get(method.getParameters()[0].getType()),
-                                getFiledNameBySetterName(method.getName())
-                        )
-                )
-                .forEach(builder::addStatement);
+        if (entityClass.isPrimitive() ||
+                entityClass.isAssignableFrom(Boolean.class) ||
+                entityClass.isAssignableFrom(Character.class) ||
+                entityClass.isAssignableFrom(Number.class) ||
+                entityClass.isAssignableFrom(String.class)) {
 
-        builder.addStatement("return entity", ClassName.get(entityClass), ClassName.get(entityClass));
+            builder.addStatement("$T<?> iterator = result.values().iterator()", ClassName.get(Iterator.class))
+                    .beginControlFlow("if (iterator.hasNext())")
+                    .addStatement("return ($T) iterator.next()", TypeName.get(entityClass))
+                    .endControlFlow()
+                    .addStatement("return null");
+        } else if (entityClass.isAssignableFrom(Map.class)) {
+            builder.addStatement("return result");
+        } else {
+            builder.addStatement("$T entity = new $T()", TypeName.get(entityClass), TypeName.get(entityClass));
+            Arrays.stream(entityClass.getMethods())
+                    .filter(method -> method.getName().startsWith("set"))
+                    .map(method ->
+                            CodeBlock.of("entity.$L(result.get($S) != null ? ($T) result.get($S) : null)",
+                                    method.getName(),
+                                    getFiledNameBySetterName(method.getName()),
+                                    ClassName.get(method.getParameters()[0].getType()),
+                                    getFiledNameBySetterName(method.getName())
+                            )
+                    )
+                    .forEach(builder::addStatement);
+            builder.addStatement("return entity", ClassName.get(entityClass), ClassName.get(entityClass));
+        }
         return builder.build();
     }
 

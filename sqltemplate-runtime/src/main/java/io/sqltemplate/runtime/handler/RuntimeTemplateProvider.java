@@ -62,7 +62,9 @@ public class RuntimeTemplateProvider implements TemplateProvider {
             Instance instanceAnnotation = method.getAnnotation(Instance.class);
             InstanceType instanceType = InstanceType.QUERY;
             if (instanceAnnotation != null) {
-                instanceName = instanceAnnotation.value();
+                if (!instanceAnnotation.value().equals("")) {
+                    instanceName = instanceAnnotation.value();
+                }
                 instanceType = instanceAnnotation.type();
             }
 
@@ -81,8 +83,7 @@ public class RuntimeTemplateProvider implements TemplateProvider {
                     .toArray(String[]::new);
 
             Class<?> returnType = method.getReturnType();
-            Type[] returnTypeArguments = ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments();
-            if (returnTypeArguments.length == 0) {
+            if (returnType.isPrimitive()) {
                 if (instanceType.equals(InstanceType.QUERY)) {
                     QueryInterceptor interceptor;
                     if (transactionalAnnotation != null) {
@@ -101,102 +102,122 @@ public class RuntimeTemplateProvider implements TemplateProvider {
                     builder.define(method).intercept(MethodDelegation.to(interceptor));
                 }
             } else {
-                ParameterizedType argumentType = (ParameterizedType) returnTypeArguments[0];
-                if (returnType.isAssignableFrom(Map.class)) {
-                    QueryInterceptor interceptor;
-                    if (transactionalAnnotation != null) {
-                        interceptor = new QueryInterceptor(new JDBCAdapter<>(), templateName, instanceName, argumentNames, transactionalAnnotation);
-                    } else {
-                        interceptor = new QueryInterceptor(new JDBCAdapter<>(), templateName, instanceName, argumentNames);
-                    }
-                    builder.define(method).intercept(MethodDelegation.to(interceptor));
-                } else if (returnType.isAssignableFrom(List.class)) {
-                    if (((Class<?>) argumentType.getRawType()).isAssignableFrom(Map.class)) {
-                        QueryListInterceptor interceptor;
+                Type[] returnTypeArguments = ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments();
+                if (returnTypeArguments.length == 0) {
+                    if (instanceType.equals(InstanceType.QUERY)) {
+                        QueryInterceptor interceptor;
                         if (transactionalAnnotation != null) {
-                            interceptor = new QueryListInterceptor(new JDBCAdapter<>(), templateName, instanceName, argumentNames, transactionalAnnotation);
+                            interceptor = new QueryInterceptor(adapterProvider.getJDBCAdapter(returnType), templateName, instanceName, argumentNames, transactionalAnnotation);
                         } else {
-                            interceptor = new QueryListInterceptor(new JDBCAdapter<>(), templateName, instanceName, argumentNames);
+                            interceptor = new QueryInterceptor(adapterProvider.getJDBCAdapter(returnType), templateName, instanceName, argumentNames);
                         }
                         builder.define(method).intercept(MethodDelegation.to(interceptor));
                     } else {
-                        QueryListInterceptor interceptor;
+                        UpdateInterceptor interceptor;
                         if (transactionalAnnotation != null) {
-                            interceptor = new QueryListInterceptor(adapterProvider.getJDBCAdapter(returnType), templateName, instanceName, argumentNames, transactionalAnnotation);
+                            interceptor = new UpdateInterceptor(new JDBCAdapter<>(), templateName, instanceName, argumentNames, transactionalAnnotation);
                         } else {
-                            interceptor = new QueryListInterceptor(adapterProvider.getJDBCAdapter(returnType), templateName, instanceName, argumentNames);
+                            interceptor = new UpdateInterceptor(new JDBCAdapter<>(), templateName, instanceName, argumentNames);
                         }
                         builder.define(method).intercept(MethodDelegation.to(interceptor));
                     }
-                } else if (returnType.isAssignableFrom(Mono.class)) {
-                    if (((Class<?>) argumentType.getRawType()).isAssignableFrom(Map.class)) {
-                        QueryMonoInterceptor interceptor;
+                } else {
+                    ParameterizedType argumentType = (ParameterizedType) returnTypeArguments[0];
+                    if (returnType.isAssignableFrom(Map.class)) {
+                        QueryInterceptor interceptor;
                         if (transactionalAnnotation != null) {
-                            interceptor = new QueryMonoInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames, transactionalAnnotation);
+                            interceptor = new QueryInterceptor(new JDBCAdapter<>(), templateName, instanceName, argumentNames, transactionalAnnotation);
                         } else {
-                            interceptor = new QueryMonoInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames);
+                            interceptor = new QueryInterceptor(new JDBCAdapter<>(), templateName, instanceName, argumentNames);
                         }
                         builder.define(method).intercept(MethodDelegation.to(interceptor));
-                    } else if (((Class<?>) argumentType.getRawType()).isAssignableFrom(List.class)) {
-                        Type argumentTypeArgumentType = argumentType.getActualTypeArguments()[0];
-                        if (argumentTypeArgumentType instanceof ParameterizedType) {
-                            QueryMonoListInterceptor interceptor;
+                    } else if (returnType.isAssignableFrom(List.class)) {
+                        if (((Class<?>) argumentType.getRawType()).isAssignableFrom(Map.class)) {
+                            QueryListInterceptor interceptor;
                             if (transactionalAnnotation != null) {
-                                interceptor = new QueryMonoListInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames, transactionalAnnotation);
+                                interceptor = new QueryListInterceptor(new JDBCAdapter<>(), templateName, instanceName, argumentNames, transactionalAnnotation);
                             } else {
-                                interceptor = new QueryMonoListInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames);
+                                interceptor = new QueryListInterceptor(new JDBCAdapter<>(), templateName, instanceName, argumentNames);
                             }
                             builder.define(method).intercept(MethodDelegation.to(interceptor));
                         } else {
-                            QueryMonoListInterceptor interceptor;
+                            QueryListInterceptor interceptor;
                             if (transactionalAnnotation != null) {
-                                interceptor = new QueryMonoListInterceptor(adapterProvider.getR2DBCAdapter(returnType), templateName, instanceName, argumentNames, transactionalAnnotation);
+                                interceptor = new QueryListInterceptor(adapterProvider.getJDBCAdapter(returnType), templateName, instanceName, argumentNames, transactionalAnnotation);
                             } else {
-                                interceptor = new QueryMonoListInterceptor(adapterProvider.getR2DBCAdapter(returnType), templateName, instanceName, argumentNames);
+                                interceptor = new QueryListInterceptor(adapterProvider.getJDBCAdapter(returnType), templateName, instanceName, argumentNames);
                             }
                             builder.define(method).intercept(MethodDelegation.to(interceptor));
                         }
-                    } else {
-                        if (instanceType.equals(InstanceType.QUERY)) {
+                    } else if (returnType.isAssignableFrom(Mono.class)) {
+                        if (((Class<?>) argumentType.getRawType()).isAssignableFrom(Map.class)) {
                             QueryMonoInterceptor interceptor;
                             if (transactionalAnnotation != null) {
-                                interceptor = new QueryMonoInterceptor(adapterProvider.getR2DBCAdapter(returnType), templateName, instanceName, argumentNames, transactionalAnnotation);
+                                interceptor = new QueryMonoInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames, transactionalAnnotation);
                             } else {
-                                interceptor = new QueryMonoInterceptor(adapterProvider.getR2DBCAdapter(returnType), templateName, instanceName, argumentNames);
+                                interceptor = new QueryMonoInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames);
                             }
                             builder.define(method).intercept(MethodDelegation.to(interceptor));
+                        } else if (((Class<?>) argumentType.getRawType()).isAssignableFrom(List.class)) {
+                            Type argumentTypeArgumentType = argumentType.getActualTypeArguments()[0];
+                            if (argumentTypeArgumentType instanceof ParameterizedType) {
+                                QueryMonoListInterceptor interceptor;
+                                if (transactionalAnnotation != null) {
+                                    interceptor = new QueryMonoListInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames, transactionalAnnotation);
+                                } else {
+                                    interceptor = new QueryMonoListInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames);
+                                }
+                                builder.define(method).intercept(MethodDelegation.to(interceptor));
+                            } else {
+                                QueryMonoListInterceptor interceptor;
+                                if (transactionalAnnotation != null) {
+                                    interceptor = new QueryMonoListInterceptor(adapterProvider.getR2DBCAdapter(returnType), templateName, instanceName, argumentNames, transactionalAnnotation);
+                                } else {
+                                    interceptor = new QueryMonoListInterceptor(adapterProvider.getR2DBCAdapter(returnType), templateName, instanceName, argumentNames);
+                                }
+                                builder.define(method).intercept(MethodDelegation.to(interceptor));
+                            }
                         } else {
-                            UpdateMonoInterceptor interceptor;
+                            if (instanceType.equals(InstanceType.QUERY)) {
+                                QueryMonoInterceptor interceptor;
+                                if (transactionalAnnotation != null) {
+                                    interceptor = new QueryMonoInterceptor(adapterProvider.getR2DBCAdapter(returnType), templateName, instanceName, argumentNames, transactionalAnnotation);
+                                } else {
+                                    interceptor = new QueryMonoInterceptor(adapterProvider.getR2DBCAdapter(returnType), templateName, instanceName, argumentNames);
+                                }
+                                builder.define(method).intercept(MethodDelegation.to(interceptor));
+                            } else {
+                                UpdateMonoInterceptor interceptor;
+                                if (transactionalAnnotation != null) {
+                                    interceptor = new UpdateMonoInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames, transactionalAnnotation);
+                                } else {
+                                    interceptor = new UpdateMonoInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames);
+                                }
+                                builder.define(method).intercept(MethodDelegation.to(interceptor));
+                            }
+                        }
+                    } else if (returnType.isAssignableFrom(Flux.class)) {
+                        if (((Class<?>) argumentType.getRawType()).isAssignableFrom(Map.class)) {
+                            QueryFluxInterceptor interceptor;
                             if (transactionalAnnotation != null) {
-                                interceptor = new UpdateMonoInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames, transactionalAnnotation);
+                                interceptor = new QueryFluxInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames, transactionalAnnotation);
                             } else {
-                                interceptor = new UpdateMonoInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames);
+                                interceptor = new QueryFluxInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames);
+                            }
+                            builder.define(method).intercept(MethodDelegation.to(interceptor));
+                        } else {
+                            QueryFluxInterceptor interceptor;
+                            if (transactionalAnnotation != null) {
+                                interceptor = new QueryFluxInterceptor(adapterProvider.getR2DBCAdapter(returnType), templateName, instanceName, argumentNames, transactionalAnnotation);
+                            } else {
+                                interceptor = new QueryFluxInterceptor(adapterProvider.getR2DBCAdapter(returnType), templateName, instanceName, argumentNames);
                             }
                             builder.define(method).intercept(MethodDelegation.to(interceptor));
                         }
-                    }
-                } else if (returnType.isAssignableFrom(Flux.class)) {
-                    if (((Class<?>) argumentType.getRawType()).isAssignableFrom(Map.class)) {
-                        QueryFluxInterceptor interceptor;
-                        if (transactionalAnnotation != null) {
-                            interceptor = new QueryFluxInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames, transactionalAnnotation);
-                        } else {
-                            interceptor = new QueryFluxInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames);
-                        }
-                        builder.define(method).intercept(MethodDelegation.to(interceptor));
-                    } else {
-                        QueryFluxInterceptor interceptor;
-                        if (transactionalAnnotation != null) {
-                            interceptor = new QueryFluxInterceptor(adapterProvider.getR2DBCAdapter(returnType), templateName, instanceName, argumentNames, transactionalAnnotation);
-                        } else {
-                            interceptor = new QueryFluxInterceptor(adapterProvider.getR2DBCAdapter(returnType), templateName, instanceName, argumentNames);
-                        }
-                        builder.define(method).intercept(MethodDelegation.to(interceptor));
                     }
                 }
             }
         }
-
         return builder
                 .make()
                 .load(templateClass.getClassLoader())

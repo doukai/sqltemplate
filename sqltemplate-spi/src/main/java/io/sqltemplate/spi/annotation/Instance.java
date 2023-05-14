@@ -7,7 +7,7 @@ import java.lang.annotation.*;
 @Documented
 public @interface Instance {
 
-    String value();
+    String value() default "";
 
     InstanceType type() default InstanceType.QUERY;
 }
