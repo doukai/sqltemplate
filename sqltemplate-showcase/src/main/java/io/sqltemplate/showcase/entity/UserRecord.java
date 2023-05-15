@@ -1,6 +1,6 @@
 package io.sqltemplate.showcase.entity;
 
-import io.sqltemplate.active.record.model.Record;
+import io.sqltemplate.active.record.Record;
 import io.sqltemplate.active.record.model.expression.Expression;
 import io.sqltemplate.showcase.templates.Sex;
 
