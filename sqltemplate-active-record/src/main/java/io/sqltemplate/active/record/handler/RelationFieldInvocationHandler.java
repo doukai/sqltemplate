@@ -1,9 +1,6 @@
 package io.sqltemplate.active.record.handler;
 
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.*;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -21,6 +18,18 @@ public class RelationFieldInvocationHandler implements InvocationHandler {
         } else if (method.isAnnotationPresent(ManyToMany.class)) {
 
         }
-        return null;
+        return method.invoke(proxy, args);
+    }
+
+    private JoinTable getJoinTable(Method method) {
+        return method.getAnnotation(JoinTable.class);
+    }
+
+    private JoinColumn[] getJoinColumnList(Method method) {
+        if (method.isAnnotationPresent(JoinColumns.class)) {
+            return method.getAnnotation(JoinColumns.class).value();
+        } else {
+            return new JoinColumn[]{method.getAnnotation(JoinColumn.class)};
+        }
     }
 }
