@@ -35,7 +35,7 @@ public class TableRecord<T> {
     private Class<?>[] rollbackOn = {};
     private Class<?>[] dontRollbackOn = {};
 
-    private io.sqltemplate.active.record.model.join.JoinTable joinTable;
+    private JoinTable joinTable;
     private List<Conditional> conditionals;
     private List<Sort> sorts;
     private Integer limit;
@@ -131,22 +131,6 @@ public class TableRecord<T> {
 
     protected List<String> getColumnNames() {
         throw new RuntimeException("column names undefined");
-    }
-
-    protected List<String> getOneToOneColumnNames() {
-        throw new RuntimeException("one to one column names undefined");
-    }
-
-    protected List<String> getOneToManyColumnNames() {
-        throw new RuntimeException("one to many column names undefined");
-    }
-
-    protected List<String> getManyToOneColumnNames() {
-        throw new RuntimeException("many to one column names undefined");
-    }
-
-    protected List<String> getManyToManyColumnNames() {
-        throw new RuntimeException("many to many names undefined");
     }
 
     protected List<Object> getValues() {
