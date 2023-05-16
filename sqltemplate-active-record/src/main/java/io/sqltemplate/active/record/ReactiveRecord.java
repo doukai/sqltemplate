@@ -1,6 +1,10 @@
 package io.sqltemplate.active.record;
 
+import io.sqltemplate.active.record.model.conditional.Conditional;
+import io.sqltemplate.active.record.model.join.JoinColumn;
+import io.sqltemplate.active.record.model.join.JoinTable;
 import io.sqltemplate.active.record.model.sort.DESC;
+import io.sqltemplate.active.record.model.sort.Sort;
 import io.sqltemplate.active.record.model.update.ValueSet;
 import io.sqltemplate.core.r2dbc.R2DBCAdapter;
 import reactor.core.publisher.Mono;
@@ -16,10 +20,22 @@ import static io.sqltemplate.active.record.model.sort.DESC.DESC;
 
 public class ReactiveRecord<T> extends TableRecord<T> {
 
-    static public <T> Mono<T> get(Object value) {
+    public static <T> Mono<T> get(Object value) {
         ReactiveRecord<T> record = new ReactiveRecord<>();
         where(record, EQ(record.getKeyName(), value));
         return record.first();
+    }
+
+    public <E, R extends ReactiveRecord<E>> Mono<E> getOne(R entityRecord, List<JoinColumn> joinColumns) {
+        return ReactiveRecord.where(entityRecord).on(joinColumns).first();
+    }
+
+    public <E, R extends ReactiveRecord<E>> Mono<List<E>> getMany(R entityRecord, List<JoinColumn> joinColumns) {
+        return ReactiveRecord.where(entityRecord).on(joinColumns).list();
+    }
+
+    public <E, R extends ReactiveRecord<E>> Mono<List<E>> getMany(R entityRecord, JoinTable joinTable) {
+        return ReactiveRecord.where(entityRecord).on(joinTable).list();
     }
 
     public static <T> Mono<List<T>> all() {
@@ -35,6 +51,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
             put("sorts", getSorts());
             put("limit", getLimit());
             put("offset", getOffset());
+            put("joinTable", getJoinTable());
         }};
         return new R2DBCAdapter<T>("stg/record/select.stg", "select", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
             @Override
@@ -109,7 +126,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
             put("columns", getColumnNames());
-            put("values", getValues());
+            put("values", getValueExpressions());
         }};
         return new R2DBCAdapter<T>("stg/record/insert.stg", "insert", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
             @Override
@@ -207,5 +224,138 @@ public class ReactiveRecord<T> extends TableRecord<T> {
         ReactiveRecord<T> record = new ReactiveRecord<>();
         where(record, IN(record.getKeyName(), Arrays.stream(records).map(ReactiveRecord::getKeyValue).collect(Collectors.toList())));
         return record.deleteAll();
+    }
+
+    public static <T> ReactiveRecord<T> where(Conditional conditional) {
+        ReactiveRecord<T> record = new ReactiveRecord<>();
+        return where(record, conditional);
+    }
+
+    public static <T> ReactiveRecord<T> where() {
+        ReactiveRecord<T> record = new ReactiveRecord<>();
+        return where(record);
+    }
+
+    public static <T> ReactiveRecord<T> where(ReactiveRecord<T> record, Conditional conditional) {
+        return (ReactiveRecord<T>) TableRecord.where(record, conditional);
+    }
+
+    public static <T> ReactiveRecord<T> where(ReactiveRecord<T> record) {
+        return (ReactiveRecord<T>) TableRecord.where(record);
+    }
+
+    @Override
+    public ReactiveRecord<T> and(Conditional conditional) {
+        return (ReactiveRecord<T>) super.and(conditional);
+    }
+
+    @Override
+    public ReactiveRecord<T> on(List<JoinColumn> joinColumns) {
+        return (ReactiveRecord<T>) super.on(joinColumns);
+    }
+
+    @Override
+    public ReactiveRecord<T> on(JoinTable joinTable) {
+        return (ReactiveRecord<T>) super.on(joinTable);
+    }
+
+    @Override
+    public ReactiveRecord<T> limit(int limit) {
+        return (ReactiveRecord<T>) super.limit(limit);
+    }
+
+    @Override
+    public ReactiveRecord<T> offset(int offset) {
+        return (ReactiveRecord<T>) super.offset(offset);
+    }
+
+    @Override
+    public ReactiveRecord<T> orderBy(Sort sort) {
+        return (ReactiveRecord<T>) super.orderBy(sort);
+    }
+
+    @Override
+    public ReactiveRecord<T> orderBy(Collection<Sort> sorts) {
+        return (ReactiveRecord<T>) super.orderBy(sorts);
+    }
+
+    @Override
+    public ReactiveRecord<T> eq(String columnName, Object expression) {
+        return (ReactiveRecord<T>) super.eq(columnName, expression);
+    }
+
+    @Override
+    public ReactiveRecord<T> neq(String columnName, Object expression) {
+        return (ReactiveRecord<T>) super.neq(columnName, expression);
+    }
+
+    @Override
+    public ReactiveRecord<T> gt(String columnName, Object expression) {
+        return (ReactiveRecord<T>) super.gt(columnName, expression);
+    }
+
+    @Override
+    public ReactiveRecord<T> gte(String columnName, Object expression) {
+        return (ReactiveRecord<T>) super.gte(columnName, expression);
+    }
+
+    @Override
+    public ReactiveRecord<T> lt(String columnName, Object expression) {
+        return (ReactiveRecord<T>) super.lt(columnName, expression);
+    }
+
+    @Override
+    public ReactiveRecord<T> lte(String columnName, Object expression) {
+        return (ReactiveRecord<T>) super.lte(columnName, expression);
+    }
+
+    @Override
+    public ReactiveRecord<T> lk(String columnName, Object expression) {
+        return (ReactiveRecord<T>) super.lk(columnName, expression);
+    }
+
+    @Override
+    public ReactiveRecord<T> nlk(String columnName, Object expression) {
+        return (ReactiveRecord<T>) super.nlk(columnName, expression);
+    }
+
+    @Override
+    public ReactiveRecord<T> nil(String columnName) {
+        return (ReactiveRecord<T>) super.nil(columnName);
+    }
+
+    @Override
+    public ReactiveRecord<T> nnil(String columnName) {
+        return (ReactiveRecord<T>) super.nnil(columnName);
+    }
+
+    @Override
+    public ReactiveRecord<T> in(String columnName, Collection<Object> expressions) {
+        return (ReactiveRecord<T>) super.in(columnName, expressions);
+    }
+
+    @Override
+    public ReactiveRecord<T> nin(String columnName, Collection<Object> expressions) {
+        return (ReactiveRecord<T>) super.nin(columnName, expressions);
+    }
+
+    @Override
+    public ReactiveRecord<T> in(String columnName, Object... expressions) {
+        return (ReactiveRecord<T>) super.in(columnName, expressions);
+    }
+
+    @Override
+    public ReactiveRecord<T> nin(String columnName, Object... expressions) {
+        return (ReactiveRecord<T>) super.nin(columnName, expressions);
+    }
+
+    @Override
+    public ReactiveRecord<T> or(Collection<Conditional> conditionals) {
+        return (ReactiveRecord<T>) super.or(conditionals);
+    }
+
+    @Override
+    public ReactiveRecord<T> or(Conditional... conditionals) {
+        return (ReactiveRecord<T>) super.or(conditionals);
     }
 }

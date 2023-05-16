@@ -110,7 +110,7 @@ public class UserRecord extends Record<UserRecord> {
     }
 
     @Override
-    protected List<Expression> getValues() {
+    protected List<Expression> getValueExpressions() {
         return Arrays.asList(Expression.of(getId()), Expression.of(getName()), Expression.of(getLogin()), Expression.of(getPassword()), Expression.of(getAge()), Expression.of(getSex()));
     }
 

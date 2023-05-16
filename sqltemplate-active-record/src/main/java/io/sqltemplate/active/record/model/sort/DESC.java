@@ -1,5 +1,7 @@
 package io.sqltemplate.active.record.model.sort;
 
+import com.google.common.base.CaseFormat;
+
 public class DESC implements Sort {
 
     private final String columnName;
@@ -14,6 +16,6 @@ public class DESC implements Sort {
 
     @Override
     public String toString() {
-        return columnName + " DESC";
+        return "t." + CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, columnName) + " DESC";
     }
 }

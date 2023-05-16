@@ -1,5 +1,6 @@
 package io.sqltemplate.active.record.model.update;
 
+import com.google.common.base.CaseFormat;
 import io.sqltemplate.active.record.model.expression.Expression;
 
 public class ValueSet {
@@ -17,6 +18,6 @@ public class ValueSet {
 
     @Override
     public String toString() {
-        return columnName + " = " + expression;
+        return "t." + CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, columnName) + " = " + expression;
     }
 }

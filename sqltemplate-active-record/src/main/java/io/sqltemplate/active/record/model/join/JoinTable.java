@@ -1,25 +1,19 @@
 package io.sqltemplate.active.record.model.join;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class JoinTable {
 
     private String name;
 
-    private JoinColumn joinColumn;
+    private List<JoinColumn> joinColumns;
 
-    private JoinColumn inverseJoinColumn;
+    private List<JoinColumn> inverseJoinColumns;
 
     public JoinTable(String name, List<JoinColumn> joinColumns, List<JoinColumn> inverseJoinColumns) {
         this.name = name;
-        this.joinColumn = joinColumns.get(0);
-        this.inverseJoinColumn = inverseJoinColumns.get(0);
-    }
-
-    public JoinTable(jakarta.persistence.JoinTable joinTable) {
-        this(joinTable.name(), Arrays.stream(joinTable.joinColumns()).map(JoinColumn::new).collect(Collectors.toList()), Arrays.stream(joinTable.inverseJoinColumns()).map(JoinColumn::new).collect(Collectors.toList()));
+        this.joinColumns = joinColumns;
+        this.inverseJoinColumns = inverseJoinColumns;
     }
 
     public String getName() {
@@ -31,21 +25,19 @@ public class JoinTable {
         return this;
     }
 
-    public JoinColumn getJoinColumn() {
-        return joinColumn;
+    public List<JoinColumn> getJoinColumns() {
+        return joinColumns;
     }
 
-    public JoinTable setJoinColumn(JoinColumn joinColumn) {
-        this.joinColumn = joinColumn;
-        return this;
+    public void setJoinColumns(List<JoinColumn> joinColumns) {
+        this.joinColumns = joinColumns;
     }
 
-    public JoinColumn getInverseJoinColumn() {
-        return inverseJoinColumn;
+    public List<JoinColumn> getInverseJoinColumns() {
+        return inverseJoinColumns;
     }
 
-    public JoinTable setInverseJoinColumn(JoinColumn inverseJoinColumn) {
-        this.inverseJoinColumn = inverseJoinColumn;
-        return this;
+    public void setInverseJoinColumns(List<JoinColumn> inverseJoinColumns) {
+        this.inverseJoinColumns = inverseJoinColumns;
     }
 }

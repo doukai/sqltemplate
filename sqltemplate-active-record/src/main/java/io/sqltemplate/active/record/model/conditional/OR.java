@@ -1,6 +1,5 @@
 package io.sqltemplate.active.record.model.conditional;
 
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;

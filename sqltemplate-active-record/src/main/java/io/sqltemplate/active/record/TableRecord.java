@@ -1,20 +1,14 @@
 package io.sqltemplate.active.record;
 
-import com.google.common.base.CaseFormat;
 import io.sqltemplate.active.record.model.conditional.Conditional;
 import io.sqltemplate.active.record.model.expression.Expression;
+import io.sqltemplate.active.record.model.join.JoinColumn;
 import io.sqltemplate.active.record.model.join.JoinTable;
 import io.sqltemplate.active.record.model.sort.Sort;
 import io.sqltemplate.active.record.model.update.ValueSet;
-import jakarta.persistence.*;
 import jakarta.transaction.Transactional;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +40,10 @@ public class TableRecord<T> {
     private List<Sort> sorts;
     private Integer limit;
     private Integer offset;
+
+
+    public TableRecord() {
+    }
 
     public Transactional.TxType getTxType() {
         return txType;
@@ -120,16 +118,11 @@ public class TableRecord<T> {
     }
 
     protected String getTableName() {
-        return this.getClass().getAnnotation(Table.class).name();
+        throw new RuntimeException("");
     }
 
     protected String getKeyName() {
-        return Arrays.stream(this.getClass().getMethods())
-                .filter(method -> method.isAnnotationPresent(Id.class))
-                .filter(method -> method.isAnnotationPresent(Column.class))
-                .findFirst()
-                .map(method -> method.getAnnotation(Column.class).name())
-                .orElse(null);
+        throw new RuntimeException("");
     }
 
     protected Object getKeyValue() {
@@ -137,31 +130,35 @@ public class TableRecord<T> {
     }
 
     protected List<String> getColumnNames() {
-        return Arrays.stream(this.getClass().getFields())
-                .filter(field -> field.isAnnotationPresent(Column.class))
-                .filter(field ->
-                        !field.isAnnotationPresent(OneToOne.class) &&
-                                !field.isAnnotationPresent(OneToMany.class) &&
-                                !field.isAnnotationPresent(ManyToOne.class) &&
-                                !field.isAnnotationPresent(ManyToMany.class)
-                )
-                .map(field -> field.getAnnotation(Column.class).name())
-                .collect(Collectors.toList());
+        throw new RuntimeException("column names undefined");
     }
 
-    protected List<Expression> getValues() {
-        return Arrays.stream(this.getClass().getFields())
-                .filter(field -> field.isAnnotationPresent(Column.class))
-                .map(field -> getValue(field.getName()))
-                .collect(Collectors.toList());
+    protected List<String> getOneToOneColumnNames() {
+        throw new RuntimeException("one to one column names undefined");
     }
 
-    private Expression getValue(String name) {
-        try {
-            return Expression.of(this.getClass().getMethod("get" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, name)).invoke(this));
-        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
+    protected List<String> getOneToManyColumnNames() {
+        throw new RuntimeException("one to many column names undefined");
+    }
+
+    protected List<String> getManyToOneColumnNames() {
+        throw new RuntimeException("many to one column names undefined");
+    }
+
+    protected List<String> getManyToManyColumnNames() {
+        throw new RuntimeException("many to many names undefined");
+    }
+
+    protected List<Object> getValues() {
+        throw new RuntimeException("values undefined");
+    }
+
+    protected List<Expression> getValueExpressions() {
+        return getValues().stream().map(Expression::of).collect(Collectors.toList());
+    }
+
+    protected Expression getValue(String name) {
+        throw new RuntimeException("value undefined: " + name);
     }
 
     protected List<ValueSet> getValueSets() {
@@ -169,26 +166,11 @@ public class TableRecord<T> {
     }
 
     protected Map<String, Expression> entityToMap() {
-        return Arrays.stream(this.getClass().getFields())
-                .filter(field -> field.isAnnotationPresent(Column.class))
-                .map(field -> new AbstractMap.SimpleEntry<>(field.getName(), getValue(field.getName())))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        throw new RuntimeException("entity to map undefined");
     }
 
-    @SuppressWarnings({"unchecked", "JavaReflectionInvocation"})
     protected T mapToEntity(Map<String, Object> result) {
-        try {
-            TableRecord<T> record = new TableRecord<>();
-            for (Field field : Arrays.stream(this.getClass().getFields())
-                    .filter(field -> field.isAnnotationPresent(Column.class))
-                    .collect(Collectors.toList())) {
-                Method method = record.getClass().getMethod("set" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, field.getName()));
-                method.invoke(record, result.get(field.getName()) != null ? method.getParameters()[0].getType().cast(result.get(field.getName())) : null);
-            }
-            return (T) record;
-        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
+        throw new RuntimeException("map to entity undefined");
     }
 
     public TableRecord<T> and(Conditional conditional) {
@@ -196,6 +178,17 @@ public class TableRecord<T> {
             this.conditionals = new ArrayList<>();
         }
         this.conditionals.add(conditional);
+        return this;
+    }
+
+    public TableRecord<T> on(List<JoinColumn> joinColumns) {
+        joinColumns.forEach(joinColumn -> this.and(EQ(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))));
+        return this;
+    }
+
+    public TableRecord<T> on(JoinTable joinTable) {
+        this.setJoinTable(joinTable);
+        joinTable.getInverseJoinColumns().forEach(joinColumn -> this.and(EQ(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))));
         return this;
     }
 

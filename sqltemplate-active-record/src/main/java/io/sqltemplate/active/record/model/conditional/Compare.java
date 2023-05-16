@@ -1,5 +1,6 @@
 package io.sqltemplate.active.record.model.conditional;
 
+import com.google.common.base.CaseFormat;
 import io.sqltemplate.active.record.model.expression.Expression;
 
 public abstract class Compare implements Conditional {
@@ -16,6 +17,6 @@ public abstract class Compare implements Conditional {
 
     @Override
     public String toString() {
-        return columnName + " " + sign() + " " + expression;
+        return "t." + CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, columnName) + " " + sign() + " " + expression;
     }
 }

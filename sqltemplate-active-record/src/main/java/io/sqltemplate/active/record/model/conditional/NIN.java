@@ -1,5 +1,6 @@
 package io.sqltemplate.active.record.model.conditional;
 
+import com.google.common.base.CaseFormat;
 import io.sqltemplate.active.record.model.expression.Expression;
 
 import java.util.Arrays;
@@ -26,6 +27,6 @@ public class NIN implements Conditional {
 
     @Override
     public String toString() {
-        return columnName + " NOT IN " + expressions.stream().map(Object::toString).collect(Collectors.joining(", ", "(", ")"));
+        return "t." + CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, columnName) + " NOT IN " + expressions.stream().map(Object::toString).collect(Collectors.joining(", ", "(", ")"));
     }
 }

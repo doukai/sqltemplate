@@ -1,5 +1,7 @@
 package io.sqltemplate.active.record.model.join;
 
+import com.google.common.base.CaseFormat;
+
 public class JoinColumn {
 
     private String name;
@@ -11,13 +13,8 @@ public class JoinColumn {
         this.referencedColumnName = referencedColumnName;
     }
 
-    public JoinColumn(jakarta.persistence.JoinColumn joinColumn) {
-        this.name = joinColumn.name();
-        this.referencedColumnName = joinColumn.referencedColumnName();
-    }
-
     public String getName() {
-        return name;
+        return "j." + CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name);
     }
 
     public JoinColumn setName(String name) {
@@ -26,7 +23,7 @@ public class JoinColumn {
     }
 
     public String getReferencedColumnName() {
-        return referencedColumnName;
+        return "t." + CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, referencedColumnName);
     }
 
     public JoinColumn setReferencedColumnName(String referencedColumnName) {
