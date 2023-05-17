@@ -14,7 +14,7 @@ public class JoinColumn {
     }
 
     public String getName() {
-        return "j." + CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name);
+        return CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name);
     }
 
     public JoinColumn setName(String name) {
@@ -23,7 +23,7 @@ public class JoinColumn {
     }
 
     public String getReferencedColumnName() {
-        return "t." + CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, referencedColumnName);
+        return CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, referencedColumnName);
     }
 
     public JoinColumn setReferencedColumnName(String referencedColumnName) {

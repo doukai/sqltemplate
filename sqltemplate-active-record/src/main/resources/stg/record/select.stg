@@ -1,7 +1,7 @@
-select(table,columns,conditionals,sorts,limit,offset,joinTable) ::= <<
+select(table,columns,conditionals,sorts,limit,offset,joinRecord) ::= <<
 SELECT <columns:{column|<column>};separator=", ">
 FROM <table> t
-<if(joinTable)>LEFT JOIN <joinTable.name> j ON <joinTable.inverseJoinColumns:{inverseJoinColumn|<inverseJoinColumn.name> = <inverseJoinColumn.referencedColumnName>};separator=" AND "><endif>
+<if(joinRecord)>LEFT JOIN <joinRecord.tableName> j ON <joinRecord.inverseJoinColumns:{inverseJoinColumn|j.<inverseJoinColumn.name> = t.<inverseJoinColumn.referencedColumnName>};separator=" AND "><endif>
 <if(conditionals)>WHERE <conditionals:{conditional|<conditional>};separator=" AND "><endif>
 <if(sorts)>ORDER BY <sorts:{sort|<sort>};separator=", "><endif>
 <if(limit)>LIMIT <limit><endif>

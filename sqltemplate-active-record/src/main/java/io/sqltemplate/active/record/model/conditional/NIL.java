@@ -4,8 +4,8 @@ import io.sqltemplate.active.record.model.expression.NullValue;
 
 public class NIL extends Compare {
 
-    public NIL(String columnName) {
-        super(columnName, new NullValue());
+    public NIL(String tableAlias, String columnName) {
+        super(tableAlias, columnName, new NullValue());
     }
 
     @Override
@@ -13,7 +13,7 @@ public class NIL extends Compare {
         return "IS";
     }
 
-    public static NIL NIL(String columnName) {
-        return new NIL(columnName);
+    public static NIL NIL(String tableAlias, String columnName) {
+        return new NIL(tableAlias, columnName);
     }
 }

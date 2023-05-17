@@ -4,8 +4,8 @@ import io.sqltemplate.active.record.model.expression.Expression;
 
 public class LT extends Compare {
 
-    public LT(String columnName, Expression expression) {
-        super(columnName, expression);
+    public LT(String tableAlias, String columnName, Expression expression) {
+        super(tableAlias, columnName, expression);
     }
 
     @Override
@@ -13,7 +13,7 @@ public class LT extends Compare {
         return "<";
     }
 
-    public static LT LT(String columnName, Object expression) {
-        return new LT(columnName, Expression.of(expression));
+    public static LT LT(String tableAlias, String columnName, Object expression) {
+        return new LT(tableAlias, columnName, Expression.of(expression));
     }
 }

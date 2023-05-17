@@ -5,10 +5,12 @@ import io.sqltemplate.active.record.model.expression.Expression;
 
 public abstract class Compare implements Conditional {
 
+    private final String tableAlias;
     private final String columnName;
     private final Expression expression;
 
-    public Compare(String columnName, Expression expression) {
+    public Compare(String tableAlias, String columnName, Expression expression) {
+        this.tableAlias = tableAlias;
         this.columnName = columnName;
         this.expression = expression;
     }
@@ -17,6 +19,6 @@ public abstract class Compare implements Conditional {
 
     @Override
     public String toString() {
-        return "t." + CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, columnName) + " " + sign() + " " + expression;
+        return tableAlias + "." + CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, columnName) + " " + sign() + " " + expression;
     }
 }

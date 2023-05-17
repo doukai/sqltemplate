@@ -4,8 +4,8 @@ import io.sqltemplate.active.record.model.expression.Expression;
 
 public class NEQ extends Compare {
 
-    public NEQ(String columnName, Expression expression) {
-        super(columnName, expression);
+    public NEQ(String tableAlias, String columnName, Expression expression) {
+        super(tableAlias, columnName, expression);
     }
 
     @Override
@@ -13,7 +13,7 @@ public class NEQ extends Compare {
         return "<>";
     }
 
-    public static NEQ NEQ(String columnName, Object expression) {
-        return new NEQ(columnName, Expression.of(expression));
+    public static NEQ NEQ(String tableAlias, String columnName, Object expression) {
+        return new NEQ(tableAlias, columnName, Expression.of(expression));
     }
 }

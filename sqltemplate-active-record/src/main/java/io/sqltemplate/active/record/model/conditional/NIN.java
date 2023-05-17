@@ -9,24 +9,26 @@ import java.util.stream.Collectors;
 
 public class NIN implements Conditional {
 
+    private final String tableAlias;
     private final String columnName;
     private final Collection<Expression> expressions;
 
-    public NIN(String columnName, Collection<Expression> expressions) {
+    public NIN(String tableAlias, String columnName, Collection<Expression> expressions) {
+        this.tableAlias = tableAlias;
         this.columnName = columnName;
         this.expressions = expressions;
     }
 
-    public static NIN NIN(String columnName, Collection<Object> expressions) {
-        return new NIN(columnName, expressions.stream().map(Expression::of).collect(Collectors.toList()));
+    public static NIN NIN(String tableAlias, String columnName, Collection<Object> expressions) {
+        return new NIN(tableAlias, columnName, expressions.stream().map(Expression::of).collect(Collectors.toList()));
     }
 
-    public static NIN NIN(String columnName, Object... expressions) {
-        return new NIN(columnName, Arrays.stream(expressions).map(Expression::of).collect(Collectors.toList()));
+    public static NIN NIN(String tableAlias, String columnName, Object... expressions) {
+        return new NIN(tableAlias, columnName, Arrays.stream(expressions).map(Expression::of).collect(Collectors.toList()));
     }
 
     @Override
     public String toString() {
-        return "t." + CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, columnName) + " NOT IN " + expressions.stream().map(Object::toString).collect(Collectors.joining(", ", "(", ")"));
+        return tableAlias + "." + CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, columnName) + " NOT IN " + expressions.stream().map(Object::toString).collect(Collectors.joining(", ", "(", ")"));
     }
 }

@@ -4,8 +4,8 @@ import io.sqltemplate.active.record.model.expression.Expression;
 
 public class EQ extends Compare {
 
-    public EQ(String columnName, Expression expression) {
-        super(columnName, expression);
+    public EQ(String tableAlias, String columnName, Expression expression) {
+        super(tableAlias, columnName, expression);
     }
 
     @Override
@@ -13,7 +13,7 @@ public class EQ extends Compare {
         return "=";
     }
 
-    public static EQ EQ(String columnName, Object expression) {
-        return new EQ(columnName, Expression.of(expression));
+    public static EQ EQ(String tableAlias, String columnName, Object expression) {
+        return new EQ(tableAlias, columnName, Expression.of(expression));
     }
 }
