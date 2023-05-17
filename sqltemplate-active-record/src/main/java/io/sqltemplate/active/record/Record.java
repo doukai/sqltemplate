@@ -1,7 +1,6 @@
 package io.sqltemplate.active.record;
 
 import io.sqltemplate.active.record.model.conditional.Conditional;
-import io.sqltemplate.active.record.model.conditional.EQ;
 import io.sqltemplate.active.record.model.expression.NullValue;
 import io.sqltemplate.active.record.model.join.JoinColumn;
 import io.sqltemplate.active.record.model.sort.Sort;
@@ -12,14 +11,10 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.sqltemplate.active.record.model.conditional.EQ.EQ;
-import static io.sqltemplate.active.record.model.conditional.GTE.GTE;
-import static io.sqltemplate.active.record.model.conditional.IN.IN;
 import static io.sqltemplate.active.record.model.conditional.OR.OR;
-import static io.sqltemplate.active.record.model.expression.Function.LAST_INSERT_ID;
 import static io.sqltemplate.active.record.model.sort.DESC.DESC;
 import static io.sqltemplate.active.record.model.update.ValueSet.SET;
 
@@ -27,7 +22,7 @@ public class Record<T> extends TableRecord<T> {
 
     public static <T> T get(Object... values) {
         Record<T> record = new Record<>();
-        where(record, IntStream.range(0, record.getKeyNames().size()).mapToObj(index -> EQ(record.getAlias(), record.getKeyNames().get(index), values[index])).toArray(EQ[]::new));
+        where(record, record.getKeyEQValues(values));
         return record.first();
     }
 
@@ -52,7 +47,7 @@ public class Record<T> extends TableRecord<T> {
 
     public <E> List<E> addMany(Supplier<Record<E>> entityRecordSupplier, Record<E>... entityRecords) {
         Record<E> entityRecord = entityRecordSupplier.get();
-        where(entityRecord, IN(getAlias(), entityRecord.getKeyName(), Arrays.stream(entityRecords).map(TableRecord::getKeyValue).collect(Collectors.toList())))
+        where(entityRecord, getKeyEQValues(entityRecords))
                 .updateAll(entityRecord.getJoinColumns(getTableName()).stream().map(joinColumn -> SET(getAlias(), joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))).toArray(ValueSet[]::new));
         return entityRecord.list();
     }
@@ -64,9 +59,9 @@ public class Record<T> extends TableRecord<T> {
                             Record<J> joinRecord = joinRecordSupplier.get();
                             return (Record<J>) joinRecord.mapToEntity(
                                     Stream.concat(
-                                                    joinRecord.getJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))),
-                                                    joinRecord.getInverseJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(joinColumn.getReferencedColumnName(), entityRecord.getValue(joinColumn.getName())))
-                                            )
+                                            joinRecord.getJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))),
+                                            joinRecord.getInverseJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(joinColumn.getReferencedColumnName(), entityRecord.getValue(joinColumn.getName())))
+                                    )
                                             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
 
                             );
@@ -83,7 +78,7 @@ public class Record<T> extends TableRecord<T> {
 
     public <E> List<E> removeMany(Supplier<Record<E>> entityRecordSupplier, Record<E>... entityRecords) {
         Record<E> entityRecord = entityRecordSupplier.get();
-        where(entityRecord, IN(getAlias(), entityRecord.getKeyName(), Arrays.stream(entityRecords).map(TableRecord::getKeyValue).collect(Collectors.toList())))
+        where(entityRecord, getKeyEQValues(entityRecords))
                 .updateAll(entityRecord.getJoinColumns(getTableName()).stream().map(joinColumn -> SET(getAlias(), joinColumn.getReferencedColumnName(), new NullValue())).toArray(ValueSet[]::new));
         return entityRecord.list();
     }
@@ -146,7 +141,7 @@ public class Record<T> extends TableRecord<T> {
     public T last(String... fileNames) {
         limit(1);
         if (fileNames == null) {
-            orderBy(DESC(getAlias(), getKeyName()));
+            orderBy(getKeyNames().stream().map(name -> DESC(getAlias(), name)).collect(Collectors.toList()));
         } else {
             orderBy(Arrays.stream(fileNames).map(fileName -> DESC(getAlias(), fileName)).collect(Collectors.toList()));
         }
@@ -200,7 +195,7 @@ public class Record<T> extends TableRecord<T> {
             }
         }
                 .update();
-        return where(this, EQ(getAlias(), getKeyName(), LAST_INSERT_ID)).first();
+        return where(this, getInsertKeyEQValues()).first();
     }
 
     public static <T> List<T> insertAll(Record<T>... records) {
@@ -215,7 +210,7 @@ public class Record<T> extends TableRecord<T> {
             }
         }
                 .update();
-        return where(record, GTE(record.getAlias(), record.getKeyName(), LAST_INSERT_ID)).list();
+        return where(record, record.getInsertKeyEQValues(records)).list();
     }
 
     public T update() {
@@ -223,7 +218,7 @@ public class Record<T> extends TableRecord<T> {
     }
 
     public static <T> T update(Record<T> record, ValueSet... sets) {
-        where(record, EQ(record.getAlias(), record.getKeyName(), record.getKeyValue())).updateAll(sets);
+        where(record, record.getKeyEQValues()).updateAll(sets);
         return record.first();
     }
 
@@ -244,7 +239,7 @@ public class Record<T> extends TableRecord<T> {
 
     public static <T> List<T> updateAll(Record<T>... records) {
         for (Record<T> record : records) {
-            where(record, EQ(record.getAlias(), record.getKeyName(), record.getKeyValue()));
+            where(record, record.getKeyEQValues());
         }
         Record<T> record = new Record<>();
         Map<String, Object> params = new HashMap<String, Object>() {{
@@ -257,7 +252,7 @@ public class Record<T> extends TableRecord<T> {
             }
         }
                 .update();
-        return where(record, IN(record.getAlias(), record.getKeyName(), Arrays.stream(records).map(Record::getKeyValue).collect(Collectors.toList()))).list();
+        return where(record, record.getKeyEQValues(records)).list();
     }
 
     public boolean delete() {
@@ -265,7 +260,7 @@ public class Record<T> extends TableRecord<T> {
     }
 
     public static <T> boolean delete(Record<T> record) {
-        return where(record, EQ(record.getAlias(), record.getKeyName(), record.getKeyValue())).deleteAll() > 0;
+        return where(record, record.getKeyEQValues()).deleteAll() > 0;
     }
 
     public long deleteAll() {
@@ -284,10 +279,10 @@ public class Record<T> extends TableRecord<T> {
 
     public static <T> long deleteAll(Record<T>... records) {
         for (Record<T> record : records) {
-            where(record, EQ(record.getAlias(), record.getKeyName(), record.getKeyValue()));
+            where(record, record.getKeyEQValues());
         }
         Record<T> record = new Record<>();
-        return where(record, IN(record.getAlias(), record.getKeyName(), Arrays.stream(records).map(Record::getKeyValue).collect(Collectors.toList()))).deleteAll();
+        return where(record, record.getKeyEQValues(records)).deleteAll();
     }
 
     public static <T> Record<T> where(Conditional conditional) {

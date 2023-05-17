@@ -1,6 +1,8 @@
 package io.sqltemplate.active.record;
 
+import io.sqltemplate.active.record.model.conditional.AND;
 import io.sqltemplate.active.record.model.conditional.Conditional;
+import io.sqltemplate.active.record.model.conditional.EQ;
 import io.sqltemplate.active.record.model.expression.Expression;
 import io.sqltemplate.active.record.model.join.JoinColumn;
 import io.sqltemplate.active.record.model.sort.Sort;
@@ -14,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.sqltemplate.active.record.model.conditional.EQ.EQ;
 import static io.sqltemplate.active.record.model.conditional.GT.GT;
@@ -28,6 +31,7 @@ import static io.sqltemplate.active.record.model.conditional.NNIL.NNIL;
 import static io.sqltemplate.active.record.model.conditional.IN.IN;
 import static io.sqltemplate.active.record.model.conditional.NIN.NIN;
 import static io.sqltemplate.active.record.model.conditional.OR.OR;
+import static io.sqltemplate.active.record.model.expression.Function.LAST_INSERT_ID;
 import static io.sqltemplate.active.record.model.update.ValueSet.SET;
 
 public class TableRecord<T> {
@@ -43,6 +47,7 @@ public class TableRecord<T> {
     private List<Sort> sorts;
     private Integer limit;
     private Integer offset;
+    private boolean autoIncrement = false;
 
     public TableRecord() {
     }
@@ -137,6 +142,15 @@ public class TableRecord<T> {
         return this;
     }
 
+    public boolean isAutoIncrement() {
+        return autoIncrement;
+    }
+
+    public TableRecord<T> setAutoIncrement(boolean autoIncrement) {
+        this.autoIncrement = autoIncrement;
+        return this;
+    }
+
     public List<JoinColumn> getJoinColumns(String tableName) {
         throw new RuntimeException("join column names undefined: " + tableName);
     }
@@ -175,6 +189,34 @@ public class TableRecord<T> {
 
     protected T mapToEntity(Map<String, Object> result) {
         throw new RuntimeException("map to entity undefined");
+    }
+
+    protected EQ[] getKeyEQValues() {
+        return getKeyNames().stream().map(name -> EQ(getAlias(), name, getValue(name))).toArray(EQ[]::new);
+    }
+
+    protected Conditional getKeyEQValues(TableRecord<?>... records) {
+        return OR(Arrays.stream(records).map(TableRecord::getKeyEQValues).map(AND::AND).toArray(AND[]::new));
+    }
+
+    protected EQ[] getInsertKeyEQValues() {
+        if (isAutoIncrement()) {
+            return new EQ[]{EQ(getAlias(), getKeyNames().get(0), LAST_INSERT_ID)};
+        } else {
+            return getKeyNames().stream().map(name -> EQ(getAlias(), name, getValue(name))).toArray(EQ[]::new);
+        }
+    }
+
+    protected Conditional getInsertKeyEQValues(TableRecord<?>... records) {
+        if (isAutoIncrement()) {
+            return GTE(getAlias(), getKeyNames().get(0), LAST_INSERT_ID);
+        } else {
+            return OR(Arrays.stream(records).map(TableRecord::getKeyEQValues).map(AND::AND).toArray(AND[]::new));
+        }
+    }
+
+    protected EQ[] getKeyEQValues(Object... values) {
+        return IntStream.range(0, getKeyNames().size()).mapToObj(index -> EQ(getAlias(), getKeyNames().get(index), values[index])).toArray(EQ[]::new);
     }
 
     protected List<Object> getKeyValues() {

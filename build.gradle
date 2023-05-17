@@ -1,2 +1,2 @@
-group 'org.example'
-version '1.0-SNAPSHOT'
+group 'io.sqltemplate'
+version '0.0.1-SNAPSHOT'

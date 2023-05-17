@@ -15,18 +15,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.sqltemplate.active.record.model.conditional.EQ.EQ;
-import static io.sqltemplate.active.record.model.conditional.GTE.GTE;
-import static io.sqltemplate.active.record.model.conditional.IN.IN;
 import static io.sqltemplate.active.record.model.conditional.OR.OR;
-import static io.sqltemplate.active.record.model.expression.Function.LAST_INSERT_ID;
 import static io.sqltemplate.active.record.model.sort.DESC.DESC;
 import static io.sqltemplate.active.record.model.update.ValueSet.SET;
 
 public class ReactiveRecord<T> extends TableRecord<T> {
 
-    public static <T> Mono<T> get(Object value) {
+    public static <T> Mono<T> get(Object... values) {
         ReactiveRecord<T> record = new ReactiveRecord<>();
-        where(record, EQ(record.getAlias(), record.getKeyName(), value));
+        where(record, record.getKeyEQValues(values));
         return record.first();
     }
 
@@ -51,7 +48,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     public <E> Mono<List<E>> addMany(Supplier<ReactiveRecord<E>> entityRecordSupplier, ReactiveRecord<E>... entityRecords) {
         ReactiveRecord<E> entityRecord = entityRecordSupplier.get();
-        return where(entityRecord, IN(getAlias(), entityRecord.getKeyName(), Arrays.stream(entityRecords).map(TableRecord::getKeyValue).collect(Collectors.toList())))
+        return where(entityRecord, getKeyEQValues(entityRecords))
                 .updateAll(entityRecord.getJoinColumns(getTableName()).stream().map(joinColumn -> SET(getAlias(), joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))).toArray(ValueSet[]::new))
                 .then(entityRecord.list());
     }
@@ -63,9 +60,9 @@ public class ReactiveRecord<T> extends TableRecord<T> {
                             ReactiveRecord<J> joinRecord = joinRecordSupplier.get();
                             return (ReactiveRecord<J>) joinRecord.mapToEntity(
                                     Stream.concat(
-                                                    joinRecord.getJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))),
-                                                    joinRecord.getInverseJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(joinColumn.getReferencedColumnName(), entityRecord.getValue(joinColumn.getName())))
-                                            )
+                                            joinRecord.getJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))),
+                                            joinRecord.getInverseJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(joinColumn.getReferencedColumnName(), entityRecord.getValue(joinColumn.getName())))
+                                    )
                                             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
 
                             );
@@ -81,7 +78,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     public <E> Mono<List<E>> removeMany(Supplier<ReactiveRecord<E>> entityRecordSupplier, ReactiveRecord<E>... entityRecords) {
         ReactiveRecord<E> entityRecord = entityRecordSupplier.get();
-        return where(entityRecord, IN(getAlias(), entityRecord.getKeyName(), Arrays.stream(entityRecords).map(TableRecord::getKeyValue).collect(Collectors.toList())))
+        return where(entityRecord, getKeyEQValues(entityRecords))
                 .updateAll(entityRecord.getJoinColumns(getTableName()).stream().map(joinColumn -> SET(getAlias(), joinColumn.getReferencedColumnName(), new NullValue())).toArray(ValueSet[]::new))
                 .then(entityRecord.list());
     }
@@ -144,7 +141,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
     public Mono<T> last(String... fileNames) {
         limit(1);
         if (fileNames == null) {
-            orderBy(DESC(getAlias(), getKeyName()));
+            orderBy(getKeyNames().stream().map(name -> DESC(getAlias(), name)).collect(Collectors.toList()));
         } else {
             orderBy(Arrays.stream(fileNames).map(fileName -> DESC(getAlias(), fileName)).collect(Collectors.toList()));
         }
@@ -198,7 +195,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
             }
         }
                 .update()
-                .then(where(this, EQ(getAlias(), getKeyName(), LAST_INSERT_ID)).first());
+                .then(where(this, getInsertKeyEQValues()).first());
     }
 
     public static <T> Mono<List<T>> insertAll(ReactiveRecord<T>... records) {
@@ -213,7 +210,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
             }
         }
                 .update()
-                .then(where(record, GTE(record.getAlias(), record.getKeyName(), LAST_INSERT_ID)).list());
+                .then(where(record, record.getInsertKeyEQValues(records)).list());
     }
 
     public Mono<T> update() {
@@ -221,7 +218,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
     }
 
     public static <T> Mono<T> update(ReactiveRecord<T> record, ValueSet... sets) {
-        where(record, EQ(record.getAlias(), record.getKeyName(), record.getKeyValue()));
+        where(record, record.getKeyEQValues());
         return record.updateAll(sets).then(record.first());
     }
 
@@ -242,7 +239,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     public static <T> Mono<List<T>> updateAll(ReactiveRecord<T>... records) {
         for (ReactiveRecord<T> record : records) {
-            where(record, EQ(record.getAlias(), record.getKeyName(), record.getKeyValue()));
+            where(record, record.getKeyEQValues());
         }
         ReactiveRecord<T> record = new ReactiveRecord<>();
         Map<String, Object> params = new HashMap<String, Object>() {{
@@ -255,7 +252,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
             }
         }
                 .update()
-                .then(where(record, IN(record.getAlias(), record.getKeyName(), Arrays.stream(records).map(ReactiveRecord::getKeyValue).collect(Collectors.toList()))).list());
+                .then(where(record, record.getKeyEQValues(records)).list());
     }
 
     public Mono<Boolean> delete() {
@@ -263,7 +260,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
     }
 
     public static <T> Mono<Boolean> delete(ReactiveRecord<T> record) {
-        where(record, EQ(record.getAlias(), record.getKeyName(), record.getKeyValue()));
+        where(record, record.getKeyEQValues());
         return record.deleteAll().map(count -> count > 0);
     }
 
@@ -283,10 +280,10 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     public static <T> Mono<Long> deleteAll(ReactiveRecord<T>... records) {
         for (ReactiveRecord<T> record : records) {
-            where(record, EQ(record.getAlias(), record.getKeyName(), record.getKeyValue()));
+            where(record, record.getKeyEQValues());
         }
         ReactiveRecord<T> record = new ReactiveRecord<>();
-        where(record, IN(record.getAlias(), record.getKeyName(), Arrays.stream(records).map(ReactiveRecord::getKeyValue).collect(Collectors.toList())));
+        where(record, record.getKeyEQValues(records));
         return record.deleteAll();
     }
 

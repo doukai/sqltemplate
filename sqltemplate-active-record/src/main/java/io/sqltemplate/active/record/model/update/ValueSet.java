@@ -20,6 +20,6 @@ public class ValueSet {
 
     @Override
     public String toString() {
-        return CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, columnName) + " = " + expression;
+        return tableAlias + "." + CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, columnName) + " = " + expression;
     }
 }
