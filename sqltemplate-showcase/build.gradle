@@ -1,5 +1,26 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        gradlePluginPortal()
+    }
+    dependencies {
+        classpath 'io.sqltemplate:sqltemplate-gradle-plugin:0.0.1-SNAPSHOT'
+        classpath 'mysql:mysql-connector-java:8.0.33'
+    }
+}
+
 plugins {
     id 'java'
+}
+
+apply plugin: 'io.sqltemplate'
+jdbc {
+    jdbcUrl = ""
+    username = ""
+    password = ""
+}
+generator {
+    packageName = ""
 }
 
 group 'io.sqltemplate'
