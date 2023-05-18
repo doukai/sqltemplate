@@ -59,11 +59,17 @@ public class GenerateRecord extends DefaultTask {
                 String tableName = tables.getString("TABLE_NAME");
                 String remarks = tables.getString("REMARKS");
                 List<FieldSpec> fieldSpecList = generateColumns(tableName);
-                TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, tableName.toLowerCase()))
+                String typeName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, tableName.toLowerCase());
+                ClassName recordClassName = generatorConfig.getBuildReactive() ?
+                        ClassName.get("io.sqltemplate.active.record", "ReactiveRecord") :
+                        ClassName.get("io.sqltemplate.active.record", "Record");
+                ParameterizedTypeName recordParameterizedTypeName = ParameterizedTypeName.get(recordClassName, ClassName.get(generatorConfig.getPackageName(), typeName));
+                TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(typeName)
                         .addModifiers(Modifier.PUBLIC)
+                        .superclass(recordParameterizedTypeName)
                         .addJavadoc(remarks)
                         .addFields(fieldSpecList);
-                fieldSpecList.forEach(fieldSpec -> addGetterAndSetter(fieldSpec, typeBuilder));
+                fieldSpecList.forEach(fieldSpec -> addGetterAndSetter(fieldSpec, typeBuilder, typeName));
                 typeSpecList.add(typeBuilder.build());
             }
             return typeSpecList;
@@ -139,17 +145,9 @@ public class GenerateRecord extends DefaultTask {
         }
     }
 
-    public void addGetterAndSetter(FieldSpec fieldSpec, TypeSpec.Builder classBuilder) {
+    public void addGetterAndSetter(FieldSpec fieldSpec, TypeSpec.Builder classBuilder, String typeName) {
         addGetter(fieldSpec, classBuilder);
-        addSetter(fieldSpec, classBuilder);
-    }
-
-    private void addSetter(FieldSpec fieldSpec, TypeSpec.Builder classBuilder) {
-        String setterName = getFieldSetterMethodName(fieldSpec);
-        MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(setterName).addModifiers(Modifier.PUBLIC);
-        methodBuilder.addParameter(fieldSpec.type, fieldSpec.name);
-        methodBuilder.addStatement("this." + fieldSpec.name + " = " + fieldSpec.name);
-        classBuilder.addMethod(methodBuilder.build());
+        addSetter(fieldSpec, classBuilder, typeName);
     }
 
     public void addGetter(FieldSpec fieldSpec, TypeSpec.Builder classBuilder) {
@@ -161,6 +159,18 @@ public class GenerateRecord extends DefaultTask {
 
     public String getFieldGetterMethodName(FieldSpec fieldSpec) {
         return "get".concat(CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldSpec.name));
+    }
+
+    private void addSetter(FieldSpec fieldSpec, TypeSpec.Builder classBuilder, String typeName) {
+        String setterName = getFieldSetterMethodName(fieldSpec);
+        MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(setterName).addModifiers(Modifier.PUBLIC);
+        methodBuilder.addParameter(fieldSpec.type, fieldSpec.name);
+        methodBuilder.addStatement("this." + fieldSpec.name + " = " + fieldSpec.name);
+        if (generatorConfig.getFluentSetter()) {
+            methodBuilder.returns(ClassName.get(generatorConfig.getPackageName(), typeName));
+            methodBuilder.addStatement("return this");
+        }
+        classBuilder.addMethod(methodBuilder.build());
     }
 
     public String getFieldSetterMethodName(FieldSpec fieldSpec) {

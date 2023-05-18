@@ -6,6 +6,8 @@ public class GeneratorConfig {
 
     private String packageName;
 
+    private Boolean fluentSetter = true;
+
     private Boolean buildReactive = false;
 
     public String getSchemaName() {
@@ -22,6 +24,14 @@ public class GeneratorConfig {
 
     public void setPackageName(String packageName) {
         this.packageName = packageName;
+    }
+
+    public Boolean getFluentSetter() {
+        return fluentSetter;
+    }
+
+    public void setFluentSetter(Boolean fluentSetter) {
+        this.fluentSetter = fluentSetter;
     }
 
     public Boolean getBuildReactive() {
