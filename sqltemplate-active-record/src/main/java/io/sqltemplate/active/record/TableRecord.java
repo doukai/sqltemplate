@@ -296,7 +296,7 @@ public class TableRecord<T> {
 
     public static <T> TableRecord<T> where(TableRecord<T> record, Conditional conditional) {
         record.setConditionals(new ArrayList<>());
-        record.getConditionals().add(conditional);
+        record.and(conditional);
         return record;
     }
 
@@ -312,99 +312,99 @@ public class TableRecord<T> {
     }
 
     public TableRecord<T> eq(String columnName, Object expression) {
-        getConditionals().add(EQ.eq(columnName, expression));
+        and(EQ.eq(columnName, expression));
         return this;
     }
 
     public TableRecord<T> neq(String columnName, Object expression) {
-        getConditionals().add(NEQ.neq(columnName, expression));
+        and(NEQ.neq(columnName, expression));
         return this;
     }
 
     public TableRecord<T> gt(String columnName, Object expression) {
-        getConditionals().add(GT.gt(columnName, expression));
+        and(GT.gt(columnName, expression));
         return this;
     }
 
     public TableRecord<T> gte(String columnName, Object expression) {
-        getConditionals().add(GTE.gte(columnName, expression));
+        and(GTE.gte(columnName, expression));
         return this;
     }
 
     public TableRecord<T> lt(String columnName, Object expression) {
-        getConditionals().add(LT.lt(columnName, expression));
+        and(LT.lt(columnName, expression));
         return this;
     }
 
     public TableRecord<T> lte(String columnName, Object expression) {
-        getConditionals().add(LTE.lte(columnName, expression));
+        and(LTE.lte(columnName, expression));
         return this;
     }
 
     public TableRecord<T> lk(String columnName, Object expression) {
-        getConditionals().add(LK.lk(columnName, expression));
+        and(LK.lk(columnName, expression));
         return this;
     }
 
     public TableRecord<T> nlk(String columnName, Object expression) {
-        getConditionals().add(NLK.nlk(columnName, expression));
+        and(NLK.nlk(columnName, expression));
         return this;
     }
 
     public TableRecord<T> nil(String columnName) {
-        getConditionals().add(NIL.nil(columnName));
+        and(NIL.nil(columnName));
         return this;
     }
 
     public TableRecord<T> nnil(String columnName) {
-        getConditionals().add(NNIL.nnil(columnName));
+        and(NNIL.nnil(columnName));
         return this;
     }
 
     public TableRecord<T> in(String columnName, Collection<Object> expressions) {
-        getConditionals().add(IN.in(columnName, expressions));
+        and(IN.in(columnName, expressions));
         return this;
     }
 
     public TableRecord<T> nin(String columnName, Collection<Object> expressions) {
-        getConditionals().add(NIN.nin(columnName, expressions));
+        and(NIN.nin(columnName, expressions));
         return this;
     }
 
     public TableRecord<T> in(String columnName, Object... expressions) {
-        getConditionals().add(IN.in(columnName, expressions));
+        and(IN.in(columnName, expressions));
         return this;
     }
 
     public TableRecord<T> nin(String columnName, Object... expressions) {
-        getConditionals().add(NIN.nin(columnName, expressions));
+        and(NIN.nin(columnName, expressions));
         return this;
     }
 
     public TableRecord<T> or(Function<TableRecord<T>, TableRecord<T>> orConditionBuilder) {
         TableRecord<T> record = new TableRecord<>();
         TableRecord<T> result = orConditionBuilder.apply(record);
-        getConditionals().add(OR.or(result.getConditionals()));
+        and(OR.or(result.getConditionals()));
         return this;
     }
 
     public TableRecord<T> or(Collection<Conditional> conditionals) {
-        getConditionals().add(OR.or(conditionals));
+        and(OR.or(conditionals));
         return this;
     }
 
     public TableRecord<T> or(Conditional... conditionals) {
-        getConditionals().add(OR.or(conditionals));
+        and(OR.or(conditionals));
         return this;
     }
 
     public TableRecord<T> asc(String columnName) {
-        getSorts().add(ASC.asc(columnName));
+        orderBy(ASC.asc(columnName));
         return this;
     }
 
     public TableRecord<T> desc(String columnName) {
-        getSorts().add(DESC.desc(columnName));
+        orderBy(DESC.desc(columnName));
         return this;
     }
 }
