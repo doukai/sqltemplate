@@ -21,11 +21,11 @@ public class OR implements Conditional {
         return this;
     }
 
-    public static OR OR(Collection<Conditional> conditionals) {
+    public static OR or(Collection<Conditional> conditionals) {
         return new OR(conditionals);
     }
 
-    public static OR OR(Conditional... conditionals) {
+    public static OR or(Conditional... conditionals) {
         return new OR(Arrays.stream(conditionals).collect(Collectors.toList()));
     }
 

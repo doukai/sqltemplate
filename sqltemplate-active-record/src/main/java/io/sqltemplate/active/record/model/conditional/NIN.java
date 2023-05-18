@@ -7,6 +7,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
+import static io.sqltemplate.active.record.TableRecord.DEFAULT_ALIAS;
+
 public class NIN implements Conditional {
 
     private final String tableAlias;
@@ -19,12 +21,20 @@ public class NIN implements Conditional {
         this.expressions = expressions;
     }
 
-    public static NIN NIN(String tableAlias, String columnName, Collection<Object> expressions) {
+    public static NIN nin(String tableAlias, String columnName, Collection<Object> expressions) {
         return new NIN(tableAlias, columnName, expressions.stream().map(Expression::of).collect(Collectors.toList()));
     }
 
-    public static NIN NIN(String tableAlias, String columnName, Object... expressions) {
+    public static NIN nin(String tableAlias, String columnName, Object... expressions) {
         return new NIN(tableAlias, columnName, Arrays.stream(expressions).map(Expression::of).collect(Collectors.toList()));
+    }
+
+    public static NIN nin(String columnName, Collection<Object> expressions) {
+        return new NIN(DEFAULT_ALIAS, columnName, expressions.stream().map(Expression::of).collect(Collectors.toList()));
+    }
+
+    public static NIN nin(String columnName, Object... expressions) {
+        return new NIN(DEFAULT_ALIAS, columnName, Arrays.stream(expressions).map(Expression::of).collect(Collectors.toList()));
     }
 
     @Override

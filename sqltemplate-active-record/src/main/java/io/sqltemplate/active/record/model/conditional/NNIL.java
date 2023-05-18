@@ -2,6 +2,8 @@ package io.sqltemplate.active.record.model.conditional;
 
 import io.sqltemplate.active.record.model.expression.NullValue;
 
+import static io.sqltemplate.active.record.TableRecord.DEFAULT_ALIAS;
+
 public class NNIL extends Compare {
 
     public NNIL(String tableAlias, String columnName) {
@@ -13,7 +15,11 @@ public class NNIL extends Compare {
         return "IS NOT";
     }
 
-    public static NNIL NNIL(String tableAlias, String columnName) {
+    public static NNIL nnil(String tableAlias, String columnName) {
         return new NNIL(tableAlias, columnName);
+    }
+
+    public static NNIL nnil(String columnName) {
+        return new NNIL(DEFAULT_ALIAS, columnName);
     }
 }

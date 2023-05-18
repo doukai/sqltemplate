@@ -2,6 +2,8 @@ package io.sqltemplate.active.record.model.conditional;
 
 import io.sqltemplate.active.record.model.expression.Expression;
 
+import static io.sqltemplate.active.record.TableRecord.DEFAULT_ALIAS;
+
 public class GTE extends Compare {
 
     public GTE(String tableAlias, String columnName, Expression expression) {
@@ -13,7 +15,11 @@ public class GTE extends Compare {
         return ">=";
     }
 
-    public static GTE GTE(String tableAlias, String columnName, Object expression) {
+    public static GTE gte(String tableAlias, String columnName, Object expression) {
         return new GTE(tableAlias, columnName, Expression.of(expression));
+    }
+
+    public static GTE gte(String columnName, Object expression) {
+        return new GTE(DEFAULT_ALIAS, columnName, Expression.of(expression));
     }
 }

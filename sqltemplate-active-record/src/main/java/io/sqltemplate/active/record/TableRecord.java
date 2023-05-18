@@ -3,8 +3,22 @@ package io.sqltemplate.active.record;
 import io.sqltemplate.active.record.model.conditional.AND;
 import io.sqltemplate.active.record.model.conditional.Conditional;
 import io.sqltemplate.active.record.model.conditional.EQ;
+import io.sqltemplate.active.record.model.conditional.GT;
+import io.sqltemplate.active.record.model.conditional.GTE;
+import io.sqltemplate.active.record.model.conditional.IN;
+import io.sqltemplate.active.record.model.conditional.LK;
+import io.sqltemplate.active.record.model.conditional.LT;
+import io.sqltemplate.active.record.model.conditional.LTE;
+import io.sqltemplate.active.record.model.conditional.NEQ;
+import io.sqltemplate.active.record.model.conditional.NIL;
+import io.sqltemplate.active.record.model.conditional.NIN;
+import io.sqltemplate.active.record.model.conditional.NLK;
+import io.sqltemplate.active.record.model.conditional.NNIL;
+import io.sqltemplate.active.record.model.conditional.OR;
 import io.sqltemplate.active.record.model.expression.Expression;
 import io.sqltemplate.active.record.model.join.JoinColumn;
+import io.sqltemplate.active.record.model.sort.ASC;
+import io.sqltemplate.active.record.model.sort.DESC;
 import io.sqltemplate.active.record.model.sort.Sort;
 import io.sqltemplate.active.record.model.update.ValueSet;
 import jakarta.transaction.Transactional;
@@ -18,29 +32,18 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.sqltemplate.active.record.model.conditional.EQ.EQ;
-import static io.sqltemplate.active.record.model.conditional.GT.GT;
-import static io.sqltemplate.active.record.model.conditional.GTE.GTE;
-import static io.sqltemplate.active.record.model.conditional.LK.LK;
-import static io.sqltemplate.active.record.model.conditional.LT.LT;
-import static io.sqltemplate.active.record.model.conditional.LTE.LTE;
-import static io.sqltemplate.active.record.model.conditional.NEQ.NEQ;
-import static io.sqltemplate.active.record.model.conditional.NIL.NIL;
-import static io.sqltemplate.active.record.model.conditional.NLK.NLK;
-import static io.sqltemplate.active.record.model.conditional.NNIL.NNIL;
-import static io.sqltemplate.active.record.model.conditional.IN.IN;
-import static io.sqltemplate.active.record.model.conditional.NIN.NIN;
-import static io.sqltemplate.active.record.model.conditional.OR.OR;
 import static io.sqltemplate.active.record.model.expression.Function.LAST_INSERT_ID;
-import static io.sqltemplate.active.record.model.update.ValueSet.SET;
+import static io.sqltemplate.active.record.model.update.ValueSet.set;
 
 public class TableRecord<T> {
+
+    public static String DEFAULT_ALIAS = "t";
 
     private Transactional.TxType txType = Transactional.TxType.REQUIRED;
     private Class<?>[] rollbackOn = {};
     private Class<?>[] dontRollbackOn = {};
 
-    private String alias = "t";
+    private String alias = DEFAULT_ALIAS;
     private String joinAlias = "j";
     private Record<?> joinRecord;
     private List<Conditional> conditionals;
@@ -192,31 +195,31 @@ public class TableRecord<T> {
     }
 
     protected EQ[] getKeyEQValues() {
-        return getKeyNames().stream().map(name -> EQ(getAlias(), name, getValue(name))).toArray(EQ[]::new);
+        return getKeyNames().stream().map(name -> EQ.eq(name, getValue(name))).toArray(EQ[]::new);
     }
 
     protected Conditional getKeyEQValues(TableRecord<?>... records) {
-        return OR(Arrays.stream(records).map(TableRecord::getKeyEQValues).map(AND::AND).toArray(AND[]::new));
+        return OR.or(Arrays.stream(records).map(TableRecord::getKeyEQValues).map(AND::and).toArray(AND[]::new));
     }
 
     protected EQ[] getInsertKeyEQValues() {
         if (isAutoIncrement()) {
-            return new EQ[]{EQ(getAlias(), getKeyNames().get(0), LAST_INSERT_ID)};
+            return new EQ[]{EQ.eq(getKeyNames().get(0), LAST_INSERT_ID)};
         } else {
-            return getKeyNames().stream().map(name -> EQ(getAlias(), name, getValue(name))).toArray(EQ[]::new);
+            return getKeyNames().stream().map(name -> EQ.eq(name, getValue(name))).toArray(EQ[]::new);
         }
     }
 
     protected Conditional getInsertKeyEQValues(TableRecord<?>... records) {
         if (isAutoIncrement()) {
-            return GTE(getAlias(), getKeyNames().get(0), LAST_INSERT_ID);
+            return GTE.gte(getKeyNames().get(0), LAST_INSERT_ID);
         } else {
-            return OR(Arrays.stream(records).map(TableRecord::getKeyEQValues).map(AND::AND).toArray(AND[]::new));
+            return OR.or(Arrays.stream(records).map(TableRecord::getKeyEQValues).map(AND::and).toArray(AND[]::new));
         }
     }
 
     protected EQ[] getKeyEQValues(Object... values) {
-        return IntStream.range(0, getKeyNames().size()).mapToObj(index -> EQ(getAlias(), getKeyNames().get(index), values[index])).toArray(EQ[]::new);
+        return IntStream.range(0, getKeyNames().size()).mapToObj(index -> EQ.eq(getKeyNames().get(index), values[index])).toArray(EQ[]::new);
     }
 
     protected List<Object> getKeyValues() {
@@ -228,7 +231,7 @@ public class TableRecord<T> {
     }
 
     protected List<ValueSet> getValueSets() {
-        return entityToMap().entrySet().stream().map(entry -> SET(getAlias(), entry.getKey(), entry.getValue())).collect(Collectors.toList());
+        return entityToMap().entrySet().stream().map(entry -> set(entry.getKey(), entry.getValue())).collect(Collectors.toList());
     }
 
     public TableRecord<T> and(Conditional conditional) {
@@ -240,13 +243,13 @@ public class TableRecord<T> {
     }
 
     public TableRecord<T> on(List<JoinColumn> joinColumns) {
-        joinColumns.forEach(joinColumn -> this.and(EQ(getAlias(), joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))));
+        joinColumns.forEach(joinColumn -> this.and(EQ.eq(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))));
         return this;
     }
 
     public <J> TableRecord<T> on(Record<J> joinRecord) {
         this.setJoinRecord(joinRecord);
-        joinRecord.getInverseJoinColumns().forEach(joinColumn -> this.and(EQ(getJoinAlias(), joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))));
+        joinRecord.getInverseJoinColumns().forEach(joinColumn -> this.and(EQ.eq(getJoinAlias(), joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))));
         return this;
     }
 
@@ -309,89 +312,99 @@ public class TableRecord<T> {
     }
 
     public TableRecord<T> eq(String columnName, Object expression) {
-        getConditionals().add(EQ(getAlias(), columnName, expression));
+        getConditionals().add(EQ.eq(columnName, expression));
         return this;
     }
 
     public TableRecord<T> neq(String columnName, Object expression) {
-        getConditionals().add(NEQ(getAlias(), columnName, expression));
+        getConditionals().add(NEQ.neq(columnName, expression));
         return this;
     }
 
     public TableRecord<T> gt(String columnName, Object expression) {
-        getConditionals().add(GT(getAlias(), columnName, expression));
+        getConditionals().add(GT.gt(columnName, expression));
         return this;
     }
 
     public TableRecord<T> gte(String columnName, Object expression) {
-        getConditionals().add(GTE(getAlias(), columnName, expression));
+        getConditionals().add(GTE.gte(columnName, expression));
         return this;
     }
 
     public TableRecord<T> lt(String columnName, Object expression) {
-        getConditionals().add(LT(getAlias(), columnName, expression));
+        getConditionals().add(LT.lt(columnName, expression));
         return this;
     }
 
     public TableRecord<T> lte(String columnName, Object expression) {
-        getConditionals().add(LTE(getAlias(), columnName, expression));
+        getConditionals().add(LTE.lte(columnName, expression));
         return this;
     }
 
     public TableRecord<T> lk(String columnName, Object expression) {
-        getConditionals().add(LK(getAlias(), columnName, expression));
+        getConditionals().add(LK.lk(columnName, expression));
         return this;
     }
 
     public TableRecord<T> nlk(String columnName, Object expression) {
-        getConditionals().add(NLK(getAlias(), columnName, expression));
+        getConditionals().add(NLK.nlk(columnName, expression));
         return this;
     }
 
     public TableRecord<T> nil(String columnName) {
-        getConditionals().add(NIL(getAlias(), columnName));
+        getConditionals().add(NIL.nil(columnName));
         return this;
     }
 
     public TableRecord<T> nnil(String columnName) {
-        getConditionals().add(NNIL(getAlias(), columnName));
+        getConditionals().add(NNIL.nnil(columnName));
         return this;
     }
 
     public TableRecord<T> in(String columnName, Collection<Object> expressions) {
-        getConditionals().add(IN(getAlias(), columnName, expressions));
+        getConditionals().add(IN.in(columnName, expressions));
         return this;
     }
 
     public TableRecord<T> nin(String columnName, Collection<Object> expressions) {
-        getConditionals().add(NIN(getAlias(), columnName, expressions));
+        getConditionals().add(NIN.nin(columnName, expressions));
         return this;
     }
 
     public TableRecord<T> in(String columnName, Object... expressions) {
-        getConditionals().add(IN(getAlias(), columnName, expressions));
+        getConditionals().add(IN.in(columnName, expressions));
         return this;
     }
 
     public TableRecord<T> nin(String columnName, Object... expressions) {
-        getConditionals().add(NIN(getAlias(), columnName, expressions));
+        getConditionals().add(NIN.nin(columnName, expressions));
         return this;
     }
 
     public TableRecord<T> or(Function<TableRecord<T>, TableRecord<T>> orConditionBuilder) {
         TableRecord<T> record = new TableRecord<>();
         TableRecord<T> result = orConditionBuilder.apply(record);
-        getConditionals().add(OR(result.getConditionals()));
+        getConditionals().add(OR.or(result.getConditionals()));
         return this;
     }
 
     public TableRecord<T> or(Collection<Conditional> conditionals) {
-        getConditionals().add(OR(conditionals));
+        getConditionals().add(OR.or(conditionals));
         return this;
     }
 
     public TableRecord<T> or(Conditional... conditionals) {
-        getConditionals().add(OR(conditionals));
+        getConditionals().add(OR.or(conditionals));
+        return this;
+    }
+
+    public TableRecord<T> asc(String columnName) {
+        getSorts().add(ASC.asc(columnName));
+        return this;
+    }
+
+    public TableRecord<T> desc(String columnName) {
+        getSorts().add(DESC.desc(columnName));
         return this;
     }
 }

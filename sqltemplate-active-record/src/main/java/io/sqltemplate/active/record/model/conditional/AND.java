@@ -21,11 +21,11 @@ public class AND implements Conditional {
         return this;
     }
 
-    public static AND AND(Collection<Conditional> conditionals) {
+    public static AND and(Collection<Conditional> conditionals) {
         return new AND(conditionals);
     }
 
-    public static AND AND(Conditional... conditionals) {
+    public static AND and(Conditional... conditionals) {
         return new AND(Arrays.stream(conditionals).collect(Collectors.toList()));
     }
 

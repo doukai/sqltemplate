@@ -1,8 +1,11 @@
 package io.sqltemplate.active.record;
 
 import io.sqltemplate.active.record.model.conditional.Conditional;
+import io.sqltemplate.active.record.model.conditional.EQ;
+import io.sqltemplate.active.record.model.conditional.OR;
 import io.sqltemplate.active.record.model.expression.NullValue;
 import io.sqltemplate.active.record.model.join.JoinColumn;
+import io.sqltemplate.active.record.model.sort.DESC;
 import io.sqltemplate.active.record.model.sort.Sort;
 import io.sqltemplate.active.record.model.update.ValueSet;
 import io.sqltemplate.core.jdbc.JDBCAdapter;
@@ -13,10 +16,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.sqltemplate.active.record.model.conditional.EQ.EQ;
-import static io.sqltemplate.active.record.model.conditional.OR.OR;
-import static io.sqltemplate.active.record.model.sort.DESC.DESC;
-import static io.sqltemplate.active.record.model.update.ValueSet.SET;
+import static io.sqltemplate.active.record.model.update.ValueSet.set;
 
 public class Record<T> extends TableRecord<T> {
 
@@ -42,13 +42,13 @@ public class Record<T> extends TableRecord<T> {
     }
 
     public <E> E addOne(Record<E> record) {
-        return update(record, record.getJoinColumns(getTableName()).stream().map(joinColumn -> SET(record.getAlias(), joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))).toArray(ValueSet[]::new));
+        return update(record, record.getJoinColumns(getTableName()).stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))).toArray(ValueSet[]::new));
     }
 
     public <E> List<E> addMany(Supplier<Record<E>> entityRecordSupplier, Record<E>... entityRecords) {
         Record<E> entityRecord = entityRecordSupplier.get();
         where(entityRecord, getKeyEQValues(entityRecords))
-                .updateAll(entityRecord.getJoinColumns(getTableName()).stream().map(joinColumn -> SET(getAlias(), joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))).toArray(ValueSet[]::new));
+                .updateAll(entityRecord.getJoinColumns(getTableName()).stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))).toArray(ValueSet[]::new));
         return entityRecord.list();
     }
 
@@ -59,9 +59,9 @@ public class Record<T> extends TableRecord<T> {
                             Record<J> joinRecord = joinRecordSupplier.get();
                             return (Record<J>) joinRecord.mapToEntity(
                                     Stream.concat(
-                                            joinRecord.getJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))),
-                                            joinRecord.getInverseJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(joinColumn.getReferencedColumnName(), entityRecord.getValue(joinColumn.getName())))
-                                    )
+                                                    joinRecord.getJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))),
+                                                    joinRecord.getInverseJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(joinColumn.getReferencedColumnName(), entityRecord.getValue(joinColumn.getName())))
+                                            )
                                             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
 
                             );
@@ -73,24 +73,24 @@ public class Record<T> extends TableRecord<T> {
     }
 
     public <E> E removeOne(Record<E> record) {
-        return update(record, record.getJoinColumns(getTableName()).stream().map(joinColumn -> SET(record.getAlias(), joinColumn.getReferencedColumnName(), new NullValue())).toArray(ValueSet[]::new));
+        return update(record, record.getJoinColumns(getTableName()).stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), new NullValue())).toArray(ValueSet[]::new));
     }
 
     public <E> List<E> removeMany(Supplier<Record<E>> entityRecordSupplier, Record<E>... entityRecords) {
         Record<E> entityRecord = entityRecordSupplier.get();
         where(entityRecord, getKeyEQValues(entityRecords))
-                .updateAll(entityRecord.getJoinColumns(getTableName()).stream().map(joinColumn -> SET(getAlias(), joinColumn.getReferencedColumnName(), new NullValue())).toArray(ValueSet[]::new));
+                .updateAll(entityRecord.getJoinColumns(getTableName()).stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), new NullValue())).toArray(ValueSet[]::new));
         return entityRecord.list();
     }
 
     public <E, J> long removeJoins(Supplier<Record<J>> joinRecordSupplier, Record<E>... entityRecords) {
         Record<J> joinRecord = joinRecordSupplier.get();
         return where(joinRecord,
-                OR(Arrays.stream(entityRecords)
+                OR.or(Arrays.stream(entityRecords)
                         .flatMap(entityRecord ->
                                 Stream.concat(
-                                        joinRecord.getJoinColumns().stream().map(joinColumn -> EQ(getAlias(), joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))),
-                                        joinRecord.getInverseJoinColumns().stream().map(joinColumn -> EQ(getAlias(), joinColumn.getReferencedColumnName(), entityRecord.getValue(joinColumn.getName())))
+                                        joinRecord.getJoinColumns().stream().map(joinColumn -> EQ.eq(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))),
+                                        joinRecord.getInverseJoinColumns().stream().map(joinColumn -> EQ.eq(joinColumn.getReferencedColumnName(), entityRecord.getValue(joinColumn.getName())))
                                 )
                         ).collect(Collectors.toList())
                 )
@@ -141,9 +141,9 @@ public class Record<T> extends TableRecord<T> {
     public T last(String... fileNames) {
         limit(1);
         if (fileNames == null) {
-            orderBy(getKeyNames().stream().map(name -> DESC(getAlias(), name)).collect(Collectors.toList()));
+            orderBy(getKeyNames().stream().map(DESC::desc).collect(Collectors.toList()));
         } else {
-            orderBy(Arrays.stream(fileNames).map(fileName -> DESC(getAlias(), fileName)).collect(Collectors.toList()));
+            orderBy(Arrays.stream(fileNames).map(DESC::desc).collect(Collectors.toList()));
         }
         List<T> list = list();
         return list != null ? list.get(0) : null;
@@ -427,5 +427,15 @@ public class Record<T> extends TableRecord<T> {
     @Override
     public Record<T> or(Conditional... conditionals) {
         return (Record<T>) super.or(conditionals);
+    }
+
+    @Override
+    public Record<T> asc(String columnName) {
+        return (Record<T>) super.asc(columnName);
+    }
+
+    @Override
+    public Record<T> desc(String columnName) {
+        return (Record<T>) super.desc(columnName);
     }
 }
