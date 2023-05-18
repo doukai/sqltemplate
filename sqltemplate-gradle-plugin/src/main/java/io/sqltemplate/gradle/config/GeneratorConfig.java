@@ -2,8 +2,19 @@ package io.sqltemplate.gradle.config;
 
 public class GeneratorConfig {
 
+    private String schemaName;
+
     private String packageName;
+
     private Boolean buildReactive = false;
+
+    public String getSchemaName() {
+        return schemaName;
+    }
+
+    public void setSchemaName(String schemaName) {
+        this.schemaName = schemaName;
+    }
 
     public String getPackageName() {
         return packageName;

@@ -1,10 +1,7 @@
 package io.sqltemplate.gradle.task;
 
 import com.google.common.base.CaseFormat;
-import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.FieldSpec;
-import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.*;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import io.sqltemplate.gradle.config.GeneratorConfig;
@@ -38,14 +35,15 @@ public class GenerateRecord extends DefaultTask {
     protected static final String MAIN_JAVA_PATH = MAIN_PATH.concat(File.separator).concat("java");
     protected static final String MAIN_RESOURCES_PATH = MAIN_PATH.concat(File.separator).concat("resources");
     private DatabaseMetaData databaseMetaData;
+    private GeneratorConfig generatorConfig;
 
     @TaskAction
     public void generateRecord() {
         SourceSet sourceSet = getProject().getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
         String javaPath = sourceSet.getJava().getSourceDirectories().filter(file -> file.getPath().contains(MAIN_JAVA_PATH)).getAsPath();
-        GeneratorConfig generatorConfig = getProject().getExtensions().findByType(GeneratorConfig.class);
-        try {
-            databaseMetaData = createConnection().getMetaData();
+        generatorConfig = getProject().getExtensions().findByType(GeneratorConfig.class);
+        try (Connection connection = createConnection()) {
+            databaseMetaData = connection.getMetaData();
             for (TypeSpec typeSpec : generateTables()) {
                 JavaFile.builder(Objects.requireNonNull(generatorConfig).getPackageName(), typeSpec).build().writeTo(new File(javaPath));
             }
@@ -55,17 +53,18 @@ public class GenerateRecord extends DefaultTask {
     }
 
     protected List<TypeSpec> generateTables() {
-        try (ResultSet tables = databaseMetaData.getTables(null, null, null, new String[]{"TABLE"})) {
+        try (ResultSet tables = databaseMetaData.getTables(generatorConfig.getSchemaName(), null, null, new String[]{"TABLE"})) {
             List<TypeSpec> typeSpecList = new ArrayList<>();
             while (tables.next()) {
                 String tableName = tables.getString("TABLE_NAME");
                 String remarks = tables.getString("REMARKS");
-                TypeSpec type = TypeSpec.classBuilder(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, tableName.toLowerCase()))
+                List<FieldSpec> fieldSpecList = generateColumns(tableName);
+                TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, tableName.toLowerCase()))
                         .addModifiers(Modifier.PUBLIC)
                         .addJavadoc(remarks)
-                        .addFields(generateColumns(tableName))
-                        .build();
-                typeSpecList.add(type);
+                        .addFields(fieldSpecList);
+                fieldSpecList.forEach(fieldSpec -> addGetterAndSetter(fieldSpec, typeBuilder));
+                typeSpecList.add(typeBuilder.build());
             }
             return typeSpecList;
         } catch (SQLException e) {
@@ -74,7 +73,7 @@ public class GenerateRecord extends DefaultTask {
     }
 
     protected List<FieldSpec> generateColumns(String tableName) {
-        try (ResultSet columns = databaseMetaData.getColumns(null, null, tableName, null)) {
+        try (ResultSet columns = databaseMetaData.getColumns(generatorConfig.getSchemaName(), null, tableName, null)) {
             List<FieldSpec> fieldSpecList = new ArrayList<>();
             while (columns.next()) {
                 String columnName = columns.getString("COLUMN_NAME");
@@ -95,7 +94,7 @@ public class GenerateRecord extends DefaultTask {
     }
 
     protected void generatePrimaryKeys(String tableName) {
-        try (ResultSet primaryKeys = databaseMetaData.getPrimaryKeys(null, null, tableName)) {
+        try (ResultSet primaryKeys = databaseMetaData.getPrimaryKeys(generatorConfig.getSchemaName(), null, tableName)) {
             while (primaryKeys.next()) {
                 String primaryKeyColumnName = primaryKeys.getString("COLUMN_NAME");
 
@@ -138,6 +137,34 @@ public class GenerateRecord extends DefaultTask {
             default:
                 return ClassName.get(Object.class);
         }
+    }
+
+    public void addGetterAndSetter(FieldSpec fieldSpec, TypeSpec.Builder classBuilder) {
+        addGetter(fieldSpec, classBuilder);
+        addSetter(fieldSpec, classBuilder);
+    }
+
+    private void addSetter(FieldSpec fieldSpec, TypeSpec.Builder classBuilder) {
+        String setterName = getFieldSetterMethodName(fieldSpec);
+        MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(setterName).addModifiers(Modifier.PUBLIC);
+        methodBuilder.addParameter(fieldSpec.type, fieldSpec.name);
+        methodBuilder.addStatement("this." + fieldSpec.name + " = " + fieldSpec.name);
+        classBuilder.addMethod(methodBuilder.build());
+    }
+
+    public void addGetter(FieldSpec fieldSpec, TypeSpec.Builder classBuilder) {
+        String getterName = getFieldGetterMethodName(fieldSpec);
+        MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(getterName).returns(fieldSpec.type).addModifiers(Modifier.PUBLIC);
+        methodBuilder.addStatement("return this." + fieldSpec.name);
+        classBuilder.addMethod(methodBuilder.build());
+    }
+
+    public String getFieldGetterMethodName(FieldSpec fieldSpec) {
+        return "get".concat(CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldSpec.name));
+    }
+
+    public String getFieldSetterMethodName(FieldSpec fieldSpec) {
+        return "set".concat(CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldSpec.name));
     }
 
     protected Connection createConnection() {
