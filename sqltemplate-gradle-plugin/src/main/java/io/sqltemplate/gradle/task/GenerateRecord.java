@@ -28,6 +28,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class GenerateRecord extends DefaultTask {
 
@@ -68,7 +69,9 @@ public class GenerateRecord extends DefaultTask {
                         .addModifiers(Modifier.PUBLIC)
                         .superclass(recordParameterizedTypeName)
                         .addJavadoc(remarks)
-                        .addFields(fieldSpecList);
+                        .addFields(fieldSpecList)
+                        .addMethod(getTableNameMethod(tableName))
+                        .addMethod(getKeyNamesMethod(tableName));
                 fieldSpecList.forEach(fieldSpec -> addGetterAndSetter(fieldSpec, typeBuilder, typeName));
                 typeSpecList.add(typeBuilder.build());
             }
@@ -94,17 +97,6 @@ public class GenerateRecord extends DefaultTask {
 
             }
             return fieldSpecList;
-        } catch (SQLException e) {
-            throw new TaskExecutionException(this, e);
-        }
-    }
-
-    protected void generatePrimaryKeys(String tableName) {
-        try (ResultSet primaryKeys = databaseMetaData.getPrimaryKeys(generatorConfig.getSchemaName(), null, tableName)) {
-            while (primaryKeys.next()) {
-                String primaryKeyColumnName = primaryKeys.getString("COLUMN_NAME");
-
-            }
         } catch (SQLException e) {
             throw new TaskExecutionException(this, e);
         }
@@ -175,6 +167,32 @@ public class GenerateRecord extends DefaultTask {
 
     public String getFieldSetterMethodName(FieldSpec fieldSpec) {
         return "set".concat(CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldSpec.name));
+    }
+
+    public MethodSpec getTableNameMethod(String tableName) {
+        return MethodSpec.methodBuilder("getTableName").returns(String.class).addModifiers(Modifier.PUBLIC)
+                .addAnnotation(Override.class)
+                .addStatement("return $S", tableName)
+                .build();
+    }
+
+    public MethodSpec getKeyNamesMethod(String tableName) {
+        try (ResultSet primaryKeys = databaseMetaData.getPrimaryKeys(generatorConfig.getSchemaName(), null, tableName)) {
+            List<String> primaryKeyColumnNameList = new ArrayList<>();
+            while (primaryKeys.next()) {
+                String primaryKeyColumnName = primaryKeys.getString("COLUMN_NAME");
+                primaryKeyColumnNameList.add(primaryKeyColumnName);
+            }
+            return MethodSpec.methodBuilder("getKeyNames").returns(ParameterizedTypeName.get(List.class, String.class)).addModifiers(Modifier.PUBLIC)
+                    .addAnnotation(Override.class)
+                    .addStatement("return new $T() {{ $L }}",
+                            ParameterizedTypeName.get(ArrayList.class, String.class),
+                            CodeBlock.join(primaryKeyColumnNameList.stream().map(name -> CodeBlock.of("add($S);", name)).collect(Collectors.toList()), "")
+                    )
+                    .build();
+        } catch (SQLException e) {
+            throw new TaskExecutionException(this, e);
+        }
     }
 
     protected Connection createConnection() {

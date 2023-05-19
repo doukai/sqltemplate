@@ -3,8 +3,11 @@ package io.sqltemplate.showcase.dto;
 import io.sqltemplate.active.record.Record;
 import java.lang.Boolean;
 import java.lang.Integer;
+import java.lang.Override;
 import java.lang.String;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class EnumValue extends Record<EnumValue> {
   private Integer id;
@@ -34,6 +37,16 @@ public class EnumValue extends Record<EnumValue> {
   private String createGroupId;
 
   private String Typename;
+
+  @Override
+  public String getTableName() {
+    return "__enum_value";
+  }
+
+  @Override
+  public List<String> getKeyNames() {
+    return new ArrayList<String>() {{ add("id"); }};
+  }
 
   public Integer getId() {
     return this.id;

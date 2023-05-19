@@ -3,8 +3,11 @@ package io.sqltemplate.showcase.dto;
 import io.sqltemplate.active.record.Record;
 import java.lang.Boolean;
 import java.lang.Integer;
+import java.lang.Override;
 import java.lang.String;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserRole extends Record<UserRole> {
   private Integer id;
@@ -30,6 +33,16 @@ public class UserRole extends Record<UserRole> {
   private String createGroupId;
 
   private String Typename;
+
+  @Override
+  public String getTableName() {
+    return "user_role";
+  }
+
+  @Override
+  public List<String> getKeyNames() {
+    return new ArrayList<String>() {{ add("id"); }};
+  }
 
   public Integer getId() {
     return this.id;
