@@ -25,9 +25,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class GenerateRecord extends DefaultTask {
@@ -59,7 +57,8 @@ public class GenerateRecord extends DefaultTask {
             while (tables.next()) {
                 String tableName = tables.getString("TABLE_NAME");
                 String remarks = tables.getString("REMARKS");
-                List<FieldSpec> fieldSpecList = generateColumns(tableName);
+                List<Map<String, Object>> columnMapList = getColumnMapList(tableName);
+                List<FieldSpec> fieldSpecList = generateColumns(columnMapList);
                 String typeName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, tableName.toLowerCase());
                 ClassName recordClassName = generatorConfig.getBuildReactive() ?
                         ClassName.get("io.sqltemplate.active.record", "ReactiveRecord") :
@@ -71,7 +70,8 @@ public class GenerateRecord extends DefaultTask {
                         .addJavadoc(remarks)
                         .addFields(fieldSpecList)
                         .addMethod(getTableNameMethod(tableName))
-                        .addMethod(getKeyNamesMethod(tableName));
+                        .addMethod(getKeyNamesMethod(tableName))
+                        .addMethod(getColumnNamesMethod(columnMapList));
                 fieldSpecList.forEach(fieldSpec -> addGetterAndSetter(fieldSpec, typeBuilder, typeName));
                 typeSpecList.add(typeBuilder.build());
             }
@@ -81,25 +81,38 @@ public class GenerateRecord extends DefaultTask {
         }
     }
 
-    protected List<FieldSpec> generateColumns(String tableName) {
+    protected List<Map<String, Object>> getColumnMapList(String tableName) {
         try (ResultSet columns = databaseMetaData.getColumns(generatorConfig.getSchemaName(), null, tableName, null)) {
-            List<FieldSpec> fieldSpecList = new ArrayList<>();
+            List<Map<String, Object>> columnMapList = new ArrayList<>();
             while (columns.next()) {
-                String columnName = columns.getString("COLUMN_NAME");
-                int datatype = columns.getInt("DATA_TYPE");
-                String isNullable = columns.getString("IS_NULLABLE");
-                String isAutoIncrement = columns.getString("IS_AUTOINCREMENT");
-                String remarks = columns.getString("REMARKS");
-                FieldSpec field = FieldSpec.builder(getClassName(JDBCType.valueOf(datatype)), CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, columnName.toLowerCase()), Modifier.PRIVATE)
-                        .addJavadoc(remarks)
-                        .build();
-                fieldSpecList.add(field);
-
+                Map<String, Object> columnMap = new HashMap<>();
+                columnMap.put("COLUMN_NAME", columns.getString("COLUMN_NAME"));
+                columnMap.put("DATA_TYPE", columns.getInt("DATA_TYPE"));
+                columnMap.put("IS_NULLABLE", columns.getString("IS_NULLABLE"));
+                columnMap.put("IS_AUTOINCREMENT", columns.getString("IS_AUTOINCREMENT"));
+                columnMap.put("REMARKS", columns.getString("REMARKS"));
+                columnMapList.add(columnMap);
             }
-            return fieldSpecList;
+            return columnMapList;
         } catch (SQLException e) {
             throw new TaskExecutionException(this, e);
         }
+    }
+
+    protected List<FieldSpec> generateColumns(List<Map<String, Object>> columnMapList) {
+        List<FieldSpec> fieldSpecList = new ArrayList<>();
+        for (Map<String, Object> columnMap : columnMapList) {
+            String columnName = (String) columnMap.get("COLUMN_NAME");
+            int datatype = (int) columnMap.get("DATA_TYPE");
+            String isNullable = (String) columnMap.get("IS_NULLABLE");
+            String isAutoIncrement = (String) columnMap.get("IS_AUTOINCREMENT");
+            String remarks = (String) columnMap.get("REMARKS");
+            FieldSpec field = FieldSpec.builder(getClassName(JDBCType.valueOf(datatype)), CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, columnName.toLowerCase()), Modifier.PRIVATE)
+                    .addJavadoc(remarks)
+                    .build();
+            fieldSpecList.add(field);
+        }
+        return fieldSpecList;
     }
 
     ClassName getClassName(JDBCType jdbcType) {
@@ -183,16 +196,31 @@ public class GenerateRecord extends DefaultTask {
                 String primaryKeyColumnName = primaryKeys.getString("COLUMN_NAME");
                 primaryKeyColumnNameList.add(primaryKeyColumnName);
             }
-            return MethodSpec.methodBuilder("getKeyNames").returns(ParameterizedTypeName.get(List.class, String.class)).addModifiers(Modifier.PUBLIC)
+            return MethodSpec.methodBuilder("getKeyNames").returns(ArrayTypeName.of(String.class)).addModifiers(Modifier.PUBLIC)
                     .addAnnotation(Override.class)
-                    .addStatement("return new $T() {{ $L }}",
-                            ParameterizedTypeName.get(ArrayList.class, String.class),
-                            CodeBlock.join(primaryKeyColumnNameList.stream().map(name -> CodeBlock.of("add($S);", name)).collect(Collectors.toList()), "")
+                    .addStatement("return new $T{$L}",
+                            ArrayTypeName.of(String.class),
+                            CodeBlock.join(primaryKeyColumnNameList.stream().map(name -> CodeBlock.of("$S", name)).collect(Collectors.toList()), ", ")
                     )
                     .build();
         } catch (SQLException e) {
             throw new TaskExecutionException(this, e);
         }
+    }
+
+    public MethodSpec getColumnNamesMethod(List<Map<String, Object>> columnMapList) {
+        List<String> columnNameList = new ArrayList<>();
+        for (Map<String, Object> columnMap : columnMapList) {
+            String columnName = (String) columnMap.get("COLUMN_NAME");
+            columnNameList.add(columnName);
+        }
+        return MethodSpec.methodBuilder("getColumnNames").returns(ArrayTypeName.of(String.class)).addModifiers(Modifier.PUBLIC)
+                .addAnnotation(Override.class)
+                .addStatement("return new $T{$L}",
+                        ArrayTypeName.of(String.class),
+                        CodeBlock.join(columnNameList.stream().map(name -> CodeBlock.of("$S", name)).collect(Collectors.toList()), ", ")
+                )
+                .build();
     }
 
     protected Connection createConnection() {

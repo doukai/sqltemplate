@@ -170,16 +170,12 @@ public class TableRecord<T> {
         throw new RuntimeException("table name undefined");
     }
 
-    protected List<String> getKeyNames() {
+    protected String[] getKeyNames() {
         throw new RuntimeException("key name undefined");
     }
 
-    protected List<String> getColumnNames() {
+    protected String[] getColumnNames() {
         throw new RuntimeException("column names undefined");
-    }
-
-    protected List<Object> getValues() {
-        throw new RuntimeException("values undefined");
     }
 
     protected Expression getValue(String name) {
@@ -195,7 +191,7 @@ public class TableRecord<T> {
     }
 
     protected EQ[] getKeyEQValues() {
-        return getKeyNames().stream().map(name -> EQ.eq(name, getValue(name))).toArray(EQ[]::new);
+        return Arrays.stream(getKeyNames()).map(name -> EQ.eq(name, getValue(name))).toArray(EQ[]::new);
     }
 
     protected Conditional getKeyEQValues(TableRecord<?>... records) {
@@ -204,30 +200,30 @@ public class TableRecord<T> {
 
     protected EQ[] getInsertKeyEQValues() {
         if (isAutoIncrement()) {
-            return new EQ[]{EQ.eq(getKeyNames().get(0), LAST_INSERT_ID)};
+            return new EQ[]{EQ.eq(getKeyNames()[0], LAST_INSERT_ID)};
         } else {
-            return getKeyNames().stream().map(name -> EQ.eq(name, getValue(name))).toArray(EQ[]::new);
+            return Arrays.stream(getKeyNames()).map(name -> EQ.eq(name, getValue(name))).toArray(EQ[]::new);
         }
     }
 
     protected Conditional getInsertKeyEQValues(TableRecord<?>... records) {
         if (isAutoIncrement()) {
-            return GTE.gte(getKeyNames().get(0), LAST_INSERT_ID);
+            return GTE.gte(getKeyNames()[0], LAST_INSERT_ID);
         } else {
             return OR.or(Arrays.stream(records).map(TableRecord::getKeyEQValues).map(AND::and).toArray(AND[]::new));
         }
     }
 
     protected EQ[] getKeyEQValues(Object... values) {
-        return IntStream.range(0, getKeyNames().size()).mapToObj(index -> EQ.eq(getKeyNames().get(index), values[index])).toArray(EQ[]::new);
+        return IntStream.range(0, getKeyNames().length).mapToObj(index -> EQ.eq(getKeyNames()[index], values[index])).toArray(EQ[]::new);
     }
 
     protected List<Object> getKeyValues() {
-        return getKeyNames().stream().map(this::getValue).collect(Collectors.toList());
+        return Arrays.stream(getKeyNames()).map(this::getValue).collect(Collectors.toList());
     }
 
     protected List<Expression> getValueExpressions() {
-        return getValues().stream().map(Expression::of).collect(Collectors.toList());
+        return Arrays.stream(getKeyNames()).map(this::getValue).map(Expression::of).collect(Collectors.toList());
     }
 
     protected List<ValueSet> getValueSets() {

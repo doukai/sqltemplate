@@ -1,209 +1,213 @@
 package io.sqltemplate.showcase.dto;
 
 import io.sqltemplate.active.record.Record;
+
 import java.lang.Boolean;
 import java.lang.Integer;
 import java.lang.Override;
 import java.lang.String;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 public class User extends Record<User> {
-  private Integer id;
+    private Integer id;
 
-  private String login;
+    private String login;
 
-  private String password;
+    private String password;
 
-  private String name;
+    private String name;
 
-  private Integer age;
+    private Integer age;
 
-  private Boolean disabled;
+    private Boolean disabled;
 
-  private String sex;
+    private String sex;
 
-  private Integer organizationId;
+    private Integer organizationId;
 
-  private Boolean isDeprecated;
+    private Boolean isDeprecated;
 
-  private Integer version;
+    private Integer version;
 
-  private String realmId;
+    private String realmId;
 
-  private String createUserId;
+    private String createUserId;
 
-  private LocalDateTime createTime;
+    private LocalDateTime createTime;
 
-  private String updateUserId;
+    private String updateUserId;
 
-  private LocalDateTime updateTime;
+    private LocalDateTime updateTime;
 
-  private String createGroupId;
+    private String createGroupId;
 
-  private String Typename;
+    private String Typename;
 
-  @Override
-  public String getTableName() {
-    return "user";
-  }
+    @Override
+    public String getTableName() {
+        return "user";
+    }
 
-  @Override
-  public List<String> getKeyNames() {
-    return new ArrayList<String>() {{ add("id"); }};
-  }
+    @Override
+    public String[] getKeyNames() {
+        return new String[]{"id"};
+    }
 
-  public Integer getId() {
-    return this.id;
-  }
+    @Override
+    public String[] getColumnNames() {
+        return new String[]{"id", "login", "password", "name", "age", "disabled", "sex", "organization_id", "is_deprecated", "version", "realm_id", "create_user_id", "create_time", "update_user_id", "update_time", "create_group_id", "__typename"};
+    }
 
-  public User setId(Integer id) {
-    this.id = id;
-    return this;
-  }
+    public Integer getId() {
+        return this.id;
+    }
 
-  public String getLogin() {
-    return this.login;
-  }
+    public User setId(Integer id) {
+        this.id = id;
+        return this;
+    }
 
-  public User setLogin(String login) {
-    this.login = login;
-    return this;
-  }
+    public String getLogin() {
+        return this.login;
+    }
 
-  public String getPassword() {
-    return this.password;
-  }
+    public User setLogin(String login) {
+        this.login = login;
+        return this;
+    }
 
-  public User setPassword(String password) {
-    this.password = password;
-    return this;
-  }
+    public String getPassword() {
+        return this.password;
+    }
 
-  public String getName() {
-    return this.name;
-  }
+    public User setPassword(String password) {
+        this.password = password;
+        return this;
+    }
 
-  public User setName(String name) {
-    this.name = name;
-    return this;
-  }
+    public String getName() {
+        return this.name;
+    }
 
-  public Integer getAge() {
-    return this.age;
-  }
+    public User setName(String name) {
+        this.name = name;
+        return this;
+    }
 
-  public User setAge(Integer age) {
-    this.age = age;
-    return this;
-  }
+    public Integer getAge() {
+        return this.age;
+    }
 
-  public Boolean getDisabled() {
-    return this.disabled;
-  }
+    public User setAge(Integer age) {
+        this.age = age;
+        return this;
+    }
 
-  public User setDisabled(Boolean disabled) {
-    this.disabled = disabled;
-    return this;
-  }
+    public Boolean getDisabled() {
+        return this.disabled;
+    }
 
-  public String getSex() {
-    return this.sex;
-  }
+    public User setDisabled(Boolean disabled) {
+        this.disabled = disabled;
+        return this;
+    }
 
-  public User setSex(String sex) {
-    this.sex = sex;
-    return this;
-  }
+    public String getSex() {
+        return this.sex;
+    }
 
-  public Integer getOrganizationId() {
-    return this.organizationId;
-  }
+    public User setSex(String sex) {
+        this.sex = sex;
+        return this;
+    }
 
-  public User setOrganizationId(Integer organizationId) {
-    this.organizationId = organizationId;
-    return this;
-  }
+    public Integer getOrganizationId() {
+        return this.organizationId;
+    }
 
-  public Boolean getIsDeprecated() {
-    return this.isDeprecated;
-  }
+    public User setOrganizationId(Integer organizationId) {
+        this.organizationId = organizationId;
+        return this;
+    }
 
-  public User setIsDeprecated(Boolean isDeprecated) {
-    this.isDeprecated = isDeprecated;
-    return this;
-  }
+    public Boolean getIsDeprecated() {
+        return this.isDeprecated;
+    }
 
-  public Integer getVersion() {
-    return this.version;
-  }
+    public User setIsDeprecated(Boolean isDeprecated) {
+        this.isDeprecated = isDeprecated;
+        return this;
+    }
 
-  public User setVersion(Integer version) {
-    this.version = version;
-    return this;
-  }
+    public Integer getVersion() {
+        return this.version;
+    }
 
-  public String getRealmId() {
-    return this.realmId;
-  }
+    public User setVersion(Integer version) {
+        this.version = version;
+        return this;
+    }
 
-  public User setRealmId(String realmId) {
-    this.realmId = realmId;
-    return this;
-  }
+    public String getRealmId() {
+        return this.realmId;
+    }
 
-  public String getCreateUserId() {
-    return this.createUserId;
-  }
+    public User setRealmId(String realmId) {
+        this.realmId = realmId;
+        return this;
+    }
 
-  public User setCreateUserId(String createUserId) {
-    this.createUserId = createUserId;
-    return this;
-  }
+    public String getCreateUserId() {
+        return this.createUserId;
+    }
 
-  public LocalDateTime getCreateTime() {
-    return this.createTime;
-  }
+    public User setCreateUserId(String createUserId) {
+        this.createUserId = createUserId;
+        return this;
+    }
 
-  public User setCreateTime(LocalDateTime createTime) {
-    this.createTime = createTime;
-    return this;
-  }
+    public LocalDateTime getCreateTime() {
+        return this.createTime;
+    }
 
-  public String getUpdateUserId() {
-    return this.updateUserId;
-  }
+    public User setCreateTime(LocalDateTime createTime) {
+        this.createTime = createTime;
+        return this;
+    }
 
-  public User setUpdateUserId(String updateUserId) {
-    this.updateUserId = updateUserId;
-    return this;
-  }
+    public String getUpdateUserId() {
+        return this.updateUserId;
+    }
 
-  public LocalDateTime getUpdateTime() {
-    return this.updateTime;
-  }
+    public User setUpdateUserId(String updateUserId) {
+        this.updateUserId = updateUserId;
+        return this;
+    }
 
-  public User setUpdateTime(LocalDateTime updateTime) {
-    this.updateTime = updateTime;
-    return this;
-  }
+    public LocalDateTime getUpdateTime() {
+        return this.updateTime;
+    }
 
-  public String getCreateGroupId() {
-    return this.createGroupId;
-  }
+    public User setUpdateTime(LocalDateTime updateTime) {
+        this.updateTime = updateTime;
+        return this;
+    }
 
-  public User setCreateGroupId(String createGroupId) {
-    this.createGroupId = createGroupId;
-    return this;
-  }
+    public String getCreateGroupId() {
+        return this.createGroupId;
+    }
 
-  public String getTypename() {
-    return this.Typename;
-  }
+    public User setCreateGroupId(String createGroupId) {
+        this.createGroupId = createGroupId;
+        return this;
+    }
 
-  public User setTypename(String Typename) {
-    this.Typename = Typename;
-    return this;
-  }
+    public String getTypename() {
+        return this.Typename;
+    }
+
+    public User setTypename(String Typename) {
+        this.Typename = Typename;
+        return this;
+    }
 }

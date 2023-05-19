@@ -6,8 +6,6 @@ import java.lang.Integer;
 import java.lang.Override;
 import java.lang.String;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 public class UserMobileNumbers extends Record<UserMobileNumbers> {
   private Integer id;
@@ -40,8 +38,13 @@ public class UserMobileNumbers extends Record<UserMobileNumbers> {
   }
 
   @Override
-  public List<String> getKeyNames() {
-    return new ArrayList<String>() {{ add("id"); }};
+  public String[] getKeyNames() {
+    return new String[]{ "id" };
+  }
+
+  @Override
+  public String[] getColumnNames() {
+    return new String[]{ "id","user_id","mobile_number","is_deprecated","version","realm_id","create_user_id","create_time","update_user_id","update_time","create_group_id","__typename" };
   }
 
   public Integer getId() {

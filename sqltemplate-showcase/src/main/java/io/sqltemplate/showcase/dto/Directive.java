@@ -6,8 +6,6 @@ import java.lang.Integer;
 import java.lang.Override;
 import java.lang.String;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Directive extends Record<Directive> {
   private String name;
@@ -42,8 +40,13 @@ public class Directive extends Record<Directive> {
   }
 
   @Override
-  public List<String> getKeyNames() {
-    return new ArrayList<String>() {{ add("name"); }};
+  public String[] getKeyNames() {
+    return new String[]{ "name" };
+  }
+
+  @Override
+  public String[] getColumnNames() {
+    return new String[]{ "name","schema_id","description","is_repeatable","is_deprecated","version","realm_id","create_user_id","create_time","update_user_id","update_time","create_group_id","__typename" };
   }
 
   public String getName() {

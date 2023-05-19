@@ -6,8 +6,6 @@ import java.lang.Integer;
 import java.lang.Override;
 import java.lang.String;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 public class InputValue extends Record<InputValue> {
   private Integer id;
@@ -50,8 +48,13 @@ public class InputValue extends Record<InputValue> {
   }
 
   @Override
-  public List<String> getKeyNames() {
-    return new ArrayList<String>() {{ add("id"); }};
+  public String[] getKeyNames() {
+    return new String[]{ "id" };
+  }
+
+  @Override
+  public String[] getColumnNames() {
+    return new String[]{ "id","name","type_name","of_type_name","field_id","directive_name","description","default_value","is_deprecated","version","realm_id","create_user_id","create_time","update_user_id","update_time","create_group_id","__typename" };
   }
 
   public Integer getId() {

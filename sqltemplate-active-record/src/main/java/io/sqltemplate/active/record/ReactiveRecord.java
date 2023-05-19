@@ -60,9 +60,9 @@ public class ReactiveRecord<T> extends TableRecord<T> {
                             ReactiveRecord<J> joinRecord = joinRecordSupplier.get();
                             return (ReactiveRecord<J>) joinRecord.mapToEntity(
                                     Stream.concat(
-                                                    joinRecord.getJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))),
-                                                    joinRecord.getInverseJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(joinColumn.getReferencedColumnName(), entityRecord.getValue(joinColumn.getName())))
-                                            )
+                                            joinRecord.getJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))),
+                                            joinRecord.getInverseJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(joinColumn.getReferencedColumnName(), entityRecord.getValue(joinColumn.getName())))
+                                    )
                                             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
 
                             );
@@ -141,7 +141,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
     public Mono<T> last(String... fileNames) {
         limit(1);
         if (fileNames == null) {
-            orderBy(getKeyNames().stream().map(DESC::desc).collect(Collectors.toList()));
+            orderBy(Arrays.stream(getKeyNames()).map(DESC::desc).collect(Collectors.toList()));
         } else {
             orderBy(Arrays.stream(fileNames).map(DESC::desc).collect(Collectors.toList()));
         }
