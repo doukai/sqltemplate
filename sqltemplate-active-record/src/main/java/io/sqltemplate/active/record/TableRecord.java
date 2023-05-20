@@ -178,12 +178,8 @@ public class TableRecord<T> {
         throw new RuntimeException("column names undefined");
     }
 
-    protected Expression getValue(String name) {
+    protected Object getValue(String name) {
         throw new RuntimeException("value undefined: " + name);
-    }
-
-    protected Map<String, Expression> entityToMap() {
-        throw new RuntimeException("entity to map undefined");
     }
 
     protected T mapToEntity(Map<String, Object> result) {
@@ -227,7 +223,7 @@ public class TableRecord<T> {
     }
 
     protected List<ValueSet> getValueSets() {
-        return entityToMap().entrySet().stream().map(entry -> set(entry.getKey(), entry.getValue())).collect(Collectors.toList());
+        return Arrays.stream(getColumnNames()).map(name -> set(name, getValue(name))).collect(Collectors.toList());
     }
 
     public TableRecord<T> and(Conditional conditional) {

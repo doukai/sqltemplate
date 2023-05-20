@@ -98,7 +98,7 @@ public class RuntimeAdapterProvider {
                             )
                     )
                     .forEach(builder::addStatement);
-            builder.addStatement("return entity", ClassName.get(entityClass), ClassName.get(entityClass));
+            builder.addStatement("return entity");
         }
         return builder.build();
     }

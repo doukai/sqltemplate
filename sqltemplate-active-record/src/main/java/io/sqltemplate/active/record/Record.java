@@ -26,34 +26,35 @@ public class Record<T> extends TableRecord<T> {
         return record.first();
     }
 
-    public <E> E getOne(Record<E> record) {
-        return where(record).on(record.getJoinColumns(getTableName())).first();
+    public <E> E getOne(Supplier<Record<E>> entityRecordSupplier) {
+        Record<E> record = entityRecordSupplier.get();
+        return where(record).on(getJoinColumns(record.getTableName())).first();
     }
 
     public <E> List<E> getMany(Supplier<Record<E>> entityRecordSupplier) {
         Record<E> record = entityRecordSupplier.get();
-        return where(record).on(record.getJoinColumns(getTableName())).list();
+        return where(record).on(getJoinColumns(record.getTableName())).list();
     }
 
-    public <E, J> List<E> getJoins(Supplier<Record<E>> entityRecordSupplier, Supplier<Record<J>> joinRecordSupplier) {
+    public <E, J> List<E> getManyByJoin(Supplier<Record<E>> entityRecordSupplier, Supplier<Record<J>> joinRecordSupplier) {
         Record<E> record = entityRecordSupplier.get();
         Record<J> joinRecord = joinRecordSupplier.get();
         return where(record).on(joinRecord.getJoinColumns()).list();
     }
 
     public <E> E addOne(Record<E> record) {
-        return update(record, record.getJoinColumns(getTableName()).stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))).toArray(ValueSet[]::new));
+        return update(record, getJoinColumns(record.getTableName()).stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))).toArray(ValueSet[]::new));
     }
 
     public <E> List<E> addMany(Supplier<Record<E>> entityRecordSupplier, Record<E>... entityRecords) {
         Record<E> entityRecord = entityRecordSupplier.get();
         where(entityRecord, getKeyEQValues(entityRecords))
-                .updateAll(entityRecord.getJoinColumns(getTableName()).stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))).toArray(ValueSet[]::new));
+                .updateAll(getJoinColumns(entityRecord.getTableName()).stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))).toArray(ValueSet[]::new));
         return entityRecord.list();
     }
 
     @SuppressWarnings("unchecked")
-    public <E, J> List<E> addJoins(Supplier<Record<E>> entityRecordSupplier, Supplier<Record<J>> joinRecordSupplier, Record<E>... entityRecords) {
+    public <E, J> List<E> addManyByJoin(Supplier<Record<E>> entityRecordSupplier, Supplier<Record<J>> joinRecordSupplier, Record<E>... entityRecords) {
         List<Record<J>> joinRecords = Arrays.stream(entityRecords)
                 .map(entityRecord -> {
                             Record<J> joinRecord = joinRecordSupplier.get();
@@ -69,21 +70,21 @@ public class Record<T> extends TableRecord<T> {
                 )
                 .collect(Collectors.toList());
         insertAll(joinRecords.toArray(new Record[]{}));
-        return getJoins(entityRecordSupplier, joinRecordSupplier);
+        return getManyByJoin(entityRecordSupplier, joinRecordSupplier);
     }
 
     public <E> E removeOne(Record<E> record) {
-        return update(record, record.getJoinColumns(getTableName()).stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), new NullValue())).toArray(ValueSet[]::new));
+        return update(record, getJoinColumns(record.getTableName()).stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), new NullValue())).toArray(ValueSet[]::new));
     }
 
     public <E> List<E> removeMany(Supplier<Record<E>> entityRecordSupplier, Record<E>... entityRecords) {
         Record<E> entityRecord = entityRecordSupplier.get();
         where(entityRecord, getKeyEQValues(entityRecords))
-                .updateAll(entityRecord.getJoinColumns(getTableName()).stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), new NullValue())).toArray(ValueSet[]::new));
+                .updateAll(getJoinColumns(entityRecord.getTableName()).stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), new NullValue())).toArray(ValueSet[]::new));
         return entityRecord.list();
     }
 
-    public <E, J> long removeJoins(Supplier<Record<J>> joinRecordSupplier, Record<E>... entityRecords) {
+    public <E, J> long removeManyByJoin(Supplier<Record<J>> joinRecordSupplier, Record<E>... entityRecords) {
         Record<J> joinRecord = joinRecordSupplier.get();
         return where(joinRecord,
                 OR.or(Arrays.stream(entityRecords)

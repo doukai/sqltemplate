@@ -3,9 +3,11 @@ package io.sqltemplate.showcase.dto;
 import io.sqltemplate.active.record.Record;
 import java.lang.Boolean;
 import java.lang.Integer;
+import java.lang.Object;
 import java.lang.Override;
 import java.lang.String;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 public class UserProfile extends Record<UserProfile> {
   private Integer id;
@@ -34,19 +36,76 @@ public class UserProfile extends Record<UserProfile> {
 
   private String Typename;
 
+  private final String tableName = "user_profile";
+
+  private final String[] keyNames = new String[]{"id"};
+
+  private final String[] columnNames = new String[]{"id", "user_id", "email", "address", "is_deprecated", "version", "realm_id", "create_user_id", "create_time", "update_user_id", "update_time", "create_group_id", "__typename"};
+
   @Override
   public String getTableName() {
-    return "user_profile";
+    return tableName;
   }
 
   @Override
   public String[] getKeyNames() {
-    return new String[]{ "id" };
+    return keyNames;
   }
 
   @Override
   public String[] getColumnNames() {
-    return new String[]{ "id","user_id","email","address","is_deprecated","version","realm_id","create_user_id","create_time","update_user_id","update_time","create_group_id","__typename" };
+    return columnNames;
+  }
+
+  @Override
+  public Object getValue(String columnName) {
+    if (columnName.equals("id")) {
+      return getId();
+    } else if (columnName.equals("user_id")) {
+      return getUserId();
+    } else if (columnName.equals("email")) {
+      return getEmail();
+    } else if (columnName.equals("address")) {
+      return getAddress();
+    } else if (columnName.equals("is_deprecated")) {
+      return getIsDeprecated();
+    } else if (columnName.equals("version")) {
+      return getVersion();
+    } else if (columnName.equals("realm_id")) {
+      return getRealmId();
+    } else if (columnName.equals("create_user_id")) {
+      return getCreateUserId();
+    } else if (columnName.equals("create_time")) {
+      return getCreateTime();
+    } else if (columnName.equals("update_user_id")) {
+      return getUpdateUserId();
+    } else if (columnName.equals("update_time")) {
+      return getUpdateTime();
+    } else if (columnName.equals("create_group_id")) {
+      return getCreateGroupId();
+    } else if (columnName.equals("__typename")) {
+      return getTypename();
+    }
+    return null;
+  }
+
+  @Override
+  public UserProfile mapToEntity(Map<String, Object> result) {
+    UserProfile entity = new UserProfile();
+    entity.setId(result.get("id") != null ? (Integer) result.get("id") : null);
+    entity.setUserId(result.get("userId") != null ? (Integer) result.get("userId") : null);
+    entity.setEmail(result.get("email") != null ? (String) result.get("email") : null);
+    entity.setAddress(result.get("address") != null ? (String) result.get("address") : null);
+    entity.setIsDeprecated(result.get("isDeprecated") != null ? (Boolean) result.get("isDeprecated") : null);
+    entity.setVersion(result.get("version") != null ? (Integer) result.get("version") : null);
+    entity.setRealmId(result.get("realmId") != null ? (String) result.get("realmId") : null);
+    entity.setCreateUserId(result.get("createUserId") != null ? (String) result.get("createUserId") : null);
+    entity.setCreateTime(result.get("createTime") != null ? (LocalDateTime) result.get("createTime") : null);
+    entity.setUpdateUserId(result.get("updateUserId") != null ? (String) result.get("updateUserId") : null);
+    entity.setUpdateTime(result.get("updateTime") != null ? (LocalDateTime) result.get("updateTime") : null);
+    entity.setCreateGroupId(result.get("createGroupId") != null ? (String) result.get("createGroupId") : null);
+    entity.setTypename(result.get("Typename") != null ? (String) result.get("Typename") : null);
+    return entity;
   }
 
   public Integer getId() {

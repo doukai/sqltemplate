@@ -3,9 +3,11 @@ package io.sqltemplate.showcase.dto;
 import io.sqltemplate.active.record.Record;
 import java.lang.Boolean;
 import java.lang.Integer;
+import java.lang.Object;
 import java.lang.Override;
 import java.lang.String;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 public class Directive extends Record<Directive> {
   private String name;
@@ -34,19 +36,76 @@ public class Directive extends Record<Directive> {
 
   private String Typename;
 
+  private final String tableName = "__directive";
+
+  private final String[] keyNames = new String[]{"name"};
+
+  private final String[] columnNames = new String[]{"name", "schema_id", "description", "is_repeatable", "is_deprecated", "version", "realm_id", "create_user_id", "create_time", "update_user_id", "update_time", "create_group_id", "__typename"};
+
   @Override
   public String getTableName() {
-    return "__directive";
+    return tableName;
   }
 
   @Override
   public String[] getKeyNames() {
-    return new String[]{ "name" };
+    return keyNames;
   }
 
   @Override
   public String[] getColumnNames() {
-    return new String[]{ "name","schema_id","description","is_repeatable","is_deprecated","version","realm_id","create_user_id","create_time","update_user_id","update_time","create_group_id","__typename" };
+    return columnNames;
+  }
+
+  @Override
+  public Object getValue(String columnName) {
+    if (columnName.equals("name")) {
+      return getName();
+    } else if (columnName.equals("schema_id")) {
+      return getSchemaId();
+    } else if (columnName.equals("description")) {
+      return getDescription();
+    } else if (columnName.equals("is_repeatable")) {
+      return getIsRepeatable();
+    } else if (columnName.equals("is_deprecated")) {
+      return getIsDeprecated();
+    } else if (columnName.equals("version")) {
+      return getVersion();
+    } else if (columnName.equals("realm_id")) {
+      return getRealmId();
+    } else if (columnName.equals("create_user_id")) {
+      return getCreateUserId();
+    } else if (columnName.equals("create_time")) {
+      return getCreateTime();
+    } else if (columnName.equals("update_user_id")) {
+      return getUpdateUserId();
+    } else if (columnName.equals("update_time")) {
+      return getUpdateTime();
+    } else if (columnName.equals("create_group_id")) {
+      return getCreateGroupId();
+    } else if (columnName.equals("__typename")) {
+      return getTypename();
+    }
+    return null;
+  }
+
+  @Override
+  public Directive mapToEntity(Map<String, Object> result) {
+    Directive entity = new Directive();
+    entity.setName(result.get("name") != null ? (String) result.get("name") : null);
+    entity.setSchemaId(result.get("schemaId") != null ? (Integer) result.get("schemaId") : null);
+    entity.setDescription(result.get("description") != null ? (String) result.get("description") : null);
+    entity.setIsRepeatable(result.get("isRepeatable") != null ? (Boolean) result.get("isRepeatable") : null);
+    entity.setIsDeprecated(result.get("isDeprecated") != null ? (Boolean) result.get("isDeprecated") : null);
+    entity.setVersion(result.get("version") != null ? (Integer) result.get("version") : null);
+    entity.setRealmId(result.get("realmId") != null ? (String) result.get("realmId") : null);
+    entity.setCreateUserId(result.get("createUserId") != null ? (String) result.get("createUserId") : null);
+    entity.setCreateTime(result.get("createTime") != null ? (LocalDateTime) result.get("createTime") : null);
+    entity.setUpdateUserId(result.get("updateUserId") != null ? (String) result.get("updateUserId") : null);
+    entity.setUpdateTime(result.get("updateTime") != null ? (LocalDateTime) result.get("updateTime") : null);
+    entity.setCreateGroupId(result.get("createGroupId") != null ? (String) result.get("createGroupId") : null);
+    entity.setTypename(result.get("Typename") != null ? (String) result.get("Typename") : null);
+    return entity;
   }
 
   public String getName() {

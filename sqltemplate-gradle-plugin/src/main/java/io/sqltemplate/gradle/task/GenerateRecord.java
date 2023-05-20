@@ -69,9 +69,14 @@ public class GenerateRecord extends DefaultTask {
                         .superclass(recordParameterizedTypeName)
                         .addJavadoc(remarks)
                         .addFields(fieldSpecList)
-                        .addMethod(getTableNameMethod(tableName))
-                        .addMethod(getKeyNamesMethod(tableName))
-                        .addMethod(getColumnNamesMethod(columnMapList));
+                        .addField(getTableNameField(tableName))
+                        .addField(getKeyNamesField(tableName))
+                        .addField(getColumnNamesField(columnMapList))
+                        .addMethod(getTableNameMethod())
+                        .addMethod(getKeyNamesMethod())
+                        .addMethod(getColumnNamesMethod())
+                        .addMethod(getValueMethod(columnMapList))
+                        .addMethod(mapToEntityMethod(typeName, columnMapList));
                 fieldSpecList.forEach(fieldSpec -> addGetterAndSetter(fieldSpec, typeBuilder, typeName));
                 typeSpecList.add(typeBuilder.build());
             }
@@ -156,18 +161,18 @@ public class GenerateRecord extends DefaultTask {
     }
 
     public void addGetter(FieldSpec fieldSpec, TypeSpec.Builder classBuilder) {
-        String getterName = getFieldGetterMethodName(fieldSpec);
+        String getterName = getFieldGetterMethodName(fieldSpec.name);
         MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(getterName).returns(fieldSpec.type).addModifiers(Modifier.PUBLIC);
         methodBuilder.addStatement("return this." + fieldSpec.name);
         classBuilder.addMethod(methodBuilder.build());
     }
 
-    public String getFieldGetterMethodName(FieldSpec fieldSpec) {
-        return "get".concat(CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldSpec.name));
+    public String getFieldGetterMethodName(String fieldName) {
+        return "get".concat(CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName));
     }
 
     private void addSetter(FieldSpec fieldSpec, TypeSpec.Builder classBuilder, String typeName) {
-        String setterName = getFieldSetterMethodName(fieldSpec);
+        String setterName = getFieldSetterMethodName(fieldSpec.name);
         MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(setterName).addModifiers(Modifier.PUBLIC);
         methodBuilder.addParameter(fieldSpec.type, fieldSpec.name);
         methodBuilder.addStatement("this." + fieldSpec.name + " = " + fieldSpec.name);
@@ -178,27 +183,33 @@ public class GenerateRecord extends DefaultTask {
         classBuilder.addMethod(methodBuilder.build());
     }
 
-    public String getFieldSetterMethodName(FieldSpec fieldSpec) {
-        return "set".concat(CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldSpec.name));
+    public String getFieldSetterMethodName(String fieldName) {
+        return "set".concat(CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, fieldName));
     }
 
-    public MethodSpec getTableNameMethod(String tableName) {
-        return MethodSpec.methodBuilder("getTableName").returns(String.class).addModifiers(Modifier.PUBLIC)
-                .addAnnotation(Override.class)
-                .addStatement("return $S", tableName)
+    public FieldSpec getTableNameField(String tableName) {
+        return FieldSpec.builder(String.class, "tableName", Modifier.PRIVATE, Modifier.FINAL)
+                .initializer("$S", tableName)
                 .build();
     }
 
-    public MethodSpec getKeyNamesMethod(String tableName) {
+    public MethodSpec getTableNameMethod() {
+        return MethodSpec.methodBuilder("getTableName").returns(String.class).addModifiers(Modifier.PUBLIC)
+                .addAnnotation(Override.class)
+                .addStatement("return tableName")
+                .build();
+    }
+
+
+    public FieldSpec getKeyNamesField(String tableName) {
         try (ResultSet primaryKeys = databaseMetaData.getPrimaryKeys(generatorConfig.getSchemaName(), null, tableName)) {
             List<String> primaryKeyColumnNameList = new ArrayList<>();
             while (primaryKeys.next()) {
                 String primaryKeyColumnName = primaryKeys.getString("COLUMN_NAME");
                 primaryKeyColumnNameList.add(primaryKeyColumnName);
             }
-            return MethodSpec.methodBuilder("getKeyNames").returns(ArrayTypeName.of(String.class)).addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Override.class)
-                    .addStatement("return new $T{$L}",
+            return FieldSpec.builder(ArrayTypeName.of(String.class), "keyNames", Modifier.PRIVATE, Modifier.FINAL)
+                    .initializer("new $T{$L}",
                             ArrayTypeName.of(String.class),
                             CodeBlock.join(primaryKeyColumnNameList.stream().map(name -> CodeBlock.of("$S", name)).collect(Collectors.toList()), ", ")
                     )
@@ -208,19 +219,79 @@ public class GenerateRecord extends DefaultTask {
         }
     }
 
-    public MethodSpec getColumnNamesMethod(List<Map<String, Object>> columnMapList) {
+    public MethodSpec getKeyNamesMethod() {
+        return MethodSpec.methodBuilder("getKeyNames").returns(ArrayTypeName.of(String.class)).addModifiers(Modifier.PUBLIC)
+                .addAnnotation(Override.class)
+                .addStatement("return keyNames")
+                .build();
+    }
+
+    public FieldSpec getColumnNamesField(List<Map<String, Object>> columnMapList) {
         List<String> columnNameList = new ArrayList<>();
         for (Map<String, Object> columnMap : columnMapList) {
             String columnName = (String) columnMap.get("COLUMN_NAME");
             columnNameList.add(columnName);
         }
-        return MethodSpec.methodBuilder("getColumnNames").returns(ArrayTypeName.of(String.class)).addModifiers(Modifier.PUBLIC)
-                .addAnnotation(Override.class)
-                .addStatement("return new $T{$L}",
+        return FieldSpec.builder(ArrayTypeName.of(String.class), "columnNames", Modifier.PRIVATE, Modifier.FINAL)
+                .initializer("new $T{$L}",
                         ArrayTypeName.of(String.class),
                         CodeBlock.join(columnNameList.stream().map(name -> CodeBlock.of("$S", name)).collect(Collectors.toList()), ", ")
                 )
                 .build();
+    }
+
+    public MethodSpec getColumnNamesMethod() {
+        return MethodSpec.methodBuilder("getColumnNames").returns(ArrayTypeName.of(String.class)).addModifiers(Modifier.PUBLIC)
+                .addAnnotation(Override.class)
+                .addStatement("return columnNames")
+                .build();
+    }
+
+    public MethodSpec getValueMethod(List<Map<String, Object>> columnMapList) {
+        MethodSpec.Builder builder = MethodSpec.methodBuilder("getValue").returns(Object.class).addModifiers(Modifier.PUBLIC)
+                .addParameter(ParameterSpec.builder(String.class, "columnName").build())
+                .addAnnotation(Override.class);
+
+        int index = 0;
+        for (Map<String, Object> columnMap : columnMapList) {
+            String columnName = (String) columnMap.get("COLUMN_NAME");
+            if (index == 0) {
+                builder.beginControlFlow("if (columnName.equals($S))", columnName);
+            } else {
+                builder.nextControlFlow("else if (columnName.equals($S))", columnName);
+            }
+            builder.addStatement("return $L()", getFieldGetterMethodName(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, columnName)));
+            if (index == columnMapList.size() - 1) {
+                builder.endControlFlow();
+            }
+            index++;
+        }
+        builder.addStatement("return null");
+        return builder.build();
+    }
+
+    private MethodSpec mapToEntityMethod(String typeName, List<Map<String, Object>> columnMapList) {
+        ClassName className = ClassName.get(generatorConfig.getPackageName(), typeName);
+        MethodSpec.Builder builder = MethodSpec.methodBuilder("mapToEntity")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(ParameterizedTypeName.get(Map.class, String.class, Object.class), "result")
+                .returns(className);
+
+        builder.addStatement("$T entity = new $T()", className, className);
+        for (Map<String, Object> columnMap : columnMapList) {
+            String columnName = (String) columnMap.get("COLUMN_NAME");
+            int datatype = (int) columnMap.get("DATA_TYPE");
+            String fieldName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, columnName);
+            builder.addStatement("entity.$L(result.get($S) != null ? ($T) result.get($S) : null)",
+                    getFieldSetterMethodName(fieldName),
+                    fieldName,
+                    getClassName(JDBCType.valueOf(datatype)),
+                    fieldName
+            );
+        }
+        builder.addStatement("return entity");
+        return builder.build();
     }
 
     protected Connection createConnection() {
