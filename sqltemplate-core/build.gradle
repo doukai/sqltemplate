@@ -11,9 +11,9 @@ repositories {
 
 dependencies {
     compile project(':sqltemplate-spi')
-
     compile 'io.projectreactor:reactor-core:3.4.16'
     compile 'com.google.guava:guava:31.1-jre'
+
     implementation 'org.antlr:ST4:4.3.2'
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
