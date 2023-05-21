@@ -16,7 +16,8 @@ import io.sqltemplate.active.record.model.conditional.NLK;
 import io.sqltemplate.active.record.model.conditional.NNIL;
 import io.sqltemplate.active.record.model.conditional.OR;
 import io.sqltemplate.active.record.model.expression.Expression;
-import io.sqltemplate.active.record.model.join.JoinColumn;
+import io.sqltemplate.active.record.model.join.JoinColumns;
+import io.sqltemplate.active.record.model.join.JoinTable;
 import io.sqltemplate.active.record.model.sort.ASC;
 import io.sqltemplate.active.record.model.sort.DESC;
 import io.sqltemplate.active.record.model.sort.Sort;
@@ -28,6 +29,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -39,18 +41,34 @@ public class TableRecord<T> {
 
     public static String DEFAULT_ALIAS = "t";
 
+    protected static final Map<String, Map<String, JoinColumns>> joinColumnsMap = new ConcurrentHashMap<>();
+
+    protected static final Map<String, Map<String, JoinTable>> joinTableMap = new ConcurrentHashMap<>();
+
+    protected static final RecordIndex recordIndex = RecordIndex.provider();
+
+    public static void registerJoinColumn(String tableName, String joinTableName, Function<JoinColumns, JoinColumns> JoinColumnsBuilder) {
+        joinColumnsMap.computeIfAbsent(tableName, k -> new ConcurrentHashMap<>());
+        joinColumnsMap.get(tableName).put(joinTableName, JoinColumnsBuilder.apply(joinColumnsMap.get(tableName).getOrDefault(joinTableName, new JoinColumns())));
+    }
+
+    public static void registerJoinTable(String tableName, String joinTableName, Function<JoinTable, JoinTable> joinTableBuilder) {
+        joinTableMap.computeIfAbsent(tableName, k -> new ConcurrentHashMap<>());
+        joinTableMap.get(tableName).put(joinTableName, joinTableBuilder.apply(joinTableMap.get(tableName).getOrDefault(joinTableName, new JoinTable())));
+    }
+
     private Transactional.TxType txType = Transactional.TxType.REQUIRED;
     private Class<?>[] rollbackOn = {};
     private Class<?>[] dontRollbackOn = {};
 
     private String alias = DEFAULT_ALIAS;
     private String joinAlias = "j";
-    private Record<?> joinRecord;
+    private JoinTable joinTable;
     private List<Conditional> conditionals;
     private List<Sort> sorts;
     private Integer limit;
     private Integer offset;
-    private boolean autoIncrement = false;
+    private Boolean autoIncrement = false;
 
     public TableRecord() {
     }
@@ -100,12 +118,12 @@ public class TableRecord<T> {
         return this;
     }
 
-    public Record<?> getJoinRecord() {
-        return joinRecord;
+    public JoinTable getJoinTable() {
+        return joinTable;
     }
 
-    public TableRecord<T> setJoinRecord(Record<?> joinRecord) {
-        this.joinRecord = joinRecord;
+    public TableRecord<T> setJoinTable(JoinTable joinTable) {
+        this.joinTable = joinTable;
         return this;
     }
 
@@ -145,25 +163,13 @@ public class TableRecord<T> {
         return this;
     }
 
-    public boolean isAutoIncrement() {
+    public Boolean isAutoIncrement() {
         return autoIncrement;
     }
 
     public TableRecord<T> setAutoIncrement(boolean autoIncrement) {
         this.autoIncrement = autoIncrement;
         return this;
-    }
-
-    public List<JoinColumn> getJoinColumns(String tableName) {
-        throw new RuntimeException("join column names undefined: " + tableName);
-    }
-
-    public List<JoinColumn> getJoinColumns() {
-        throw new RuntimeException("join column names undefined");
-    }
-
-    public List<JoinColumn> getInverseJoinColumns() {
-        throw new RuntimeException("inverse join column names undefined");
     }
 
     protected String getTableName() {
@@ -234,14 +240,14 @@ public class TableRecord<T> {
         return this;
     }
 
-    public TableRecord<T> on(List<JoinColumn> joinColumns) {
-        joinColumns.forEach(joinColumn -> this.and(EQ.eq(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))));
+    public TableRecord<T> on(JoinColumns joinColumns) {
+        joinColumns.getJoinColumns().forEach(joinColumn -> this.and(EQ.eq(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))));
         return this;
     }
 
-    public <J> TableRecord<T> on(Record<J> joinRecord) {
-        this.setJoinRecord(joinRecord);
-        joinRecord.getInverseJoinColumns().forEach(joinColumn -> this.and(EQ.eq(getJoinAlias(), joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))));
+    public <J> TableRecord<T> on(JoinTable joinTable) {
+        this.setJoinTable(joinTable);
+        joinTable.getInverseJoinColumns().forEach(joinColumn -> this.and(EQ.eq(getJoinAlias(), joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))));
         return this;
     }
 

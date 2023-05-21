@@ -15,8 +15,12 @@ import org.gradle.api.tasks.TaskExecutionException;
 import javax.lang.model.element.Modifier;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.JDBCType;
@@ -26,6 +30,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class GenerateRecord extends DefaultTask {
@@ -39,51 +44,107 @@ public class GenerateRecord extends DefaultTask {
     @TaskAction
     public void generateRecord() {
         SourceSet sourceSet = getProject().getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        String resourcePath = sourceSet.getResources().getSourceDirectories().filter(file -> file.getPath().contains(MAIN_RESOURCES_PATH)).getAsPath();
         String javaPath = sourceSet.getJava().getSourceDirectories().filter(file -> file.getPath().contains(MAIN_JAVA_PATH)).getAsPath();
         generatorConfig = getProject().getExtensions().findByType(GeneratorConfig.class);
         try (Connection connection = createConnection()) {
             databaseMetaData = connection.getMetaData();
-            for (TypeSpec typeSpec : generateTables()) {
+            List<Map<String, Object>> tableMapList = getTableMapList();
+            for (TypeSpec typeSpec : generateTables(tableMapList)) {
                 JavaFile.builder(Objects.requireNonNull(generatorConfig).getPackageName(), typeSpec).build().writeTo(new File(javaPath));
+            }
+            JavaFile.builder(Objects.requireNonNull(generatorConfig).getPackageName(), generateTableRecordIndex(tableMapList)).build().writeTo(new File(javaPath));
+            Path filePath = Paths.get(resourcePath).resolve("META-INF").resolve("services");
+            if (Files.notExists(filePath)) {
+                Files.createDirectories(filePath);
+            }
+            try (PrintWriter out = new PrintWriter(filePath.resolve("io.sqltemplate.active.record.RecordIndex").toFile())) {
+                out.println(Objects.requireNonNull(generatorConfig).getPackageName() + ".TableRecordIndex");
             }
         } catch (IOException | SQLException e) {
             throw new TaskExecutionException(this, e);
         }
     }
 
-    protected List<TypeSpec> generateTables() {
+    protected List<Map<String, Object>> getTableMapList() {
         try (ResultSet tables = databaseMetaData.getTables(generatorConfig.getSchemaName(), null, null, new String[]{"TABLE"})) {
-            List<TypeSpec> typeSpecList = new ArrayList<>();
+            List<Map<String, Object>> tableMapList = new ArrayList<>();
             while (tables.next()) {
-                String tableName = tables.getString("TABLE_NAME");
-                String remarks = tables.getString("REMARKS");
-                List<Map<String, Object>> columnMapList = getColumnMapList(tableName);
-                List<FieldSpec> fieldSpecList = generateColumns(columnMapList);
-                String typeName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, tableName.toLowerCase());
-                ClassName recordClassName = generatorConfig.getBuildReactive() ?
-                        ClassName.get("io.sqltemplate.active.record", "ReactiveRecord") :
-                        ClassName.get("io.sqltemplate.active.record", "Record");
-                ParameterizedTypeName recordParameterizedTypeName = ParameterizedTypeName.get(recordClassName, ClassName.get(generatorConfig.getPackageName(), typeName));
-                TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(typeName)
-                        .addModifiers(Modifier.PUBLIC)
-                        .superclass(recordParameterizedTypeName)
-                        .addJavadoc(remarks)
-                        .addFields(fieldSpecList)
-                        .addField(getTableNameField(tableName))
-                        .addField(getKeyNamesField(tableName))
-                        .addField(getColumnNamesField(columnMapList))
-                        .addMethod(getTableNameMethod())
-                        .addMethod(getKeyNamesMethod())
-                        .addMethod(getColumnNamesMethod())
-                        .addMethod(getValueMethod(columnMapList))
-                        .addMethod(mapToEntityMethod(typeName, columnMapList));
-                fieldSpecList.forEach(fieldSpec -> addGetterAndSetter(fieldSpec, typeBuilder, typeName));
-                typeSpecList.add(typeBuilder.build());
+                Map<String, Object> tableMap = new HashMap<>();
+                tableMap.put("TABLE_NAME", tables.getString("TABLE_NAME"));
+                tableMap.put("REMARKS", tables.getString("REMARKS"));
+                tableMapList.add(tableMap);
             }
-            return typeSpecList;
+            return tableMapList;
         } catch (SQLException e) {
             throw new TaskExecutionException(this, e);
         }
+    }
+
+    protected List<TypeSpec> generateTables(List<Map<String, Object>> tableMapList) {
+        List<TypeSpec> typeSpecList = new ArrayList<>();
+        for (Map<String, Object> tableMap : tableMapList) {
+            String tableName = (String) tableMap.get("TABLE_NAME");
+            String remarks = (String) tableMap.get("REMARKS");
+            List<Map<String, Object>> columnMapList = getColumnMapList(tableName);
+            List<FieldSpec> fieldSpecList = generateColumns(columnMapList);
+            String typeName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, tableName.toLowerCase());
+            ClassName recordClassName = generatorConfig.getBuildReactive() ?
+                    ClassName.get("io.sqltemplate.active.record", "ReactiveRecord") :
+                    ClassName.get("io.sqltemplate.active.record", "Record");
+            ParameterizedTypeName recordParameterizedTypeName = ParameterizedTypeName.get(recordClassName, ClassName.get(generatorConfig.getPackageName(), typeName));
+            TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(typeName)
+                    .addModifiers(Modifier.PUBLIC)
+                    .superclass(recordParameterizedTypeName)
+                    .addJavadoc(remarks)
+                    .addFields(fieldSpecList)
+                    .addField(getTableNameField(tableName))
+                    .addField(getKeyNamesField(tableName))
+                    .addField(getColumnNamesField(columnMapList))
+                    .addField(isAutoIncrementField(columnMapList))
+                    .addMethod(getTableNameMethod())
+                    .addMethod(getKeyNamesMethod())
+                    .addMethod(getColumnNamesMethod())
+                    .addMethod(getValueMethod(columnMapList))
+                    .addMethod(mapToEntityMethod(typeName, columnMapList))
+                    .addMethod(isAutoIncrementMethod());
+            fieldSpecList.forEach(fieldSpec -> addGetterAndSetter(fieldSpec, typeBuilder, typeName));
+            typeSpecList.add(typeBuilder.build());
+        }
+        return typeSpecList;
+    }
+
+    protected TypeSpec generateTableRecordIndex(List<Map<String, Object>> tableMapList) {
+        return TypeSpec.classBuilder("TableRecordIndex")
+                .addModifiers(Modifier.PUBLIC)
+                .addSuperinterface(ClassName.get("io.sqltemplate.active.record", "RecordIndex"))
+                .addMethod(getRecordSupplierMethod(tableMapList))
+                .build();
+    }
+
+    public MethodSpec getRecordSupplierMethod(List<Map<String, Object>> tableMapList) {
+        MethodSpec.Builder builder = MethodSpec.methodBuilder("getRecordSupplier")
+                .returns(ParameterizedTypeName.get(ClassName.get(Supplier.class), ParameterizedTypeName.get(ClassName.get("io.sqltemplate.active.record", "TableRecord"), TypeVariableName.get("?"))))
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(ParameterSpec.builder(String.class, "tableName").build());
+
+        int index = 0;
+        for (Map<String, Object> tableMap : tableMapList) {
+            String tableName = (String) tableMap.get("TABLE_NAME");
+            String typeName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, tableName.toLowerCase());
+            if (index == 0) {
+                builder.beginControlFlow("if (tableName.equals($S))", tableName);
+            } else {
+                builder.nextControlFlow("else if (tableName.equals($S))", tableName);
+            }
+            builder.addStatement("return $T::new", ClassName.get(generatorConfig.getPackageName(), typeName));
+            if (index == tableMapList.size() - 1) {
+                builder.endControlFlow();
+            }
+            index++;
+        }
+        builder.addStatement("return null");
+        return builder.build();
     }
 
     protected List<Map<String, Object>> getColumnMapList(String tableName) {
@@ -200,7 +261,6 @@ public class GenerateRecord extends DefaultTask {
                 .build();
     }
 
-
     public FieldSpec getKeyNamesField(String tableName) {
         try (ResultSet primaryKeys = databaseMetaData.getPrimaryKeys(generatorConfig.getSchemaName(), null, tableName)) {
             List<String> primaryKeyColumnNameList = new ArrayList<>();
@@ -244,6 +304,20 @@ public class GenerateRecord extends DefaultTask {
         return MethodSpec.methodBuilder("getColumnNames").returns(ArrayTypeName.of(String.class)).addModifiers(Modifier.PUBLIC)
                 .addAnnotation(Override.class)
                 .addStatement("return columnNames")
+                .build();
+    }
+
+    public FieldSpec isAutoIncrementField(List<Map<String, Object>> columnMapList) {
+        boolean autoIncrement = columnMapList.stream().anyMatch(columnMap -> columnMap.get("IS_AUTOINCREMENT").equals("YES"));
+        return FieldSpec.builder(Boolean.class, "autoIncrement", Modifier.PRIVATE, Modifier.FINAL)
+                .initializer("$L", autoIncrement)
+                .build();
+    }
+
+    public MethodSpec isAutoIncrementMethod() {
+        return MethodSpec.methodBuilder("isAutoIncrement").returns(Boolean.class).addModifiers(Modifier.PUBLIC)
+                .addAnnotation(Override.class)
+                .addStatement("return autoIncrement")
                 .build();
     }
 

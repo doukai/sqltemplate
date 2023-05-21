@@ -40,6 +40,8 @@ public class TypePossibleTypes extends Record<TypePossibleTypes> {
 
   private final String[] columnNames = new String[]{"id", "type_name", "possible_type_name", "is_deprecated", "version", "realm_id", "create_user_id", "create_time", "update_user_id", "update_time", "create_group_id", "__typename"};
 
+  private final Boolean autoIncrement = true;
+
   @Override
   public String getTableName() {
     return tableName;
@@ -101,6 +103,11 @@ public class TypePossibleTypes extends Record<TypePossibleTypes> {
     entity.setCreateGroupId(result.get("createGroupId") != null ? (String) result.get("createGroupId") : null);
     entity.setTypename(result.get("Typename") != null ? (String) result.get("Typename") : null);
     return entity;
+  }
+
+  @Override
+  public Boolean isAutoIncrement() {
+    return autoIncrement;
   }
 
   public Integer getId() {
