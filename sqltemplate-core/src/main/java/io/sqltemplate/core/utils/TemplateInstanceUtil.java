@@ -1,5 +1,6 @@
 package io.sqltemplate.core.utils;
 
+import io.sqltemplate.core.expression.Expression;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.STGroupDir;
 import org.stringtemplate.v4.STGroupFile;
@@ -32,10 +33,10 @@ public enum TemplateInstanceUtil {
             Iterator<String> iterator = instance.getAttributes().keySet().iterator();
             int index = 0;
             while (iterator.hasNext()) {
-                instance.add(iterator.next(), params[index++]);
+                instance.add(iterator.next(), Expression.of(params[index++]));
             }
         } else {
-            paramsMap.forEach(instance::add);
+            paramsMap.forEach((key, value) -> instance.add(key, Expression.of(value)));
         }
         return instance;
     }

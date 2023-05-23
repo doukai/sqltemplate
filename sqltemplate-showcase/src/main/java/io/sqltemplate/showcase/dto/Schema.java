@@ -45,22 +45,22 @@ public class Schema extends Record<Schema> {
   private final Boolean autoIncrement = true;
 
   @Override
-  public String getTableName() {
+  protected String getTableName() {
     return tableName;
   }
 
   @Override
-  public String[] getKeyNames() {
+  protected String[] getKeyNames() {
     return keyNames;
   }
 
   @Override
-  public String[] getColumnNames() {
+  protected String[] getColumnNames() {
     return columnNames;
   }
 
   @Override
-  public Object getValue(String columnName) {
+  protected Object getValue(String columnName) {
     if (columnName.equals("id")) {
       return getId();
     } else if (columnName.equals("query_type_name")) {
@@ -92,7 +92,7 @@ public class Schema extends Record<Schema> {
   }
 
   @Override
-  public Schema mapToEntity(Map<String, Object> result) {
+  protected Schema mapToEntity(Map<String, Object> result) {
     Schema entity = new Schema();
     entity.setId(result.get("id") != null ? (Integer) result.get("id") : null);
     entity.setQueryTypeName(result.get("queryTypeName") != null ? (String) result.get("queryTypeName") : null);
@@ -111,7 +111,7 @@ public class Schema extends Record<Schema> {
   }
 
   @Override
-  public Boolean isAutoIncrement() {
+  protected Boolean isAutoIncrement() {
     return autoIncrement;
   }
 

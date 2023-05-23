@@ -1,29 +1,39 @@
 package io.sqltemplate.showcase.templates;
 
+import io.sqltemplate.showcase.dto.User;
 import io.sqltemplate.spi.annotation.Instance;
 import io.sqltemplate.spi.annotation.InstanceType;
 import io.sqltemplate.spi.annotation.Template;
-import jakarta.transaction.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.sql.SQLException;
 import java.util.List;
 
 @Template("stg/user")
 public interface UserTemplate {
 
-    @Transactional(value = Transactional.TxType.NEVER, rollbackOn = {ClassNotFoundException.class, SQLException.class}, dontRollbackOn = {RuntimeException.class})
-    User getUser(String id) throws SQLException;
+    User getUser(String id);
+
+    List<User> getUserListByName(String name);
 
     @Instance(type = InstanceType.UPDATE)
-    long updateUser(String id) throws SQLException;
+    long insertUser(String name, String login, String password);
 
-    List<User> getUserList(String name) throws SQLException;
+    @Instance(type = InstanceType.UPDATE)
+    long updateUserNameById(String id, String name);
 
-    Mono<User> getUserMono(String id);
+    @Instance("getUser")
+    Mono<User> getUserByNameMono(String id);
 
-    Mono<List<User>> getUserListMono(String name);
+    @Instance("getUserListByName")
+    Mono<List<User>> getUserListByNameMono(String name);
 
-    Flux<User> getUserFlux(String name);
+    @Instance("getUserListByName")
+    Flux<User> getUserByNameFlux(String name);
+
+    @Instance(value = "insertUser", type = InstanceType.UPDATE)
+    Mono<Long> insertUserMono(String name, String login, String password);
+
+    @Instance(value = "updateUserNameById", type = InstanceType.UPDATE)
+    Mono<Long> updateUserNameByIdMono(String id, String name);
 }

@@ -1,6 +1,7 @@
 package io.sqltemplate.runtime.handler;
 
 import com.google.common.base.CaseFormat;
+import com.google.common.primitives.Primitives;
 import com.squareup.javapoet.*;
 import io.sqltemplate.core.adapter.Adapter;
 import io.sqltemplate.core.jdbc.JDBCAdapter;
@@ -11,25 +12,42 @@ import javax.lang.model.element.Modifier;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RuntimeAdapterProvider {
+
+    private final Map<String, Object> adapterInstanceCache = new ConcurrentHashMap<>();
 
     private final ClassPool classPool = ClassPool.getDefault();
 
     public <T> Adapter<?> getJDBCAdapter(Class<T> entityClass) {
-        try {
-            return getJDBCAdapterClass(entityClass).newInstance();
-        } catch (InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        Class<?> returnClass = entityClass.isPrimitive() ? Primitives.wrap(entityClass) : entityClass;
+        String entityAdapterName = returnClass.getCanonicalName() + JDBCAdapter.class.getSimpleName();
+        return (Adapter<?>) adapterInstanceCache
+                .computeIfAbsent(entityAdapterName,
+                        key -> {
+                            try {
+                                return getJDBCAdapterClass(entityClass).newInstance();
+                            } catch (InstantiationException | IllegalAccessException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                );
     }
 
     public <T> Adapter<?> getR2DBCAdapter(Class<T> entityClass) {
-        try {
-            return getR2DBCAdapterClass(entityClass).newInstance();
-        } catch (InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        Class<?> returnClass = entityClass.isPrimitive() ? Primitives.wrap(entityClass) : entityClass;
+        String entityAdapterName = returnClass.getCanonicalName() + R2DBCAdapter.class.getSimpleName();
+        return (Adapter<?>) adapterInstanceCache
+                .computeIfAbsent(entityAdapterName,
+                        key -> {
+                            try {
+                                return getR2DBCAdapterClass(entityClass).newInstance();
+                            } catch (InstantiationException | IllegalAccessException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                );
     }
 
     private <T> Class<? extends Adapter<?>> getJDBCAdapterClass(Class<T> entityClass) {
@@ -43,13 +61,15 @@ public class RuntimeAdapterProvider {
     @SuppressWarnings("unchecked")
     private <T> Class<? extends Adapter<?>> getAdapterClass(Class<T> entityClass, boolean reactive) {
         Class<?> adapterClass = reactive ? R2DBCAdapter.class : JDBCAdapter.class;
-        String entityAdapterName = entityClass.getCanonicalName() + adapterClass.getSimpleName();
+        Class<?> returnClass = entityClass.isPrimitive() ? Primitives.wrap(entityClass) : entityClass;
+        String entityAdapterName = returnClass.getCanonicalName() + adapterClass.getSimpleName();
+
         try {
-            CtClass AdapterCtClass = classPool.getOrNull(entityAdapterName);
-            if (AdapterCtClass != null) {
-                return (Class<? extends Adapter<?>>) AdapterCtClass.toClass();
+            CtClass adapterCtClass = classPool.getOrNull(entityAdapterName);
+            if (adapterCtClass != null) {
+                return (Class<? extends Adapter<?>>) adapterCtClass.toClass();
             }
-            return makeAdapterClass(entityClass, reactive);
+            return makeAdapterClass(returnClass, reactive);
         } catch (CannotCompileException | NotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -67,9 +87,9 @@ public class RuntimeAdapterProvider {
 
     private <T> MethodSpec buildMapMethod(Class<T> entityClass) {
         MethodSpec.Builder builder = MethodSpec.methodBuilder("map")
-                .addAnnotation(Override.class)
+//                .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
-                .addParameter(ParameterizedTypeName.get(Map.class, String.class, Object.class), "result")
+                .addParameter(Map.class, "result")
                 .returns(entityClass);
 
         if (entityClass.isPrimitive() ||
@@ -88,14 +108,20 @@ public class RuntimeAdapterProvider {
         } else {
             builder.addStatement("$T entity = new $T()", TypeName.get(entityClass), TypeName.get(entityClass));
             Arrays.stream(entityClass.getMethods())
+                    .filter(method -> method.getModifiers() == java.lang.reflect.Modifier.PUBLIC)
                     .filter(method -> method.getName().startsWith("set"))
-                    .map(method ->
-                            CodeBlock.of("entity.$L(result.get($S) != null ? ($T) result.get($S) : null)",
-                                    method.getName(),
-                                    getFiledNameBySetterName(method.getName()),
-                                    ClassName.get(method.getParameters()[0].getType()),
-                                    getFiledNameBySetterName(method.getName())
-                            )
+                    .map(method -> {
+                                TypeName parameterTypeName = TypeName.get(method.getParameters()[0].getType());
+                                if (parameterTypeName instanceof ParameterizedTypeName) {
+                                    parameterTypeName = ((ParameterizedTypeName) parameterTypeName).rawType;
+                                }
+                                return CodeBlock.of("if(result.get($S) != null)entity.$L(($T) result.get($S))",
+                                        getFiledNameBySetterName(method.getName()),
+                                        method.getName(),
+                                        parameterTypeName,
+                                        getFiledNameBySetterName(method.getName())
+                                );
+                            }
                     )
                     .forEach(builder::addStatement);
             builder.addStatement("return entity");

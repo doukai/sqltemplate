@@ -1,3 +1,15 @@
-getUserListMono(name) ::= <<
-SELECT u.id, u.name, u.login, u.password FROM userRecord u WHERE u.name = '<name>'
+getUser(id) ::= <<
+SELECT u.id, u.name, u.login, u.password FROM user u WHERE u.id = <id>
+>>
+
+getUserListByName(name) ::= <<
+SELECT u.id, u.name, u.login, u.password FROM user u WHERE u.name LIKE <name>
+>>
+
+updateUserNameById(id,name) ::= <<
+UPDATE user u SET u.name = <name> WHERE u.id = <id>
+>>
+
+insertUser(name,login,password) ::= <<
+INSERT INTO user (name, login, password) VALUES (<name>, <login>, <password>)
 >>

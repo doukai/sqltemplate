@@ -47,22 +47,22 @@ public class Type extends Record<Type> {
   private final Boolean autoIncrement = false;
 
   @Override
-  public String getTableName() {
+  protected String getTableName() {
     return tableName;
   }
 
   @Override
-  public String[] getKeyNames() {
+  protected String[] getKeyNames() {
     return keyNames;
   }
 
   @Override
-  public String[] getColumnNames() {
+  protected String[] getColumnNames() {
     return columnNames;
   }
 
   @Override
-  public Object getValue(String columnName) {
+  protected Object getValue(String columnName) {
     if (columnName.equals("name")) {
       return getName();
     } else if (columnName.equals("schema_id")) {
@@ -96,7 +96,7 @@ public class Type extends Record<Type> {
   }
 
   @Override
-  public Type mapToEntity(Map<String, Object> result) {
+  protected Type mapToEntity(Map<String, Object> result) {
     Type entity = new Type();
     entity.setName(result.get("name") != null ? (String) result.get("name") : null);
     entity.setSchemaId(result.get("schemaId") != null ? (Integer) result.get("schemaId") : null);
@@ -116,7 +116,7 @@ public class Type extends Record<Type> {
   }
 
   @Override
-  public Boolean isAutoIncrement() {
+  protected Boolean isAutoIncrement() {
     return autoIncrement;
   }
 

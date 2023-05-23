@@ -47,22 +47,22 @@ public class EnumValue extends Record<EnumValue> {
   private final Boolean autoIncrement = true;
 
   @Override
-  public String getTableName() {
+  protected String getTableName() {
     return tableName;
   }
 
   @Override
-  public String[] getKeyNames() {
+  protected String[] getKeyNames() {
     return keyNames;
   }
 
   @Override
-  public String[] getColumnNames() {
+  protected String[] getColumnNames() {
     return columnNames;
   }
 
   @Override
-  public Object getValue(String columnName) {
+  protected Object getValue(String columnName) {
     if (columnName.equals("id")) {
       return getId();
     } else if (columnName.equals("name")) {
@@ -96,7 +96,7 @@ public class EnumValue extends Record<EnumValue> {
   }
 
   @Override
-  public EnumValue mapToEntity(Map<String, Object> result) {
+  protected EnumValue mapToEntity(Map<String, Object> result) {
     EnumValue entity = new EnumValue();
     entity.setId(result.get("id") != null ? (Integer) result.get("id") : null);
     entity.setName(result.get("name") != null ? (String) result.get("name") : null);
@@ -116,7 +116,7 @@ public class EnumValue extends Record<EnumValue> {
   }
 
   @Override
-  public Boolean isAutoIncrement() {
+  protected Boolean isAutoIncrement() {
     return autoIncrement;
   }
 

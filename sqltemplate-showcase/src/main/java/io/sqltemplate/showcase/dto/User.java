@@ -53,22 +53,22 @@ public class User extends Record<User> {
   private final Boolean autoIncrement = true;
 
   @Override
-  public String getTableName() {
+  protected String getTableName() {
     return tableName;
   }
 
   @Override
-  public String[] getKeyNames() {
+  protected String[] getKeyNames() {
     return keyNames;
   }
 
   @Override
-  public String[] getColumnNames() {
+  protected String[] getColumnNames() {
     return columnNames;
   }
 
   @Override
-  public Object getValue(String columnName) {
+  protected Object getValue(String columnName) {
     if (columnName.equals("id")) {
       return getId();
     } else if (columnName.equals("login")) {
@@ -108,7 +108,7 @@ public class User extends Record<User> {
   }
 
   @Override
-  public User mapToEntity(Map<String, Object> result) {
+  protected User mapToEntity(Map<String, Object> result) {
     User entity = new User();
     entity.setId(result.get("id") != null ? (Integer) result.get("id") : null);
     entity.setLogin(result.get("login") != null ? (String) result.get("login") : null);
@@ -131,7 +131,7 @@ public class User extends Record<User> {
   }
 
   @Override
-  public Boolean isAutoIncrement() {
+  protected Boolean isAutoIncrement() {
     return autoIncrement;
   }
 

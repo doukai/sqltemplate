@@ -255,7 +255,7 @@ public class GenerateRecord extends DefaultTask {
     }
 
     public MethodSpec getTableNameMethod() {
-        return MethodSpec.methodBuilder("getTableName").returns(String.class).addModifiers(Modifier.PUBLIC)
+        return MethodSpec.methodBuilder("getTableName").returns(String.class).addModifiers(Modifier.PROTECTED)
                 .addAnnotation(Override.class)
                 .addStatement("return tableName")
                 .build();
@@ -280,7 +280,7 @@ public class GenerateRecord extends DefaultTask {
     }
 
     public MethodSpec getKeyNamesMethod() {
-        return MethodSpec.methodBuilder("getKeyNames").returns(ArrayTypeName.of(String.class)).addModifiers(Modifier.PUBLIC)
+        return MethodSpec.methodBuilder("getKeyNames").returns(ArrayTypeName.of(String.class)).addModifiers(Modifier.PROTECTED)
                 .addAnnotation(Override.class)
                 .addStatement("return keyNames")
                 .build();
@@ -301,7 +301,7 @@ public class GenerateRecord extends DefaultTask {
     }
 
     public MethodSpec getColumnNamesMethod() {
-        return MethodSpec.methodBuilder("getColumnNames").returns(ArrayTypeName.of(String.class)).addModifiers(Modifier.PUBLIC)
+        return MethodSpec.methodBuilder("getColumnNames").returns(ArrayTypeName.of(String.class)).addModifiers(Modifier.PROTECTED)
                 .addAnnotation(Override.class)
                 .addStatement("return columnNames")
                 .build();
@@ -315,14 +315,14 @@ public class GenerateRecord extends DefaultTask {
     }
 
     public MethodSpec isAutoIncrementMethod() {
-        return MethodSpec.methodBuilder("isAutoIncrement").returns(Boolean.class).addModifiers(Modifier.PUBLIC)
+        return MethodSpec.methodBuilder("isAutoIncrement").returns(Boolean.class).addModifiers(Modifier.PROTECTED)
                 .addAnnotation(Override.class)
                 .addStatement("return autoIncrement")
                 .build();
     }
 
     public MethodSpec getValueMethod(List<Map<String, Object>> columnMapList) {
-        MethodSpec.Builder builder = MethodSpec.methodBuilder("getValue").returns(Object.class).addModifiers(Modifier.PUBLIC)
+        MethodSpec.Builder builder = MethodSpec.methodBuilder("getValue").returns(Object.class).addModifiers(Modifier.PROTECTED)
                 .addParameter(ParameterSpec.builder(String.class, "columnName").build())
                 .addAnnotation(Override.class);
 
@@ -348,7 +348,7 @@ public class GenerateRecord extends DefaultTask {
         ClassName className = ClassName.get(generatorConfig.getPackageName(), typeName);
         MethodSpec.Builder builder = MethodSpec.methodBuilder("mapToEntity")
                 .addAnnotation(Override.class)
-                .addModifiers(Modifier.PUBLIC)
+                .addModifiers(Modifier.PROTECTED)
                 .addParameter(ParameterizedTypeName.get(Map.class, String.class, Object.class), "result")
                 .returns(className);
 

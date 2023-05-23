@@ -15,7 +15,7 @@ import io.sqltemplate.active.record.model.conditional.NIN;
 import io.sqltemplate.active.record.model.conditional.NLK;
 import io.sqltemplate.active.record.model.conditional.NNIL;
 import io.sqltemplate.active.record.model.conditional.OR;
-import io.sqltemplate.active.record.model.expression.Expression;
+import io.sqltemplate.core.expression.Expression;
 import io.sqltemplate.active.record.model.join.JoinColumns;
 import io.sqltemplate.active.record.model.join.JoinTable;
 import io.sqltemplate.active.record.model.sort.ASC;
@@ -34,7 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.sqltemplate.active.record.model.expression.Function.LAST_INSERT_ID;
+import static io.sqltemplate.core.expression.Function.LAST_INSERT_ID;
 import static io.sqltemplate.active.record.model.update.ValueSet.set;
 
 public class TableRecord<T> {
@@ -100,74 +100,74 @@ public class TableRecord<T> {
         return this;
     }
 
-    public String getAlias() {
+    protected String getAlias() {
         return alias;
     }
 
-    public TableRecord<T> setAlias(String alias) {
+    protected TableRecord<T> setAlias(String alias) {
         this.alias = alias;
         return this;
     }
 
-    public String getJoinAlias() {
+    protected String getJoinAlias() {
         return joinAlias;
     }
 
-    public TableRecord<T> setJoinAlias(String joinAlias) {
+    protected TableRecord<T> setJoinAlias(String joinAlias) {
         this.joinAlias = joinAlias;
         return this;
     }
 
-    public JoinTable getJoinTable() {
+    protected JoinTable getJoinTable() {
         return joinTable;
     }
 
-    public TableRecord<T> setJoinTable(JoinTable joinTable) {
+    protected TableRecord<T> setJoinTable(JoinTable joinTable) {
         this.joinTable = joinTable;
         return this;
     }
 
-    public List<Conditional> getConditionals() {
+    protected List<Conditional> getConditionals() {
         return conditionals;
     }
 
-    public TableRecord<T> setConditionals(List<Conditional> conditionals) {
+    protected TableRecord<T> setConditionals(List<Conditional> conditionals) {
         this.conditionals = conditionals;
         return this;
     }
 
-    public List<Sort> getSorts() {
+    protected List<Sort> getSorts() {
         return sorts;
     }
 
-    public TableRecord<T> setSorts(List<Sort> sorts) {
+    protected TableRecord<T> setSorts(List<Sort> sorts) {
         this.sorts = sorts;
         return this;
     }
 
-    public Integer getLimit() {
+    protected Integer getLimit() {
         return limit;
     }
 
-    public TableRecord<T> setLimit(Integer limit) {
+    protected TableRecord<T> setLimit(Integer limit) {
         this.limit = limit;
         return this;
     }
 
-    public Integer getOffset() {
+    protected Integer getOffset() {
         return offset;
     }
 
-    public TableRecord<T> setOffset(Integer offset) {
+    protected TableRecord<T> setOffset(Integer offset) {
         this.offset = offset;
         return this;
     }
 
-    public Boolean isAutoIncrement() {
+    protected Boolean isAutoIncrement() {
         return autoIncrement;
     }
 
-    public TableRecord<T> setAutoIncrement(boolean autoIncrement) {
+    protected TableRecord<T> setAutoIncrement(boolean autoIncrement) {
         this.autoIncrement = autoIncrement;
         return this;
     }

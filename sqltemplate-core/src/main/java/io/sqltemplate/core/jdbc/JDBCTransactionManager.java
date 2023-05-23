@@ -21,7 +21,7 @@ public class JDBCTransactionManager {
 
     public static List<JDBCConnectionCounter> getConnectionCounterList() {
         if (connectionCounterThreadLocal.get() == null) {
-            connectionCounterThreadLocal.set(new ArrayList<>() {{
+            connectionCounterThreadLocal.set(new ArrayList<JDBCConnectionCounter>() {{
                 add(new JDBCConnectionCounter(Objects.requireNonNull(connectionProvider).createConnection()));
             }});
         }
@@ -38,7 +38,6 @@ public class JDBCTransactionManager {
         JDBCConnectionCounter connectionCounter = connectionCounterList.get(connectionCounterList.size() - 1);
         Connection newConnection;
         JDBCConnectionCounter newConnectionCounter;
-
         switch (txType) {
             case REQUIRED:
                 if (connectionCounter.getCounter().getAndIncrement() == 0) {
@@ -96,7 +95,6 @@ public class JDBCTransactionManager {
         try {
             if (rollbackOn != null && rollbackOn.length > 0) {
                 if (Arrays.stream(rollbackOn).anyMatch(exception -> exception.equals(throwable.getClass()))) {
-
                     connectionCounter.getConnection().rollback();
                 } else {
                     connectionCounter.getConnection().commit();

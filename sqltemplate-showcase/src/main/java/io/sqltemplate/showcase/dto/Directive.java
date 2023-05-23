@@ -45,22 +45,22 @@ public class Directive extends Record<Directive> {
   private final Boolean autoIncrement = false;
 
   @Override
-  public String getTableName() {
+  protected String getTableName() {
     return tableName;
   }
 
   @Override
-  public String[] getKeyNames() {
+  protected String[] getKeyNames() {
     return keyNames;
   }
 
   @Override
-  public String[] getColumnNames() {
+  protected String[] getColumnNames() {
     return columnNames;
   }
 
   @Override
-  public Object getValue(String columnName) {
+  protected Object getValue(String columnName) {
     if (columnName.equals("name")) {
       return getName();
     } else if (columnName.equals("schema_id")) {
@@ -92,7 +92,7 @@ public class Directive extends Record<Directive> {
   }
 
   @Override
-  public Directive mapToEntity(Map<String, Object> result) {
+  protected Directive mapToEntity(Map<String, Object> result) {
     Directive entity = new Directive();
     entity.setName(result.get("name") != null ? (String) result.get("name") : null);
     entity.setSchemaId(result.get("schemaId") != null ? (Integer) result.get("schemaId") : null);
@@ -111,7 +111,7 @@ public class Directive extends Record<Directive> {
   }
 
   @Override
-  public Boolean isAutoIncrement() {
+  protected Boolean isAutoIncrement() {
     return autoIncrement;
   }
 

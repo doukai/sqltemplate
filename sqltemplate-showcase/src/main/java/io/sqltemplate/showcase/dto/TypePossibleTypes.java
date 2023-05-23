@@ -43,22 +43,22 @@ public class TypePossibleTypes extends Record<TypePossibleTypes> {
   private final Boolean autoIncrement = true;
 
   @Override
-  public String getTableName() {
+  protected String getTableName() {
     return tableName;
   }
 
   @Override
-  public String[] getKeyNames() {
+  protected String[] getKeyNames() {
     return keyNames;
   }
 
   @Override
-  public String[] getColumnNames() {
+  protected String[] getColumnNames() {
     return columnNames;
   }
 
   @Override
-  public Object getValue(String columnName) {
+  protected Object getValue(String columnName) {
     if (columnName.equals("id")) {
       return getId();
     } else if (columnName.equals("type_name")) {
@@ -88,7 +88,7 @@ public class TypePossibleTypes extends Record<TypePossibleTypes> {
   }
 
   @Override
-  public TypePossibleTypes mapToEntity(Map<String, Object> result) {
+  protected TypePossibleTypes mapToEntity(Map<String, Object> result) {
     TypePossibleTypes entity = new TypePossibleTypes();
     entity.setId(result.get("id") != null ? (Integer) result.get("id") : null);
     entity.setTypeName(result.get("typeName") != null ? (String) result.get("typeName") : null);
@@ -106,7 +106,7 @@ public class TypePossibleTypes extends Record<TypePossibleTypes> {
   }
 
   @Override
-  public Boolean isAutoIncrement() {
+  protected Boolean isAutoIncrement() {
     return autoIncrement;
   }
 

@@ -43,22 +43,22 @@ public class DirectiveLocations extends Record<DirectiveLocations> {
   private final Boolean autoIncrement = true;
 
   @Override
-  public String getTableName() {
+  protected String getTableName() {
     return tableName;
   }
 
   @Override
-  public String[] getKeyNames() {
+  protected String[] getKeyNames() {
     return keyNames;
   }
 
   @Override
-  public String[] getColumnNames() {
+  protected String[] getColumnNames() {
     return columnNames;
   }
 
   @Override
-  public Object getValue(String columnName) {
+  protected Object getValue(String columnName) {
     if (columnName.equals("id")) {
       return getId();
     } else if (columnName.equals("directive_name")) {
@@ -88,7 +88,7 @@ public class DirectiveLocations extends Record<DirectiveLocations> {
   }
 
   @Override
-  public DirectiveLocations mapToEntity(Map<String, Object> result) {
+  protected DirectiveLocations mapToEntity(Map<String, Object> result) {
     DirectiveLocations entity = new DirectiveLocations();
     entity.setId(result.get("id") != null ? (Integer) result.get("id") : null);
     entity.setDirectiveName(result.get("directiveName") != null ? (String) result.get("directiveName") : null);
@@ -106,7 +106,7 @@ public class DirectiveLocations extends Record<DirectiveLocations> {
   }
 
   @Override
-  public Boolean isAutoIncrement() {
+  protected Boolean isAutoIncrement() {
     return autoIncrement;
   }
 

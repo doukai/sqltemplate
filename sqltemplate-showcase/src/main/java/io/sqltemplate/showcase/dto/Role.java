@@ -41,22 +41,22 @@ public class Role extends Record<Role> {
   private final Boolean autoIncrement = true;
 
   @Override
-  public String getTableName() {
+  protected String getTableName() {
     return tableName;
   }
 
   @Override
-  public String[] getKeyNames() {
+  protected String[] getKeyNames() {
     return keyNames;
   }
 
   @Override
-  public String[] getColumnNames() {
+  protected String[] getColumnNames() {
     return columnNames;
   }
 
   @Override
-  public Object getValue(String columnName) {
+  protected Object getValue(String columnName) {
     if (columnName.equals("id")) {
       return getId();
     } else if (columnName.equals("name")) {
@@ -84,7 +84,7 @@ public class Role extends Record<Role> {
   }
 
   @Override
-  public Role mapToEntity(Map<String, Object> result) {
+  protected Role mapToEntity(Map<String, Object> result) {
     Role entity = new Role();
     entity.setId(result.get("id") != null ? (Integer) result.get("id") : null);
     entity.setName(result.get("name") != null ? (String) result.get("name") : null);
@@ -101,7 +101,7 @@ public class Role extends Record<Role> {
   }
 
   @Override
-  public Boolean isAutoIncrement() {
+  protected Boolean isAutoIncrement() {
     return autoIncrement;
   }
 

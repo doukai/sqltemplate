@@ -45,22 +45,22 @@ public class UserProfile extends Record<UserProfile> {
   private final Boolean autoIncrement = true;
 
   @Override
-  public String getTableName() {
+  protected String getTableName() {
     return tableName;
   }
 
   @Override
-  public String[] getKeyNames() {
+  protected String[] getKeyNames() {
     return keyNames;
   }
 
   @Override
-  public String[] getColumnNames() {
+  protected String[] getColumnNames() {
     return columnNames;
   }
 
   @Override
-  public Object getValue(String columnName) {
+  protected Object getValue(String columnName) {
     if (columnName.equals("id")) {
       return getId();
     } else if (columnName.equals("user_id")) {
@@ -92,7 +92,7 @@ public class UserProfile extends Record<UserProfile> {
   }
 
   @Override
-  public UserProfile mapToEntity(Map<String, Object> result) {
+  protected UserProfile mapToEntity(Map<String, Object> result) {
     UserProfile entity = new UserProfile();
     entity.setId(result.get("id") != null ? (Integer) result.get("id") : null);
     entity.setUserId(result.get("userId") != null ? (Integer) result.get("userId") : null);
@@ -111,7 +111,7 @@ public class UserProfile extends Record<UserProfile> {
   }
 
   @Override
-  public Boolean isAutoIncrement() {
+  protected Boolean isAutoIncrement() {
     return autoIncrement;
   }
 

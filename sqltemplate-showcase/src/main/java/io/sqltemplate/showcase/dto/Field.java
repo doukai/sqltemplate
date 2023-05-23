@@ -49,22 +49,22 @@ public class Field extends Record<Field> {
   private final Boolean autoIncrement = true;
 
   @Override
-  public String getTableName() {
+  protected String getTableName() {
     return tableName;
   }
 
   @Override
-  public String[] getKeyNames() {
+  protected String[] getKeyNames() {
     return keyNames;
   }
 
   @Override
-  public String[] getColumnNames() {
+  protected String[] getColumnNames() {
     return columnNames;
   }
 
   @Override
-  public Object getValue(String columnName) {
+  protected Object getValue(String columnName) {
     if (columnName.equals("id")) {
       return getId();
     } else if (columnName.equals("name")) {
@@ -100,7 +100,7 @@ public class Field extends Record<Field> {
   }
 
   @Override
-  public Field mapToEntity(Map<String, Object> result) {
+  protected Field mapToEntity(Map<String, Object> result) {
     Field entity = new Field();
     entity.setId(result.get("id") != null ? (Integer) result.get("id") : null);
     entity.setName(result.get("name") != null ? (String) result.get("name") : null);
@@ -121,7 +121,7 @@ public class Field extends Record<Field> {
   }
 
   @Override
-  public Boolean isAutoIncrement() {
+  protected Boolean isAutoIncrement() {
     return autoIncrement;
   }
 

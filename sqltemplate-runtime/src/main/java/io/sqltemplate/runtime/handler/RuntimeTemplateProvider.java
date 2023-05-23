@@ -48,11 +48,12 @@ public class RuntimeTemplateProvider implements TemplateProvider {
                 );
     }
 
+    @SuppressWarnings("unchecked")
     private <T> Class<? extends T> makeTemplate(Class<T> templateClass) {
-        DynamicType.Builder<T> builder = new ByteBuddy()
-                .subclass(templateClass)
+        DynamicType.Builder<T> builder = (DynamicType.Builder<T>) new ByteBuddy()
+                .subclass(Object.class)
                 .implement(templateClass)
-                .name(templateClass.getCanonicalName() + "Impl");
+                .name(templateClass.getCanonicalName() + "RuntimeImpl");
 
         for (Method method : templateClass.getMethods()) {
             Template templateAnnotation = method.getDeclaringClass().getAnnotation(Template.class);
@@ -91,7 +92,7 @@ public class RuntimeTemplateProvider implements TemplateProvider {
                     } else {
                         interceptor = new QueryInterceptor(adapterProvider.getJDBCAdapter(returnType), templateName, instanceName, argumentNames);
                     }
-                    builder.define(method).intercept(MethodDelegation.to(interceptor));
+                    builder = builder.define(method).intercept(MethodDelegation.to(interceptor));
                 } else {
                     UpdateInterceptor interceptor;
                     if (transactionalAnnotation != null) {
@@ -99,11 +100,11 @@ public class RuntimeTemplateProvider implements TemplateProvider {
                     } else {
                         interceptor = new UpdateInterceptor(new JDBCAdapter<>(), templateName, instanceName, argumentNames);
                     }
-                    builder.define(method).intercept(MethodDelegation.to(interceptor));
+                    builder = builder.define(method).intercept(MethodDelegation.to(interceptor));
                 }
             } else {
-                Type[] returnTypeArguments = ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments();
-                if (returnTypeArguments.length == 0) {
+                Type genericReturnType = method.getGenericReturnType();
+                if (!(genericReturnType instanceof ParameterizedType) || ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments().length == 0) {
                     if (instanceType.equals(InstanceType.QUERY)) {
                         QueryInterceptor interceptor;
                         if (transactionalAnnotation != null) {
@@ -111,7 +112,7 @@ public class RuntimeTemplateProvider implements TemplateProvider {
                         } else {
                             interceptor = new QueryInterceptor(adapterProvider.getJDBCAdapter(returnType), templateName, instanceName, argumentNames);
                         }
-                        builder.define(method).intercept(MethodDelegation.to(interceptor));
+                        builder = builder.define(method).intercept(MethodDelegation.to(interceptor));
                     } else {
                         UpdateInterceptor interceptor;
                         if (transactionalAnnotation != null) {
@@ -119,10 +120,9 @@ public class RuntimeTemplateProvider implements TemplateProvider {
                         } else {
                             interceptor = new UpdateInterceptor(new JDBCAdapter<>(), templateName, instanceName, argumentNames);
                         }
-                        builder.define(method).intercept(MethodDelegation.to(interceptor));
+                        builder = builder.define(method).intercept(MethodDelegation.to(interceptor));
                     }
                 } else {
-                    ParameterizedType argumentType = (ParameterizedType) returnTypeArguments[0];
                     if (returnType.isAssignableFrom(Map.class)) {
                         QueryInterceptor interceptor;
                         if (transactionalAnnotation != null) {
@@ -130,36 +130,38 @@ public class RuntimeTemplateProvider implements TemplateProvider {
                         } else {
                             interceptor = new QueryInterceptor(new JDBCAdapter<>(), templateName, instanceName, argumentNames);
                         }
-                        builder.define(method).intercept(MethodDelegation.to(interceptor));
+                        builder = builder.define(method).intercept(MethodDelegation.to(interceptor));
                     } else if (returnType.isAssignableFrom(List.class)) {
-                        if (((Class<?>) argumentType.getRawType()).isAssignableFrom(Map.class)) {
+                        Type argumentType = ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0];
+                        if (argumentType instanceof ParameterizedType && ((Class<?>) ((ParameterizedType) argumentType).getRawType()).isAssignableFrom(Map.class)) {
                             QueryListInterceptor interceptor;
                             if (transactionalAnnotation != null) {
                                 interceptor = new QueryListInterceptor(new JDBCAdapter<>(), templateName, instanceName, argumentNames, transactionalAnnotation);
                             } else {
                                 interceptor = new QueryListInterceptor(new JDBCAdapter<>(), templateName, instanceName, argumentNames);
                             }
-                            builder.define(method).intercept(MethodDelegation.to(interceptor));
-                        } else {
+                            builder = builder.define(method).intercept(MethodDelegation.to(interceptor));
+                        } else if (argumentType instanceof Class<?>) {
                             QueryListInterceptor interceptor;
                             if (transactionalAnnotation != null) {
-                                interceptor = new QueryListInterceptor(adapterProvider.getJDBCAdapter(returnType), templateName, instanceName, argumentNames, transactionalAnnotation);
+                                interceptor = new QueryListInterceptor(adapterProvider.getJDBCAdapter((Class<?>) argumentType), templateName, instanceName, argumentNames, transactionalAnnotation);
                             } else {
-                                interceptor = new QueryListInterceptor(adapterProvider.getJDBCAdapter(returnType), templateName, instanceName, argumentNames);
+                                interceptor = new QueryListInterceptor(adapterProvider.getJDBCAdapter((Class<?>) argumentType), templateName, instanceName, argumentNames);
                             }
-                            builder.define(method).intercept(MethodDelegation.to(interceptor));
+                            builder = builder.define(method).intercept(MethodDelegation.to(interceptor));
                         }
                     } else if (returnType.isAssignableFrom(Mono.class)) {
-                        if (((Class<?>) argumentType.getRawType()).isAssignableFrom(Map.class)) {
+                        Type argumentType = ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0];
+                        if (argumentType instanceof ParameterizedType && ((Class<?>) ((ParameterizedType) argumentType).getRawType()).isAssignableFrom(Map.class)) {
                             QueryMonoInterceptor interceptor;
                             if (transactionalAnnotation != null) {
                                 interceptor = new QueryMonoInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames, transactionalAnnotation);
                             } else {
                                 interceptor = new QueryMonoInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames);
                             }
-                            builder.define(method).intercept(MethodDelegation.to(interceptor));
-                        } else if (((Class<?>) argumentType.getRawType()).isAssignableFrom(List.class)) {
-                            Type argumentTypeArgumentType = argumentType.getActualTypeArguments()[0];
+                            builder = builder.define(method).intercept(MethodDelegation.to(interceptor));
+                        } else if (argumentType instanceof ParameterizedType && ((Class<?>) ((ParameterizedType) argumentType).getRawType()).isAssignableFrom(List.class)) {
+                            Type argumentTypeArgumentType = ((ParameterizedType) argumentType).getActualTypeArguments()[0];
                             if (argumentTypeArgumentType instanceof ParameterizedType) {
                                 QueryMonoListInterceptor interceptor;
                                 if (transactionalAnnotation != null) {
@@ -167,25 +169,25 @@ public class RuntimeTemplateProvider implements TemplateProvider {
                                 } else {
                                     interceptor = new QueryMonoListInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames);
                                 }
-                                builder.define(method).intercept(MethodDelegation.to(interceptor));
+                                builder = builder.define(method).intercept(MethodDelegation.to(interceptor));
                             } else {
                                 QueryMonoListInterceptor interceptor;
                                 if (transactionalAnnotation != null) {
-                                    interceptor = new QueryMonoListInterceptor(adapterProvider.getR2DBCAdapter(returnType), templateName, instanceName, argumentNames, transactionalAnnotation);
+                                    interceptor = new QueryMonoListInterceptor(adapterProvider.getR2DBCAdapter((Class<?>) argumentTypeArgumentType), templateName, instanceName, argumentNames, transactionalAnnotation);
                                 } else {
-                                    interceptor = new QueryMonoListInterceptor(adapterProvider.getR2DBCAdapter(returnType), templateName, instanceName, argumentNames);
+                                    interceptor = new QueryMonoListInterceptor(adapterProvider.getR2DBCAdapter((Class<?>) argumentTypeArgumentType), templateName, instanceName, argumentNames);
                                 }
-                                builder.define(method).intercept(MethodDelegation.to(interceptor));
+                                builder = builder.define(method).intercept(MethodDelegation.to(interceptor));
                             }
                         } else {
-                            if (instanceType.equals(InstanceType.QUERY)) {
+                            if (argumentType instanceof Class<?> && instanceType.equals(InstanceType.QUERY)) {
                                 QueryMonoInterceptor interceptor;
                                 if (transactionalAnnotation != null) {
-                                    interceptor = new QueryMonoInterceptor(adapterProvider.getR2DBCAdapter(returnType), templateName, instanceName, argumentNames, transactionalAnnotation);
+                                    interceptor = new QueryMonoInterceptor(adapterProvider.getR2DBCAdapter((Class<?>) argumentType), templateName, instanceName, argumentNames, transactionalAnnotation);
                                 } else {
-                                    interceptor = new QueryMonoInterceptor(adapterProvider.getR2DBCAdapter(returnType), templateName, instanceName, argumentNames);
+                                    interceptor = new QueryMonoInterceptor(adapterProvider.getR2DBCAdapter((Class<?>) argumentType), templateName, instanceName, argumentNames);
                                 }
-                                builder.define(method).intercept(MethodDelegation.to(interceptor));
+                                builder = builder.define(method).intercept(MethodDelegation.to(interceptor));
                             } else {
                                 UpdateMonoInterceptor interceptor;
                                 if (transactionalAnnotation != null) {
@@ -193,26 +195,27 @@ public class RuntimeTemplateProvider implements TemplateProvider {
                                 } else {
                                     interceptor = new UpdateMonoInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames);
                                 }
-                                builder.define(method).intercept(MethodDelegation.to(interceptor));
+                                builder = builder.define(method).intercept(MethodDelegation.to(interceptor));
                             }
                         }
                     } else if (returnType.isAssignableFrom(Flux.class)) {
-                        if (((Class<?>) argumentType.getRawType()).isAssignableFrom(Map.class)) {
+                        Type argumentType = ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0];
+                        if (argumentType instanceof ParameterizedType && ((Class<?>) ((ParameterizedType) argumentType).getRawType()).isAssignableFrom(Map.class)) {
                             QueryFluxInterceptor interceptor;
                             if (transactionalAnnotation != null) {
                                 interceptor = new QueryFluxInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames, transactionalAnnotation);
                             } else {
                                 interceptor = new QueryFluxInterceptor(new R2DBCAdapter<>(), templateName, instanceName, argumentNames);
                             }
-                            builder.define(method).intercept(MethodDelegation.to(interceptor));
-                        } else {
+                            builder = builder.define(method).intercept(MethodDelegation.to(interceptor));
+                        } else if (argumentType instanceof Class<?>) {
                             QueryFluxInterceptor interceptor;
                             if (transactionalAnnotation != null) {
-                                interceptor = new QueryFluxInterceptor(adapterProvider.getR2DBCAdapter(returnType), templateName, instanceName, argumentNames, transactionalAnnotation);
+                                interceptor = new QueryFluxInterceptor(adapterProvider.getR2DBCAdapter((Class<?>) argumentType), templateName, instanceName, argumentNames, transactionalAnnotation);
                             } else {
-                                interceptor = new QueryFluxInterceptor(adapterProvider.getR2DBCAdapter(returnType), templateName, instanceName, argumentNames);
+                                interceptor = new QueryFluxInterceptor(adapterProvider.getR2DBCAdapter((Class<?>) argumentType), templateName, instanceName, argumentNames);
                             }
-                            builder.define(method).intercept(MethodDelegation.to(interceptor));
+                            builder = builder.define(method).intercept(MethodDelegation.to(interceptor));
                         }
                     }
                 }

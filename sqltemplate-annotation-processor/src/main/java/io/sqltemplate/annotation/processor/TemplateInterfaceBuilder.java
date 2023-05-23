@@ -428,7 +428,7 @@ public class TemplateInterfaceBuilder {
                                             CodeBlock.of("entity.$L(result.get($S) != null ? ($T) result.get($S) : null);\n",
                                                     executableElement.getSimpleName().toString(),
                                                     getFiledNameBySetterName(executableElement.getSimpleName().toString()),
-                                                    ClassName.get(executableElement.getParameters().get(0).asType()),
+                                                    TypeName.get(executableElement.getParameters().get(0).asType()),
                                                     getFiledNameBySetterName(executableElement.getSimpleName().toString())
                                             )
                                     ),

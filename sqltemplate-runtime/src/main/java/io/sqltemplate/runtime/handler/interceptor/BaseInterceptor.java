@@ -55,7 +55,7 @@ public abstract class BaseInterceptor {
 
     public R2DBCAdapter<?> getR2DBCAdapter(Object[] args) {
         return (R2DBCAdapter<?>) adapter.setTemplateName(templateName)
-                .setInstanceName(templateName)
+                .setInstanceName(instanceName)
                 .setParams(getParams(args))
                 .setTxType(txType)
                 .setRollbackOn(rollbackOn)
@@ -64,7 +64,7 @@ public abstract class BaseInterceptor {
 
     public JDBCAdapter<?> getJDBCAdapter(Object[] args) {
         return (JDBCAdapter<?>) adapter.setTemplateName(templateName)
-                .setInstanceName(templateName)
+                .setInstanceName(instanceName)
                 .setParams(getParams(args))
                 .setTxType(txType)
                 .setRollbackOn(rollbackOn)
