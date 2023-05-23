@@ -91,22 +91,24 @@ public class RuntimeAdapterProvider {
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(Map.class, "result")
                 .returns(entityClass);
-
+        TypeName returnTypeName = TypeName.get(entityClass);
+        if (returnTypeName instanceof ParameterizedTypeName) {
+            returnTypeName = ((ParameterizedTypeName) returnTypeName).rawType;
+        }
         if (entityClass.isPrimitive() ||
                 entityClass.isAssignableFrom(Boolean.class) ||
                 entityClass.isAssignableFrom(Character.class) ||
                 entityClass.isAssignableFrom(Number.class) ||
                 entityClass.isAssignableFrom(String.class)) {
-
             builder.addStatement("$T<?> iterator = result.values().iterator()", ClassName.get(Iterator.class))
                     .beginControlFlow("if (iterator.hasNext())")
-                    .addStatement("return ($T) iterator.next()", TypeName.get(entityClass))
+                    .addStatement("return ($T) iterator.next()", returnTypeName)
                     .endControlFlow()
                     .addStatement("return null");
         } else if (entityClass.isAssignableFrom(Map.class)) {
             builder.addStatement("return result");
         } else {
-            builder.addStatement("$T entity = new $T()", TypeName.get(entityClass), TypeName.get(entityClass));
+            builder.addStatement("$T entity = new $T()", returnTypeName, returnTypeName);
             Arrays.stream(entityClass.getMethods())
                     .filter(method -> method.getModifiers() == java.lang.reflect.Modifier.PUBLIC)
                     .filter(method -> method.getName().startsWith("set"))

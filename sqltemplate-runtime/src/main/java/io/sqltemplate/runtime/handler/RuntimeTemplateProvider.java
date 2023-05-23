@@ -32,6 +32,8 @@ public class RuntimeTemplateProvider implements TemplateProvider {
 
     private final TypeCache<Class<?>> cache = new TypeCache<>();
 
+    private final ByteBuddy byteBuddy = new ByteBuddy();
+
     private final RuntimeAdapterProvider adapterProvider = new RuntimeAdapterProvider();
 
     @SuppressWarnings("unchecked")
@@ -50,7 +52,7 @@ public class RuntimeTemplateProvider implements TemplateProvider {
 
     @SuppressWarnings("unchecked")
     private <T> Class<? extends T> makeTemplate(Class<T> templateClass) {
-        DynamicType.Builder<T> builder = (DynamicType.Builder<T>) new ByteBuddy()
+        DynamicType.Builder<T> builder = (DynamicType.Builder<T>) byteBuddy
                 .subclass(Object.class)
                 .implement(templateClass)
                 .name(templateClass.getCanonicalName() + "RuntimeImpl");
