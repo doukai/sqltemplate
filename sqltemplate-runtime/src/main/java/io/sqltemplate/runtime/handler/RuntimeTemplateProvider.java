@@ -34,7 +34,15 @@ public class RuntimeTemplateProvider implements TemplateProvider {
 
     private final ByteBuddy byteBuddy = new ByteBuddy();
 
-    private final RuntimeAdapterProvider adapterProvider = new RuntimeAdapterProvider();
+    private final RuntimeAdapterProvider adapterProvider = RuntimeAdapterProvider.getInstance();
+
+    private static class RuntimeTemplateProviderHolder {
+        private static final RuntimeTemplateProvider INSTANCE = new RuntimeTemplateProvider();
+    }
+
+    public static RuntimeTemplateProvider getInstance() {
+        return RuntimeTemplateProvider.RuntimeTemplateProviderHolder.INSTANCE;
+    }
 
     @SuppressWarnings("unchecked")
     public <T> T getTemplate(Class<T> templateClass) {

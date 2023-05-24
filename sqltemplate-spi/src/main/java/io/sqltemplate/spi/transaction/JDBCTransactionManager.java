@@ -103,7 +103,10 @@ public class JDBCTransactionManager {
 
     public static void rollback(String id, Throwable throwable, Class<?>[] rollbackOn, Class<?>[] dontRollbackOn) {
         List<JDBCTransactionConnection> transactionConnectionList = getTransactionConnectionList();
-        JDBCTransactionConnection transactionConnection = getTransactionConnection();
+        if (transactionConnectionList.size() == 0) {
+            throw new RuntimeException(throwable);
+        }
+        JDBCTransactionConnection transactionConnection = transactionConnectionList.get(transactionConnectionList.size() - 1);
         try {
             if (rollbackOn != null && rollbackOn.length > 0) {
                 if (Arrays.stream(rollbackOn).anyMatch(exception -> exception.equals(throwable.getClass()))) {

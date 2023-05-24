@@ -26,9 +26,9 @@ public class R2DBCTransactionManager {
                 .transformDeferredContextual(
                         (mono, contextView) ->
                                 Mono.justOrEmpty(
-                                                contextView.getOrEmpty(transactionConnectionListKey)
-                                                        .map(connectionCounterList -> (List<R2DBCTransactionConnection>) connectionCounterList)
-                                        )
+                                        contextView.getOrEmpty(transactionConnectionListKey)
+                                                .map(connectionCounterList -> (List<R2DBCTransactionConnection>) connectionCounterList)
+                                )
                                         .switchIfEmpty(
                                                 Mono.just(new ArrayList<R2DBCTransactionConnection>())
                                                         .flatMap(connectionCounterList ->
@@ -129,6 +129,9 @@ public class R2DBCTransactionManager {
     public static Mono<Void> rollback(String id, Throwable throwable, Class<?>[] rollbackOn, Class<?>[] dontRollbackOn) {
         return getTransactionConnectionList()
                 .flatMap(transactionConnectionList -> {
+                            if (transactionConnectionList.size() == 0) {
+                                return Mono.error(throwable);
+                            }
                             R2DBCTransactionConnection transactionConnection = transactionConnectionList.get(transactionConnectionList.size() - 1);
                             if (rollbackOn != null && rollbackOn.length > 0) {
                                 if (Arrays.stream(rollbackOn).anyMatch(exception -> exception.equals(throwable.getClass()))) {

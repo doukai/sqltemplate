@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RuntimeTemplateTest {
 
-    private final TemplateProvider templateProvider = new RuntimeTemplateProvider();
+    private final TemplateProvider templateProvider = RuntimeTemplateProvider.getInstance();
 
 
     @Test

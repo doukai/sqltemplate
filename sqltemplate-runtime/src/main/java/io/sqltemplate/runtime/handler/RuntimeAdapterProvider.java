@@ -20,6 +20,17 @@ public class RuntimeAdapterProvider {
 
     private final ClassPool classPool = ClassPool.getDefault();
 
+    private static class RuntimeAdapterProviderHolder {
+        private static final RuntimeAdapterProvider INSTANCE = new RuntimeAdapterProvider();
+    }
+
+    public static RuntimeAdapterProvider getInstance() {
+        return RuntimeAdapterProvider.RuntimeAdapterProviderHolder.INSTANCE;
+    }
+
+    private RuntimeAdapterProvider() {
+    }
+
     public <T> Adapter<?> getJDBCAdapter(Class<T> entityClass) {
         Class<?> returnClass = entityClass.isPrimitive() ? Primitives.wrap(entityClass) : entityClass;
         String entityAdapterName = returnClass.getCanonicalName() + JDBCAdapter.class.getSimpleName();

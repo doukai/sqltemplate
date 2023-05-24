@@ -7,11 +7,11 @@ import jakarta.transaction.Transactional;
 
 public class Application {
 
-    private final TemplateProvider templateProvider = new RuntimeTemplateProvider();
+    private final TemplateProvider templateProvider = RuntimeTemplateProvider.getInstance();
 
     public static void main(String[] arg) {
         new Application().testInsert();
-//        new Application().testInsert();
+        new Application().testInsert();
     }
 
 
