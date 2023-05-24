@@ -3,14 +3,9 @@ package io.sqltemplate.transaction.agent;
 import io.sqltemplate.spi.transaction.JDBCTransactionManager;
 import io.sqltemplate.spi.transaction.R2DBCTransactionManager;
 import jakarta.transaction.Transactional;
-import net.bytebuddy.implementation.bind.annotation.Morph;
 import net.bytebuddy.implementation.bind.annotation.Origin;
-import net.bytebuddy.implementation.bind.annotation.Pipe;
 import net.bytebuddy.implementation.bind.annotation.RuntimeType;
-import net.bytebuddy.implementation.bind.annotation.Super;
 import net.bytebuddy.implementation.bind.annotation.SuperCall;
-import net.bytebuddy.implementation.bind.annotation.SuperMethod;
-import net.bytebuddy.implementation.bind.annotation.This;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -20,8 +15,7 @@ import java.util.concurrent.Callable;
 public class TransactionInterceptor {
 
     @RuntimeType
-    public static Object intercept(@This Object object, @SuperMethod Method superMethod, @Origin Method method, @SuperCall Callable<?> callable) {
-        System.out.println(method.getName());
+    public static Object intercept(@Origin Method method, @SuperCall Callable<?> callable) {
         Transactional transactional = method.getAnnotation(Transactional.class);
         if (method.getReturnType().isAssignableFrom(Mono.class)) {
             return Mono.usingWhen(

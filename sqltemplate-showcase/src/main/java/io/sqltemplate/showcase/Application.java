@@ -22,6 +22,5 @@ public class Application {
         long l2 = userTemplate.insertUser("Kelly Villarreal", "villarreal", "54368");
         long l3 = userTemplate.insertUser("Maliha England", "england", "68925");
         long l4 = userTemplate.insertUser("Neha Chambers", "chambers", "47502");
-
     }
 }
