@@ -10,6 +10,7 @@ repositories {
 }
 
 dependencies {
+    compile 'io.projectreactor:reactor-core:3.4.16'
     compile 'io.r2dbc:r2dbc-spi:1.0.0.RELEASE'
     compile 'jakarta.transaction:jakarta.transaction-api:2.0.1'
 

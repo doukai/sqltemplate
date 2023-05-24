@@ -2,6 +2,7 @@ package io.sqltemplate.core.jdbc;
 
 import com.google.common.base.CaseFormat;
 import io.sqltemplate.core.adapter.Adapter;
+import io.sqltemplate.spi.transaction.JDBCTransactionManager;
 import jakarta.transaction.InvalidTransactionException;
 import jakarta.transaction.NotSupportedException;
 import jakarta.transaction.TransactionRequiredException;
@@ -35,13 +36,14 @@ public class JDBCAdapter<T> extends Adapter<T> {
     }
 
     public T query() {
+        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
+        String tid = null;
         try {
-            ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
-            JDBCTransactionManager.begin(getTxType());
+            tid = JDBCTransactionManager.begin(getTxType());
             Connection connection = JDBCTransactionManager.getConnection();
             Statement statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(instance.render());
-            JDBCTransactionManager.commit();
+            JDBCTransactionManager.commit(tid);
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             int columnCount = resultSetMetaData.getColumnCount();
 
@@ -54,19 +56,20 @@ public class JDBCAdapter<T> extends Adapter<T> {
             }
             return null;
         } catch (SQLException | TransactionRequiredException | InvalidTransactionException | NotSupportedException e) {
-            JDBCTransactionManager.rollback(e, getRollbackOn(), getDontRollbackOn());
+            JDBCTransactionManager.rollback(tid, e, getRollbackOn(), getDontRollbackOn());
             throw new RuntimeException(e);
         }
     }
 
     public List<T> queryList() {
+        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
+        String tid = null;
         try {
-            ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
-            JDBCTransactionManager.begin(getTxType());
+            tid = JDBCTransactionManager.begin(getTxType());
             Connection connection = JDBCTransactionManager.getConnection();
             Statement statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(instance.render());
-            JDBCTransactionManager.commit();
+            JDBCTransactionManager.commit(tid);
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             int columnCount = resultSetMetaData.getColumnCount();
 
@@ -80,22 +83,24 @@ public class JDBCAdapter<T> extends Adapter<T> {
             }
             return mapList(list);
         } catch (SQLException | TransactionRequiredException | InvalidTransactionException | NotSupportedException e) {
-            JDBCTransactionManager.rollback(e, getRollbackOn(), getDontRollbackOn());
+            JDBCTransactionManager.rollback(tid, e, getRollbackOn(), getDontRollbackOn());
             throw new RuntimeException(e);
         }
     }
 
     public Long update() {
+        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
+        String tid = null;
         try {
-            ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
-            JDBCTransactionManager.begin(getTxType());
+            tid = JDBCTransactionManager.begin(getTxType());
+            System.out.println(tid);
             Connection connection = JDBCTransactionManager.getConnection();
             Statement statement = connection.createStatement();
             long updated = statement.executeUpdate(instance.render());
-            JDBCTransactionManager.commit();
+            JDBCTransactionManager.commit(tid);
             return updated;
         } catch (SQLException | TransactionRequiredException | InvalidTransactionException | NotSupportedException e) {
-            JDBCTransactionManager.rollback(e, getRollbackOn(), getDontRollbackOn());
+            JDBCTransactionManager.rollback(tid, e, getRollbackOn(), getDontRollbackOn());
             throw new RuntimeException(e);
         }
     }

@@ -1,4 +1,4 @@
-package io.sqltemplate.core.r2dbc;
+package io.sqltemplate.spi.connection;
 
 import io.r2dbc.spi.Connection;
 import reactor.core.publisher.Mono;
@@ -16,6 +16,6 @@ public interface R2DBCConnectionProvider {
         if (it.hasNext()) {
             return it.next();
         }
-        return null;
+        throw new RuntimeException("R2DBCConnectionProvider undefined");
     }
 }

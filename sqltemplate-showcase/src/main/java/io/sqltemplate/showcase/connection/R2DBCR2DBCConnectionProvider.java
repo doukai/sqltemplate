@@ -4,11 +4,12 @@ import com.google.auto.service.AutoService;
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactories;
 import io.r2dbc.spi.ConnectionFactoryOptions;
+import io.sqltemplate.spi.connection.R2DBCConnectionProvider;
 import org.mariadb.r2dbc.MariadbConnectionFactoryProvider;
 import reactor.core.publisher.Mono;
 
-@AutoService(io.sqltemplate.core.r2dbc.R2DBCConnectionProvider.class)
-public class R2DBCR2DBCConnectionProvider implements io.sqltemplate.core.r2dbc.R2DBCConnectionProvider {
+@AutoService(R2DBCConnectionProvider.class)
+public class R2DBCR2DBCConnectionProvider implements R2DBCConnectionProvider {
     @Override
     public Mono<Connection> createConnection() {
         ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()

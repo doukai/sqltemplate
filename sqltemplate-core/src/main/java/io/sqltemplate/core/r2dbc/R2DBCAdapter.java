@@ -5,6 +5,7 @@ import io.r2dbc.spi.Result;
 import io.r2dbc.spi.Row;
 import io.r2dbc.spi.RowMetadata;
 import io.sqltemplate.core.adapter.Adapter;
+import io.sqltemplate.spi.transaction.R2DBCTransactionManager;
 import jakarta.transaction.Transactional;
 import org.stringtemplate.v4.ST;
 import reactor.core.publisher.Flux;
@@ -37,12 +38,12 @@ public class R2DBCAdapter<T> extends Adapter<T> {
     public Mono<T> query() {
         ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
         return Mono.usingWhen(
-                R2DBCTransactionManager.begin(getTxType()).then(R2DBCTransactionManager.getConnection()),
-                connection -> Mono.from(connection.createStatement(instance.render()).execute()),
-                connection -> R2DBCTransactionManager.commit(),
-                (connection, throwable) -> R2DBCTransactionManager.rollback(throwable, getRollbackOn(), getDontRollbackOn()),
-                connection -> R2DBCTransactionManager.commit()
-        )
+                        R2DBCTransactionManager.begin(getTxType()),
+                        tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(connection.createStatement(instance.render()).execute())),
+                        R2DBCTransactionManager::commit,
+                        (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
+                        R2DBCTransactionManager::commit
+                )
                 .flatMap(this::getMapFormSegment)
                 .map(this::map);
     }
@@ -50,12 +51,12 @@ public class R2DBCAdapter<T> extends Adapter<T> {
     public Mono<List<T>> queryList() {
         ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
         return Flux.usingWhen(
-                R2DBCTransactionManager.begin(getTxType()).then(R2DBCTransactionManager.getConnection()),
-                connection -> Flux.from(connection.createStatement(instance.render()).execute()),
-                connection -> R2DBCTransactionManager.commit(),
-                (connection, throwable) -> R2DBCTransactionManager.rollback(throwable, getRollbackOn(), getDontRollbackOn()),
-                connection -> R2DBCTransactionManager.commit()
-        )
+                        R2DBCTransactionManager.begin(getTxType()),
+                        tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(connection.createStatement(instance.render()).execute())),
+                        R2DBCTransactionManager::commit,
+                        (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
+                        R2DBCTransactionManager::commit
+                )
                 .flatMap(this::getMapFormSegment)
                 .collectList()
                 .map(this::mapList);
@@ -64,12 +65,12 @@ public class R2DBCAdapter<T> extends Adapter<T> {
     public Flux<T> queryFlux() {
         ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
         return Flux.usingWhen(
-                R2DBCTransactionManager.begin(getTxType()).then(R2DBCTransactionManager.getConnection()),
-                connection -> Flux.from(connection.createStatement(instance.render()).execute()),
-                connection -> R2DBCTransactionManager.commit(),
-                (connection, throwable) -> R2DBCTransactionManager.rollback(throwable, getRollbackOn(), getDontRollbackOn()),
-                connection -> R2DBCTransactionManager.commit()
-        )
+                        R2DBCTransactionManager.begin(getTxType()),
+                        tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(connection.createStatement(instance.render()).execute())),
+                        R2DBCTransactionManager::commit,
+                        (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
+                        R2DBCTransactionManager::commit
+                )
                 .flatMap(this::getMapFormSegment)
                 .map(this::map);
     }
@@ -77,12 +78,12 @@ public class R2DBCAdapter<T> extends Adapter<T> {
     public Mono<Long> update() {
         ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
         return Mono.usingWhen(
-                R2DBCTransactionManager.begin(getTxType()).then(R2DBCTransactionManager.getConnection()),
-                connection -> Mono.from(connection.createStatement(instance.render()).execute()),
-                connection -> R2DBCTransactionManager.commit(),
-                (connection, throwable) -> R2DBCTransactionManager.rollback(throwable, getRollbackOn(), getDontRollbackOn()),
-                connection -> R2DBCTransactionManager.commit()
-        )
+                        R2DBCTransactionManager.begin(getTxType()),
+                        tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(connection.createStatement(instance.render()).execute())),
+                        R2DBCTransactionManager::commit,
+                        (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
+                        R2DBCTransactionManager::commit
+                )
                 .flatMap(this::getUpdateCountFromResult);
     }
 

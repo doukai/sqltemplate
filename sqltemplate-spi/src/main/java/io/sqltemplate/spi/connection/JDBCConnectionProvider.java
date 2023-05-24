@@ -1,4 +1,4 @@
-package io.sqltemplate.core.jdbc;
+package io.sqltemplate.spi.connection;
 
 import java.sql.Connection;
 import java.util.Iterator;
@@ -14,6 +14,6 @@ public interface JDBCConnectionProvider {
         if (it.hasNext()) {
             return it.next();
         }
-        return null;
+        throw new RuntimeException("JDBCConnectionProvider undefined");
     }
 }

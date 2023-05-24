@@ -6,3 +6,5 @@ include 'sqltemplate-showcase'
 include 'sqltemplate-runtime'
 include 'sqltemplate-active-record'
 include 'sqltemplate-gradle-plugin'
+include 'sqltemplate-transaction-agent'
+

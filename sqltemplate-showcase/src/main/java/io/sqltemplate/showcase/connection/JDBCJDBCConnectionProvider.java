@@ -3,12 +3,13 @@ package io.sqltemplate.showcase.connection;
 import com.google.auto.service.AutoService;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import io.sqltemplate.spi.connection.JDBCConnectionProvider;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
-@AutoService(io.sqltemplate.core.jdbc.JDBCConnectionProvider.class)
-public class JDBCJDBCConnectionProvider implements io.sqltemplate.core.jdbc.JDBCConnectionProvider {
+@AutoService(JDBCConnectionProvider.class)
+public class JDBCJDBCConnectionProvider implements JDBCConnectionProvider {
     @Override
     public Connection createConnection() {
         HikariConfig config = new HikariConfig();
