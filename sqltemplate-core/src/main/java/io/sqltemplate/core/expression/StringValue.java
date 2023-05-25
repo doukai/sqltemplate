@@ -29,6 +29,6 @@ public class StringValue implements Expression {
 
     @Override
     public String toString() {
-        return "'" + value + "'";
+        return (value.trim().startsWith("'") ? "" : "'") + value.trim() + (value.trim().endsWith("'") ? "" : "'");
     }
 }

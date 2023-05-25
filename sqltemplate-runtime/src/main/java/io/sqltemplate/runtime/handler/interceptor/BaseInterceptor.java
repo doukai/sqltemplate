@@ -6,6 +6,7 @@ import io.sqltemplate.core.r2dbc.R2DBCAdapter;
 import jakarta.transaction.Transactional;
 
 import java.util.AbstractMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -78,7 +79,7 @@ public abstract class BaseInterceptor {
                             return new AbstractMap.SimpleEntry<>(argumentName, args[index]);
                         }
                 )
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (x, y) -> y, LinkedHashMap::new));
     }
 
     public String getTemplateName() {

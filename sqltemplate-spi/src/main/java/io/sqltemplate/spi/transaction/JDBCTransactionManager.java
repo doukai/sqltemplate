@@ -88,13 +88,28 @@ public class JDBCTransactionManager {
 
     public static void commit(String id) throws SQLException {
         List<JDBCTransactionConnection> transactionConnectionList = getTransactionConnectionList();
-        JDBCTransactionConnection transactionConnection = getTransactionConnection();
+        JDBCTransactionConnection transactionConnection = transactionConnectionList.get(transactionConnectionList.size() - 1);
         if (transactionConnection.getConnection().getAutoCommit()) {
             transactionConnection.getConnection().close();
             transactionConnectionList.remove(transactionConnection);
         } else {
             if (transactionConnection.getId().equals(id)) {
                 transactionConnection.getConnection().commit();
+                transactionConnection.getConnection().close();
+                transactionConnectionList.remove(transactionConnection);
+            }
+        }
+    }
+
+    public static void rollback(String id) throws SQLException {
+        List<JDBCTransactionConnection> transactionConnectionList = getTransactionConnectionList();
+        JDBCTransactionConnection transactionConnection = transactionConnectionList.get(transactionConnectionList.size() - 1);
+        if (transactionConnection.getConnection().getAutoCommit()) {
+            transactionConnection.getConnection().close();
+            transactionConnectionList.remove(transactionConnection);
+        } else {
+            if (transactionConnection.getId().equals(id)) {
+                transactionConnection.getConnection().rollback();
                 transactionConnection.getConnection().close();
                 transactionConnectionList.remove(transactionConnection);
             }

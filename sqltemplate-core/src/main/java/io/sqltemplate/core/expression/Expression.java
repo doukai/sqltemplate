@@ -6,11 +6,9 @@ import java.time.LocalTime;
 
 public interface Expression {
 
-    static Expression of(Object object) {
+    static Object of(Object object) {
         if (object == null) {
             return new NullValue();
-        } else if (object instanceof Expression) {
-            return (Expression) object;
         } else if (object instanceof Number) {
             return new NumberValue((Number) object);
         } else if (object instanceof Enum) {
@@ -22,7 +20,7 @@ public interface Expression {
         } else if (object instanceof LocalDateTime) {
             return new StringValue((LocalDateTime) object);
         } else {
-            return new StringValue(object);
+            return object;
         }
     }
 }

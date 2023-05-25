@@ -14,6 +14,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import static jakarta.transaction.Transactional.TxType.REQUIRED;
+
 public class R2DBCTransactionManager {
 
     private static final String transactionConnectionListKey = "transactionConnectionList";
@@ -26,9 +28,9 @@ public class R2DBCTransactionManager {
                 .transformDeferredContextual(
                         (mono, contextView) ->
                                 Mono.justOrEmpty(
-                                        contextView.getOrEmpty(transactionConnectionListKey)
-                                                .map(connectionCounterList -> (List<R2DBCTransactionConnection>) connectionCounterList)
-                                )
+                                                contextView.getOrEmpty(transactionConnectionListKey)
+                                                        .map(connectionCounterList -> (List<R2DBCTransactionConnection>) connectionCounterList)
+                                        )
                                         .switchIfEmpty(
                                                 Mono.just(new ArrayList<R2DBCTransactionConnection>())
                                                         .flatMap(connectionCounterList ->
@@ -45,6 +47,10 @@ public class R2DBCTransactionManager {
 
     public static Mono<Connection> getConnection() {
         return getTransactionConnection().map(R2DBCTransactionConnection::getConnection);
+    }
+
+    public static Mono<String> begin() {
+        return begin(REQUIRED);
     }
 
     public static Mono<String> begin(Transactional.TxType txType) {
@@ -117,6 +123,25 @@ public class R2DBCTransactionManager {
                             } else {
                                 if (transactionConnection.getId().equals(id)) {
                                     return Mono.from(transactionConnection.getConnection().commitTransaction())
+                                            .then(Mono.from(transactionConnection.getConnection().close()))
+                                            .doOnNext(v -> transactionConnectionList.remove(transactionConnection));
+                                }
+                                return Mono.empty();
+                            }
+                        }
+                );
+    }
+
+    public static Mono<Void> rollback(String id) {
+        return getTransactionConnectionList()
+                .flatMap(transactionConnectionList -> {
+                            R2DBCTransactionConnection transactionConnection = transactionConnectionList.get(transactionConnectionList.size() - 1);
+                            if (transactionConnection.getConnection().isAutoCommit()) {
+                                return Mono.from(transactionConnection.getConnection().close())
+                                        .doOnNext(v -> transactionConnectionList.remove(transactionConnection));
+                            } else {
+                                if (transactionConnection.getId().equals(id)) {
+                                    return Mono.from(transactionConnection.getConnection().rollbackTransaction())
                                             .then(Mono.from(transactionConnection.getConnection().close()))
                                             .doOnNext(v -> transactionConnectionList.remove(transactionConnection));
                                 }

@@ -1,0 +1,3 @@
+testVar(_var1,_var2) ::= <<
+<_var1> <_var2> <_var1> <_var2> <_var1>
+>>

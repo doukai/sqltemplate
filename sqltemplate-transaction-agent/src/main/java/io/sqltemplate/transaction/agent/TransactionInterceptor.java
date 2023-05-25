@@ -29,7 +29,7 @@ public class TransactionInterceptor {
                     },
                     R2DBCTransactionManager::commit,
                     (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, transactional.rollbackOn(), transactional.dontRollbackOn()),
-                    R2DBCTransactionManager::commit
+                    R2DBCTransactionManager::rollback
             );
         } else if (method.getReturnType().isAssignableFrom(Flux.class)) {
             return Flux.usingWhen(
@@ -43,14 +43,13 @@ public class TransactionInterceptor {
                     },
                     R2DBCTransactionManager::commit,
                     (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, transactional.rollbackOn(), transactional.dontRollbackOn()),
-                    R2DBCTransactionManager::commit
+                    R2DBCTransactionManager::rollback
             );
         } else {
             String tid = null;
             try {
                 tid = JDBCTransactionManager.begin(transactional.value());
                 Object called = callable.call();
-                System.out.println(tid);
                 JDBCTransactionManager.commit(tid);
                 return called;
             } catch (Exception e) {

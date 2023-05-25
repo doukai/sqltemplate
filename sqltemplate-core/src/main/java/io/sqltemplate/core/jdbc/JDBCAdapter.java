@@ -10,6 +10,7 @@ import jakarta.transaction.Transactional;
 import org.stringtemplate.v4.ST;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -36,13 +37,16 @@ public class JDBCAdapter<T> extends Adapter<T> {
     }
 
     public T query() {
-        ST instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
+        Map.Entry<String, Map<Integer, Object>> instance = TEMPLATE_INSTANCE_UTIL.getInstance(getTemplateName(), getInstanceName(), getParams());
+        String sql = instance.getKey();
+        Map<Integer, Object> dbParams = instance.getValue();
         String tid = null;
         try {
             tid = JDBCTransactionManager.begin(getTxType());
             Connection connection = JDBCTransactionManager.getConnection();
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(instance.render());
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+
+            ResultSet resultSet = preparedStatement.executeQuery();
             JDBCTransactionManager.commit(tid);
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             int columnCount = resultSetMetaData.getColumnCount();
