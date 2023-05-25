@@ -4,7 +4,7 @@ import com.google.common.base.CaseFormat;
 import io.sqltemplate.active.record.model.conditional.Conditional;
 import io.sqltemplate.active.record.model.conditional.EQ;
 import io.sqltemplate.active.record.model.conditional.OR;
-import io.sqltemplate.core.expression.NullValue;
+import io.sqltemplate.active.record.model.expression.NullValue;
 import io.sqltemplate.active.record.model.join.JoinColumns;
 import io.sqltemplate.active.record.model.join.JoinTable;
 import io.sqltemplate.active.record.model.sort.DESC;

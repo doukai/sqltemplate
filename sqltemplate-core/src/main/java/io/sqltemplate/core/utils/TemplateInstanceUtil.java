@@ -1,6 +1,5 @@
 package io.sqltemplate.core.utils;
 
-import io.sqltemplate.core.expression.Expression;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.STGroup;
 import org.stringtemplate.v4.STGroupDir;
@@ -11,13 +10,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public enum TemplateInstanceUtil {
     TEMPLATE_INSTANCE_UTIL;
 
-    public Map.Entry<String, Map<Integer, Object>> getInstance(String templateName, String instanceName, Map<String, Object> paramsMap) {
+    public Map.Entry<String, List<Object>> getSQLWithParams(String templateName, String instanceName, Map<String, Object> paramsMap) {
         STGroup stGroup;
         ST instance;
         if (templateName.endsWith(".stg")) {
@@ -38,32 +35,21 @@ public enum TemplateInstanceUtil {
                 instance = stGroup.getInstanceOf(file + "/" + instanceName);
             }
         }
-        List<String> parameterNameList = new ArrayList<>();
-        ParameterRenderer parameterRenderer = new ParameterRenderer(parameterNameList);
-        stGroup.registerRenderer(Parameter.class, parameterRenderer);
-        String[] attributeKeys = instance.getAttributes().keySet().toArray(new String[]{});
-        if (paramsMap.keySet().stream().anyMatch(key -> instance.getAttributes().keySet().stream().noneMatch(attrName -> attrName.equals(key)))) {
-            Object[] params = paramsMap.values().toArray();
-            for (int index = 0; index < attributeKeys.length; index++) {
-                String key = attributeKeys[index];
-                if (key.startsWith("_")) {
-                    instance.add(key, new Parameter(key));
-                } else {
-                    instance.add(key, Expression.of(params[index]));
-                }
+        List<Object> attributeList = new ArrayList<>();
+        ObjectRenderer objectRenderer = new ObjectRenderer(attributeList);
+        stGroup.registerRenderer(Object.class, objectRenderer);
+        List<String> attributeKeyList = new ArrayList<>(instance.getAttributes().keySet());
+        if (paramsMap.keySet().stream().anyMatch(key -> attributeKeyList.stream().noneMatch(attrName -> attrName.equals(key)))) {
+            List<Object> params = new ArrayList<>(paramsMap.values());
+            for (int index = 0; index < attributeKeyList.size(); index++) {
+                String key = attributeKeyList.get(index);
+                instance.add(key, params.get(index));
             }
         } else {
-            for (String key : attributeKeys) {
-                if (key.startsWith("_")) {
-                    instance.add(key, new Parameter(key));
-                } else {
-                    instance.add(key, Expression.of(paramsMap.get(key)));
-                }
+            for (String key : attributeKeyList) {
+                instance.add(key, paramsMap.get(key));
             }
         }
-        Map<Integer, Object> dbParamsMap = IntStream.range(0, parameterNameList.size())
-                .mapToObj(index -> new AbstractMap.SimpleEntry<>(index, paramsMap.get(parameterNameList.get(index))))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        return new AbstractMap.SimpleEntry<>(instance.render(), dbParamsMap);
+        return new AbstractMap.SimpleEntry<>(instance.render(), attributeList);
     }
 }

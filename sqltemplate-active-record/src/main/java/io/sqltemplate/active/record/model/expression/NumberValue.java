@@ -1,4 +1,4 @@
-package io.sqltemplate.core.expression;
+package io.sqltemplate.active.record.model.expression;
 
 public class NumberValue implements Expression {
 

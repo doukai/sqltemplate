@@ -1,15 +1,15 @@
 getUser(id) ::= <<
-SELECT u.id, u.name, u.login, u.password FROM user u WHERE u.id = <id>
+SELECT u.id, u.name, u.login, u.password FROM user u WHERE u.id = <id; format="?">
 >>
 
 getUserListByName(name) ::= <<
-SELECT u.id, u.name, u.login, u.password FROM user u WHERE u.name LIKE <name>
+SELECT u.id, u.name, u.login, u.password FROM user u WHERE u.name LIKE <name; format="?">
 >>
 
 updateUserNameById(id,name) ::= <<
-UPDATE user u SET u.name = <name> WHERE u.id = <id>
+UPDATE user u SET u.name = <name; format="?"> WHERE u.id = <id; format="?">
 >>
 
 insertUser(name,login,password) ::= <<
-INSERT INTO user (name, login, password) VALUES (<name>, <login>, <password>)
+INSERT INTO user (name, login, password) VALUES (<name; format="?">, <login; format="?">, <password; format="?">)
 >>
