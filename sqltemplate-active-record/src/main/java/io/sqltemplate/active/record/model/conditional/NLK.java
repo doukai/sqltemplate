@@ -1,6 +1,6 @@
 package io.sqltemplate.active.record.model.conditional;
 
-import io.sqltemplate.active.record.model.expression.Expression;
+import io.sqltemplate.core.expression.Expression;
 
 import static io.sqltemplate.active.record.TableRecord.DEFAULT_ALIAS;
 

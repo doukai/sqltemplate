@@ -1,5 +1,6 @@
 package io.sqltemplate.core.utils;
 
+import io.sqltemplate.core.expression.Parameter;
 import org.stringtemplate.v4.AttributeRenderer;
 
 import java.util.List;
@@ -15,6 +16,10 @@ public class ObjectRenderer implements AttributeRenderer<Object> {
 
     @Override
     public String toString(Object value, String formatString, Locale locale) {
+        if (value instanceof Parameter) {
+            attributeNameList.add(((Parameter) value).getValue());
+            return "?";
+        }
         if (formatString != null) {
             if (formatString.equals("?")) {
                 attributeNameList.add(value);

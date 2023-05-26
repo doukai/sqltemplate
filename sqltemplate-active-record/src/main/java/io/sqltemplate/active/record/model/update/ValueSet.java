@@ -1,7 +1,7 @@
 package io.sqltemplate.active.record.model.update;
 
 import com.google.common.base.CaseFormat;
-import io.sqltemplate.active.record.model.expression.Expression;
+import io.sqltemplate.core.expression.Expression;
 
 import static io.sqltemplate.active.record.TableRecord.DEFAULT_ALIAS;
 

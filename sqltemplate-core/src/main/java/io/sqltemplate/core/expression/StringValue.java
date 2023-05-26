@@ -1,4 +1,4 @@
-package io.sqltemplate.active.record.model.expression;
+package io.sqltemplate.core.expression;
 
 import java.sql.Date;
 import java.sql.Time;

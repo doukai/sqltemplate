@@ -15,7 +15,7 @@ import io.sqltemplate.active.record.model.conditional.NIN;
 import io.sqltemplate.active.record.model.conditional.NLK;
 import io.sqltemplate.active.record.model.conditional.NNIL;
 import io.sqltemplate.active.record.model.conditional.OR;
-import io.sqltemplate.active.record.model.expression.Expression;
+import io.sqltemplate.core.expression.Expression;
 import io.sqltemplate.active.record.model.join.JoinColumns;
 import io.sqltemplate.active.record.model.join.JoinTable;
 import io.sqltemplate.active.record.model.sort.ASC;
@@ -34,7 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.sqltemplate.active.record.model.expression.Function.LAST_INSERT_ID;
+import static io.sqltemplate.core.expression.Function.LAST_INSERT_ID;
 import static io.sqltemplate.active.record.model.update.ValueSet.set;
 
 public class TableRecord<T> {
