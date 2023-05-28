@@ -10,6 +10,6 @@ updateUserNameById(id,name) ::= <<
 UPDATE user u SET u.name = <name; format="?"> WHERE u.id = <id; format="?">
 >>
 
-insertUser(name,login,password) ::= <<
-INSERT INTO user (name, login, password) VALUES (<name; format="?">, <login; format="?">, <password; format="?">)
+insertUser(name,login,password,age) ::= <<
+INSERT INTO user (name, login, password, age) VALUES (<name; format="?">, <login; format="?">, <password; format="?">, <age; format="?">)
 >>

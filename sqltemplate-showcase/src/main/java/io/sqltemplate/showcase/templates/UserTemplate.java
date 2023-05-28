@@ -17,7 +17,7 @@ public interface UserTemplate {
     List<User> getUserListByName(String name);
 
     @Instance(type = InstanceType.UPDATE)
-    long insertUser(String name, String login, String password);
+    long insertUser(String name, String login, String password, int age);
 
     @Instance(type = InstanceType.UPDATE)
     long updateUserNameById(String id, String name);
@@ -32,7 +32,7 @@ public interface UserTemplate {
     Flux<User> getUserByNameFlux(String name);
 
     @Instance(value = "insertUser", type = InstanceType.UPDATE)
-    Mono<Long> insertUserMono(String name, String login, String password);
+    Mono<Long> insertUserMono(String name, String login, String password, int age);
 
     @Instance(value = "updateUserNameById", type = InstanceType.UPDATE)
     Mono<Long> updateUserNameByIdMono(String id, String name);
