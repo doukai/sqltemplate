@@ -1,9 +1,9 @@
 getUser(id) ::= <<
-SELECT u.id, u.name, u.login, u.password FROM user u WHERE u.id = <id; format="?">
+SELECT u.id, u.name, u.login, u.password, u.age FROM user u WHERE u.id = <id; format="?">
 >>
 
 getUserListByName(name) ::= <<
-SELECT u.id, u.name, u.login, u.password FROM user u WHERE u.name LIKE <name; format="?">
+SELECT u.id, u.name, u.login, u.password, u.age FROM user u WHERE u.name LIKE <name; format="?">
 >>
 
 updateUserNameById(id,name) ::= <<

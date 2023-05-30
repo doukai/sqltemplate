@@ -5,7 +5,6 @@ import org.stringtemplate.v4.STGroup;
 import org.stringtemplate.v4.STGroupDir;
 import org.stringtemplate.v4.STGroupFile;
 
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -14,7 +13,7 @@ import java.util.Map;
 public enum TemplateInstanceUtil {
     TEMPLATE_INSTANCE_UTIL;
 
-    public Map.Entry<String, List<Object>> getSQLWithParams(String templateName, String instanceName, Map<String, Object> paramsMap) {
+    public String getSQLWithParams(String templateName, String instanceName, Map<String, Object> paramsMap) {
         STGroup stGroup;
         ST instance;
         if (templateName.endsWith(".stg")) {
@@ -35,9 +34,6 @@ public enum TemplateInstanceUtil {
                 instance = stGroup.getInstanceOf(file + "/" + instanceName);
             }
         }
-        List<Object> attributeList = new ArrayList<>();
-        ObjectRenderer objectRenderer = new ObjectRenderer(attributeList);
-        stGroup.registerRenderer(Object.class, objectRenderer);
         List<String> attributeKeyList = new ArrayList<>(instance.getAttributes().keySet());
         if (paramsMap.keySet().stream().anyMatch(key -> attributeKeyList.stream().noneMatch(attrName -> attrName.equals(key)))) {
             List<Object> params = new ArrayList<>(paramsMap.values());
@@ -50,6 +46,6 @@ public enum TemplateInstanceUtil {
                 instance.add(key, paramsMap.get(key));
             }
         }
-        return new AbstractMap.SimpleEntry<>(instance.render(), attributeList);
+        return instance.render();
     }
 }

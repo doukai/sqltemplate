@@ -1,10 +1,8 @@
 package io.sqltemplate.core.jdbc;
 
-import io.sqltemplate.core.r2dbc.R2DBCAdapter;
-
 import java.util.Map;
 
-public class DefaultJDBCAdapter<T> extends R2DBCAdapter<T> {
+public class DefaultJDBCAdapter<T> extends JDBCAdapter<T> {
 
     @SuppressWarnings("unchecked")
     @Override

@@ -36,55 +36,47 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
     }
 
     public Mono<T> query() {
-        Map.Entry<String, List<Object>> sqlWithParams = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
-        String sql = sqlWithParams.getKey();
-        List<Object> params = sqlWithParams.getValue();
+        String sql = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
         return Mono.usingWhen(
-                        R2DBCTransactionManager.begin(getTxType()),
-                        tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(setParams(connection.createStatement(sql), params).execute())),
-                        R2DBCTransactionManager::commit,
-                        (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
-                        R2DBCTransactionManager::commit
-                ).flatMap(this::getMapFormSegment)
+                R2DBCTransactionManager.begin(getTxType()),
+                tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(setParams(connection.createStatement(sql), getParams()).execute())),
+                R2DBCTransactionManager::commit,
+                (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
+                R2DBCTransactionManager::commit
+        ).flatMap(this::getMapFormSegment)
                 .map(this::map);
     }
 
     public Mono<List<T>> queryList() {
-        Map.Entry<String, List<Object>> sqlWithParams = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
-        String sql = sqlWithParams.getKey();
-        List<Object> params = sqlWithParams.getValue();
+        String sql = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
         return Flux.usingWhen(
-                        R2DBCTransactionManager.begin(getTxType()),
-                        tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(setParams(connection.createStatement(sql), params).execute())),
-                        R2DBCTransactionManager::commit,
-                        (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
-                        R2DBCTransactionManager::commit
-                ).flatMap(this::getMapFormSegment)
+                R2DBCTransactionManager.begin(getTxType()),
+                tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(setParams(connection.createStatement(sql), getParams()).execute())),
+                R2DBCTransactionManager::commit,
+                (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
+                R2DBCTransactionManager::commit
+        ).flatMap(this::getMapFormSegment)
                 .collectList()
                 .map(this::mapList);
     }
 
     public Flux<T> queryFlux() {
-        Map.Entry<String, List<Object>> sqlWithParams = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
-        String sql = sqlWithParams.getKey();
-        List<Object> params = sqlWithParams.getValue();
+        String sql = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
         return Flux.usingWhen(
-                        R2DBCTransactionManager.begin(getTxType()),
-                        tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(setParams(connection.createStatement(sql), params).execute())),
-                        R2DBCTransactionManager::commit,
-                        (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
-                        R2DBCTransactionManager::commit
-                ).flatMap(this::getMapFormSegment)
+                R2DBCTransactionManager.begin(getTxType()),
+                tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(setParams(connection.createStatement(sql), getParams()).execute())),
+                R2DBCTransactionManager::commit,
+                (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
+                R2DBCTransactionManager::commit
+        ).flatMap(this::getMapFormSegment)
                 .map(this::map);
     }
 
     public Mono<Long> update() {
-        Map.Entry<String, List<Object>> sqlWithParams = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
-        String sql = sqlWithParams.getKey();
-        List<Object> params = sqlWithParams.getValue();
+        String sql = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
         return Mono.usingWhen(
                 R2DBCTransactionManager.begin(getTxType()),
-                tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(setParams(connection.createStatement(sql), params).execute())),
+                tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(setParams(connection.createStatement(sql), getParams()).execute())),
                 R2DBCTransactionManager::commit,
                 (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
                 R2DBCTransactionManager::commit
@@ -126,13 +118,12 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
         }
     }
 
-    protected Statement setParams(Statement statement, List<Object> params) {
-        for (int i = 0; i < params.size(); i++) {
-            Object param = params.get(i);
-            if (param == null) {
-                statement.bindNull(i, Object.class);
+    protected Statement setParams(Statement statement, Map<String, Object> params) {
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            if (entry.getValue() == null) {
+                statement.bindNull(entry.getKey(), Object.class);
             } else {
-                statement.bind(i, param);
+                statement.bind(entry.getKey(), entry.getValue());
             }
         }
         return statement;

@@ -36,15 +36,13 @@ public abstract class JDBCAdapter<T> extends Adapter<T> {
     }
 
     public T query() {
-        Map.Entry<String, List<Object>> sqlWithParams = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
-        String sql = sqlWithParams.getKey();
-        List<Object> params = sqlWithParams.getValue();
+        String sql = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
         String tid = null;
         try {
             tid = JDBCTransactionManager.begin(getTxType());
             Connection connection = JDBCTransactionManager.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(sql);
-            ResultSet resultSet = setParams(preparedStatement, params).executeQuery();
+            NamedParameterPreparedStatement namedParameterPreparedStatement = NamedParameterPreparedStatement.createNamedParameterPreparedStatement(connection, sql);
+            ResultSet resultSet = setParams(namedParameterPreparedStatement, getParams()).executeQuery();
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             int columnCount = resultSetMetaData.getColumnCount();
 
@@ -65,15 +63,13 @@ public abstract class JDBCAdapter<T> extends Adapter<T> {
     }
 
     public List<T> queryList() {
-        Map.Entry<String, List<Object>> sqlWithParams = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
-        String sql = sqlWithParams.getKey();
-        List<Object> params = sqlWithParams.getValue();
+        String sql = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
         String tid = null;
         try {
             tid = JDBCTransactionManager.begin(getTxType());
             Connection connection = JDBCTransactionManager.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(sql);
-            ResultSet resultSet = setParams(preparedStatement, params).executeQuery();
+            NamedParameterPreparedStatement namedParameterPreparedStatement = NamedParameterPreparedStatement.createNamedParameterPreparedStatement(connection, sql);
+            ResultSet resultSet = setParams(namedParameterPreparedStatement, getParams()).executeQuery();
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             int columnCount = resultSetMetaData.getColumnCount();
 
@@ -95,15 +91,13 @@ public abstract class JDBCAdapter<T> extends Adapter<T> {
     }
 
     public Long update() {
-        Map.Entry<String, List<Object>> sqlWithParams = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
-        String sql = sqlWithParams.getKey();
-        List<Object> params = sqlWithParams.getValue();
+        String sql = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
         String tid = null;
         try {
             tid = JDBCTransactionManager.begin(getTxType());
             Connection connection = JDBCTransactionManager.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(sql);
-            long updated = setParams(preparedStatement, params).executeUpdate();
+            NamedParameterPreparedStatement namedParameterPreparedStatement = NamedParameterPreparedStatement.createNamedParameterPreparedStatement(connection, sql);
+            long updated = setParams(namedParameterPreparedStatement, getParams()).executeUpdate();
             JDBCTransactionManager.commit(tid);
             return updated;
         } catch (SQLException | TransactionRequiredException | InvalidTransactionException | NotSupportedException e) {
@@ -112,35 +106,34 @@ public abstract class JDBCAdapter<T> extends Adapter<T> {
         }
     }
 
-    protected PreparedStatement setParams(PreparedStatement preparedStatement, List<Object> params) throws SQLException {
-        for (int i = 1; i <= params.size(); i++) {
-            Object param = params.get(i - 1);
-            if (param == null) {
-                preparedStatement.setNull(i, 0);
-            } else if (param instanceof Integer) {
-                preparedStatement.setInt(i, (Integer) param);
-            } else if (param instanceof Long) {
-                preparedStatement.setLong(i, (Long) param);
-            } else if (param instanceof Short) {
-                preparedStatement.setShort(i, (Short) param);
-            } else if (param instanceof Double) {
-                preparedStatement.setDouble(i, (Double) param);
-            } else if (param instanceof Float) {
-                preparedStatement.setFloat(i, (Float) param);
-            } else if (param instanceof BigDecimal) {
-                preparedStatement.setBigDecimal(i, (BigDecimal) param);
-            } else if (param instanceof String) {
-                preparedStatement.setString(i, (String) param);
-            } else if (param instanceof LocalDate) {
-                preparedStatement.setDate(i, Date.valueOf((LocalDate) param));
-            } else if (param instanceof LocalTime) {
-                preparedStatement.setTime(i, Time.valueOf((LocalTime) param));
-            } else if (param instanceof LocalDateTime) {
-                preparedStatement.setTimestamp(i, Timestamp.valueOf((LocalDateTime) param));
-            } else if (param instanceof Byte) {
-                preparedStatement.setByte(i, (Byte) param);
+    protected PreparedStatement setParams(NamedParameterPreparedStatement preparedStatement, Map<String, Object> params) throws SQLException {
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            if (entry.getValue() == null) {
+                preparedStatement.setNull(entry.getKey(), 0);
+            } else if (entry.getValue() instanceof Integer) {
+                preparedStatement.setInt(entry.getKey(), (Integer) entry.getValue());
+            } else if (entry.getValue() instanceof Long) {
+                preparedStatement.setLong(entry.getKey(), (Long) entry.getValue());
+            } else if (entry.getValue() instanceof Short) {
+                preparedStatement.setShort(entry.getKey(), (Short) entry.getValue());
+            } else if (entry.getValue() instanceof Double) {
+                preparedStatement.setDouble(entry.getKey(), (Double) entry.getValue());
+            } else if (entry.getValue() instanceof Float) {
+                preparedStatement.setFloat(entry.getKey(), (Float) entry.getValue());
+            } else if (entry.getValue() instanceof BigDecimal) {
+                preparedStatement.setBigDecimal(entry.getKey(), (BigDecimal) entry.getValue());
+            } else if (entry.getValue() instanceof String) {
+                preparedStatement.setString(entry.getKey(), (String) entry.getValue());
+            } else if (entry.getValue() instanceof LocalDate) {
+                preparedStatement.setDate(entry.getKey(), Date.valueOf((LocalDate) entry.getValue()));
+            } else if (entry.getValue() instanceof LocalTime) {
+                preparedStatement.setTime(entry.getKey(), Time.valueOf((LocalTime) entry.getValue()));
+            } else if (entry.getValue() instanceof LocalDateTime) {
+                preparedStatement.setTimestamp(entry.getKey(), Timestamp.valueOf((LocalDateTime) entry.getValue()));
+            } else if (entry.getValue() instanceof Byte) {
+                preparedStatement.setByte(entry.getKey(), (Byte) entry.getValue());
             } else {
-                preparedStatement.setObject(i, param);
+                preparedStatement.setObject(entry.getKey(), entry.getValue());
             }
         }
         return preparedStatement;
