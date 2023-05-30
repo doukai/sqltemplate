@@ -28,21 +28,21 @@ public class Record<T> extends TableRecord<T> {
 
     @SuppressWarnings("unchecked")
     public <E> E getOne(String tableName) {
-        Record<E> record = (Record<E>) Objects.requireNonNull(recordIndex).getRecordSupplier(tableName).get();
+        Record<E> record = (Record<E>) recordIndex.getRecordSupplier(tableName).get();
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
         return where(record).on(joinColumns).first();
     }
 
     @SuppressWarnings("unchecked")
     public <E> List<E> getMany(String tableName) {
-        Record<E> record = (Record<E>) Objects.requireNonNull(recordIndex).getRecordSupplier(tableName).get();
+        Record<E> record = (Record<E>) recordIndex.getRecordSupplier(tableName).get();
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
         return where(record).on(joinColumns).list();
     }
 
     @SuppressWarnings("unchecked")
     public <E> List<E> getManyByJoin(String tableName) {
-        Record<E> record = (Record<E>) Objects.requireNonNull(recordIndex).getRecordSupplier(tableName).get();
+        Record<E> record = (Record<E>) recordIndex.getRecordSupplier(tableName).get();
         JoinTable joinTable = joinTableMap.get(getTableName()).get(tableName);
         return where(record).on(joinTable).list();
     }
@@ -54,7 +54,7 @@ public class Record<T> extends TableRecord<T> {
 
     @SuppressWarnings("unchecked")
     public <E> List<E> addMany(String tableName, Record<E>... entityRecords) {
-        Record<E> record = (Record<E>) Objects.requireNonNull(recordIndex).getRecordSupplier(tableName).get();
+        Record<E> record = (Record<E>) recordIndex.getRecordSupplier(tableName).get();
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
         where(record, getKeyEQValues(entityRecords))
                 .updateAll(joinColumns.getJoinColumns().stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))).toArray(ValueSet[]::new));
@@ -66,7 +66,7 @@ public class Record<T> extends TableRecord<T> {
         JoinTable joinTable = joinTableMap.get(getTableName()).get(tableName);
         List<Record<?>> joinRecords = Arrays.stream(entityRecords)
                 .map(entityRecord ->
-                        (Record<?>) Objects.requireNonNull(recordIndex).getRecordSupplier(joinTable.getName()).get().mapToEntity(
+                        (Record<?>) recordIndex.getRecordSupplier(joinTable.getName()).get().mapToEntity(
                                 Stream.concat(
                                         joinTable.getJoinColumns().stream()
                                                 .map(joinColumn -> new AbstractMap.SimpleEntry<>(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, joinColumn.getReferencedColumnName()), getValue(joinColumn.getName()))),
@@ -87,7 +87,7 @@ public class Record<T> extends TableRecord<T> {
 
     @SuppressWarnings("unchecked")
     public <E> List<E> removeMany(String tableName, Record<E>... entityRecords) {
-        Record<E> record = (Record<E>) Objects.requireNonNull(recordIndex).getRecordSupplier(tableName).get();
+        Record<E> record = (Record<E>) recordIndex.getRecordSupplier(tableName).get();
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
         where(record, getKeyEQValues(entityRecords))
                 .updateAll(joinColumns.getJoinColumns().stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), new NullValue())).toArray(ValueSet[]::new));
@@ -97,7 +97,7 @@ public class Record<T> extends TableRecord<T> {
     @SuppressWarnings("unchecked")
     public <E> long removeManyByJoin(String tableName, Record<E>... entityRecords) {
         JoinTable joinTable = joinTableMap.get(getTableName()).get(tableName);
-        Record<?> joinRecord = (Record<?>) Objects.requireNonNull(recordIndex).getRecordSupplier(joinTable.getName()).get();
+        Record<?> joinRecord = (Record<?>) recordIndex.getRecordSupplier(joinTable.getName()).get();
         return where(
                 joinRecord,
                 OR.or(Arrays.stream(entityRecords)

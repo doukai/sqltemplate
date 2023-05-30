@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 
 import static io.sqltemplate.core.utils.TemplateInstanceUtil.TEMPLATE_INSTANCE_UTIL;
 
-public class R2DBCAdapter<T> extends Adapter<T> {
+public abstract class R2DBCAdapter<T> extends Adapter<T> {
 
     public R2DBCAdapter() {
     }
@@ -40,12 +40,12 @@ public class R2DBCAdapter<T> extends Adapter<T> {
         String sql = sqlWithParams.getKey();
         List<Object> params = sqlWithParams.getValue();
         return Mono.usingWhen(
-                R2DBCTransactionManager.begin(getTxType()),
-                tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(setParams(connection.createStatement(sql), params).execute())),
-                R2DBCTransactionManager::commit,
-                (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
-                R2DBCTransactionManager::commit
-        ).flatMap(this::getMapFormSegment)
+                        R2DBCTransactionManager.begin(getTxType()),
+                        tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(setParams(connection.createStatement(sql), params).execute())),
+                        R2DBCTransactionManager::commit,
+                        (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
+                        R2DBCTransactionManager::commit
+                ).flatMap(this::getMapFormSegment)
                 .map(this::map);
     }
 
@@ -54,12 +54,12 @@ public class R2DBCAdapter<T> extends Adapter<T> {
         String sql = sqlWithParams.getKey();
         List<Object> params = sqlWithParams.getValue();
         return Flux.usingWhen(
-                R2DBCTransactionManager.begin(getTxType()),
-                tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(setParams(connection.createStatement(sql), params).execute())),
-                R2DBCTransactionManager::commit,
-                (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
-                R2DBCTransactionManager::commit
-        ).flatMap(this::getMapFormSegment)
+                        R2DBCTransactionManager.begin(getTxType()),
+                        tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(setParams(connection.createStatement(sql), params).execute())),
+                        R2DBCTransactionManager::commit,
+                        (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
+                        R2DBCTransactionManager::commit
+                ).flatMap(this::getMapFormSegment)
                 .collectList()
                 .map(this::mapList);
     }
@@ -69,12 +69,12 @@ public class R2DBCAdapter<T> extends Adapter<T> {
         String sql = sqlWithParams.getKey();
         List<Object> params = sqlWithParams.getValue();
         return Flux.usingWhen(
-                R2DBCTransactionManager.begin(getTxType()),
-                tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(setParams(connection.createStatement(sql), params).execute())),
-                R2DBCTransactionManager::commit,
-                (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
-                R2DBCTransactionManager::commit
-        ).flatMap(this::getMapFormSegment)
+                        R2DBCTransactionManager.begin(getTxType()),
+                        tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(setParams(connection.createStatement(sql), params).execute())),
+                        R2DBCTransactionManager::commit,
+                        (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
+                        R2DBCTransactionManager::commit
+                ).flatMap(this::getMapFormSegment)
                 .map(this::map);
     }
 

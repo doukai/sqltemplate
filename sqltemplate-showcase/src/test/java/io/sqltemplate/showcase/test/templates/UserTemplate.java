@@ -1,6 +1,6 @@
-package io.sqltemplate.showcase.templates;
+package io.sqltemplate.showcase.test.templates;
 
-import io.sqltemplate.showcase.dto.User;
+import io.sqltemplate.showcase.test.dto.User;
 import io.sqltemplate.spi.annotation.Instance;
 import io.sqltemplate.spi.annotation.InstanceType;
 import io.sqltemplate.spi.annotation.Template;

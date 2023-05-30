@@ -29,21 +29,21 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     @SuppressWarnings("unchecked")
     public <E> Mono<E> getOne(String tableName) {
-        ReactiveRecord<E> record = (ReactiveRecord<E>) Objects.requireNonNull(recordIndex).getRecordSupplier(tableName).get();
+        ReactiveRecord<E> record = (ReactiveRecord<E>) recordIndex.getRecordSupplier(tableName).get();
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
         return where(record).on(joinColumns).first();
     }
 
     @SuppressWarnings("unchecked")
     public <E> Mono<List<E>> getMany(String tableName) {
-        ReactiveRecord<E> record = (ReactiveRecord<E>) Objects.requireNonNull(recordIndex).getRecordSupplier(tableName).get();
+        ReactiveRecord<E> record = (ReactiveRecord<E>) recordIndex.getRecordSupplier(tableName).get();
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
         return where(record).on(joinColumns).list();
     }
 
     @SuppressWarnings("unchecked")
     public <E> Mono<List<E>> getManyByJoin(String tableName) {
-        ReactiveRecord<E> record = (ReactiveRecord<E>) Objects.requireNonNull(recordIndex).getRecordSupplier(tableName).get();
+        ReactiveRecord<E> record = (ReactiveRecord<E>) recordIndex.getRecordSupplier(tableName).get();
         JoinTable joinTable = joinTableMap.get(getTableName()).get(tableName);
         return where(record).on(joinTable).list();
     }
@@ -55,7 +55,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     @SuppressWarnings("unchecked")
     public <E> Mono<List<E>> addMany(String tableName, ReactiveRecord<E>... entityRecords) {
-        ReactiveRecord<E> record = (ReactiveRecord<E>) Objects.requireNonNull(recordIndex).getRecordSupplier(tableName).get();
+        ReactiveRecord<E> record = (ReactiveRecord<E>) recordIndex.getRecordSupplier(tableName).get();
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
         return where(record, getKeyEQValues(entityRecords))
                 .updateAll(joinColumns.getJoinColumns().stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))).toArray(ValueSet[]::new))
@@ -67,7 +67,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
         JoinTable joinTable = joinTableMap.get(getTableName()).get(tableName);
         List<ReactiveRecord<?>> joinRecords = Arrays.stream(entityRecords)
                 .map(entityRecord ->
-                        (ReactiveRecord<?>) Objects.requireNonNull(recordIndex).getRecordSupplier(joinTable.getName()).get().mapToEntity(
+                        (ReactiveRecord<?>) recordIndex.getRecordSupplier(joinTable.getName()).get().mapToEntity(
                                 Stream.concat(
                                         joinTable.getJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, joinColumn.getReferencedColumnName()), getValue(joinColumn.getName()))),
                                         joinTable.getInverseJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, joinColumn.getReferencedColumnName()), entityRecord.getValue(joinColumn.getName())))
@@ -86,7 +86,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     @SuppressWarnings("unchecked")
     public <E> Mono<List<E>> removeMany(String tableName, ReactiveRecord<E>... entityRecords) {
-        ReactiveRecord<E> record = (ReactiveRecord<E>) Objects.requireNonNull(recordIndex).getRecordSupplier(tableName).get();
+        ReactiveRecord<E> record = (ReactiveRecord<E>) recordIndex.getRecordSupplier(tableName).get();
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
         return where(record, getKeyEQValues(entityRecords))
                 .updateAll(joinColumns.getJoinColumns().stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), new NullValue())).toArray(ValueSet[]::new))
@@ -95,7 +95,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     public <E> Mono<Long> removeManyByJoin(String tableName, ReactiveRecord<E>... entityRecords) {
         JoinTable joinTable = joinTableMap.get(getTableName()).get(tableName);
-        ReactiveRecord<?> joinRecord = (ReactiveRecord<?>) Objects.requireNonNull(recordIndex).getRecordSupplier(joinTable.getName()).get();
+        ReactiveRecord<?> joinRecord = (ReactiveRecord<?>) recordIndex.getRecordSupplier(joinTable.getName()).get();
         return where(joinRecord,
                 OR.or(Arrays.stream(entityRecords)
                         .flatMap(entityRecord ->

@@ -91,6 +91,7 @@ public class RuntimeAdapterProvider {
         Class<?> adapterClass = reactive ? R2DBCAdapter.class : JDBCAdapter.class;
         String entityAdapterName = entityClass.getCanonicalName() + adapterClass.getSimpleName();
         CtClass entityAdapter = classPool.makeClass(entityAdapterName, classPool.get(adapterClass.getCanonicalName()));
+
         CtMethod mapMethod = CtNewMethod.make(buildMapMethod(entityClass).toString(), entityAdapter);
         entityAdapter.addMethod(mapMethod);
         return (Class<? extends Adapter<?>>) entityAdapter.toClass();
@@ -101,7 +102,7 @@ public class RuntimeAdapterProvider {
 //                .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(Map.class, "result")
-                .returns(entityClass);
+                .returns(Object.class);
         TypeName returnTypeName = TypeName.get(entityClass);
         if (returnTypeName instanceof ParameterizedTypeName) {
             returnTypeName = ((ParameterizedTypeName) returnTypeName).rawType;

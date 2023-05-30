@@ -14,6 +14,6 @@ public interface RecordIndex {
         if (it.hasNext()) {
             return it.next();
         }
-        return null;
+        throw new RuntimeException("RecordIndex undefined");
     }
 }

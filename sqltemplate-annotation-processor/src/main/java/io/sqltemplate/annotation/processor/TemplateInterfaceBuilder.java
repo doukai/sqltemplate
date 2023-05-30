@@ -2,8 +2,8 @@ package io.sqltemplate.annotation.processor;
 
 import com.google.common.base.CaseFormat;
 import com.squareup.javapoet.*;
-import io.sqltemplate.core.jdbc.JDBCAdapter;
-import io.sqltemplate.core.r2dbc.R2DBCAdapter;
+import io.sqltemplate.core.jdbc.DefaultJDBCAdapter;
+import io.sqltemplate.core.r2dbc.DefaultR2DBCAdapter;
 import io.sqltemplate.spi.annotation.Instance;
 import io.sqltemplate.spi.annotation.InstanceType;
 import io.sqltemplate.spi.annotation.Param;
@@ -134,7 +134,7 @@ public class TemplateInterfaceBuilder {
             if (type.equals(InstanceType.QUERY)) {
                 returnBuilder = CodeBlock.builder()
                         .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L) {\n",
-                                ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), TypeName.get(returnType)),
+                                ParameterizedTypeName.get(ClassName.get(DefaultJDBCAdapter.class), TypeName.get(returnType)),
                                 templateName,
                                 instanceName,
                                 ClassName.get(Transactional.TxType.class),
@@ -157,7 +157,7 @@ public class TemplateInterfaceBuilder {
             } else {
                 returnBuilder = CodeBlock.builder()
                         .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L).update();\n",
-                                ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), returnType.getKind().isPrimitive() ? TypeName.get(returnType).box() : TypeName.get(returnType)),
+                                ParameterizedTypeName.get(ClassName.get(DefaultJDBCAdapter.class), returnType.getKind().isPrimitive() ? TypeName.get(returnType).box() : TypeName.get(returnType)),
                                 templateName,
                                 instanceName,
                                 ClassName.get(Transactional.TxType.class),
@@ -177,7 +177,7 @@ public class TemplateInterfaceBuilder {
                 if (type.equals(InstanceType.QUERY)) {
                     returnBuilder = CodeBlock.builder()
                             .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L) {\n",
-                                    ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeElement)),
+                                    ParameterizedTypeName.get(ClassName.get(DefaultJDBCAdapter.class), ClassName.get(returnTypeElement)),
                                     templateName,
                                     instanceName,
                                     ClassName.get(Transactional.TxType.class),
@@ -200,7 +200,7 @@ public class TemplateInterfaceBuilder {
                 } else {
                     returnBuilder = CodeBlock.builder()
                             .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L).update();\n",
-                                    ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeElement)),
+                                    ParameterizedTypeName.get(ClassName.get(DefaultJDBCAdapter.class), ClassName.get(returnTypeElement)),
                                     templateName,
                                     instanceName,
                                     ClassName.get(Transactional.TxType.class),
@@ -216,7 +216,7 @@ public class TemplateInterfaceBuilder {
                 if (typeUtils.isAssignable(returnTypeElement.asType(), elementUtils.getTypeElement(Map.class.getCanonicalName()).asType())) {
                     CodeBlock.Builder returnBuilder = CodeBlock.builder()
                             .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L).query();\n",
-                                    ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeElement)),
+                                    ParameterizedTypeName.get(ClassName.get(DefaultJDBCAdapter.class), ClassName.get(returnTypeElement)),
                                     templateName,
                                     instanceName,
                                     ClassName.get(Transactional.TxType.class),
@@ -229,7 +229,7 @@ public class TemplateInterfaceBuilder {
                     if (typeUtils.isAssignable(returnTypeArgumentTypeElement.asType(), elementUtils.getTypeElement(Map.class.getCanonicalName()).asType())) {
                         CodeBlock.Builder returnBuilder = CodeBlock.builder()
                                 .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L).queryList();\n",
-                                        ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
+                                        ParameterizedTypeName.get(ClassName.get(DefaultJDBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
                                         templateName,
                                         instanceName,
                                         ClassName.get(Transactional.TxType.class),
@@ -241,7 +241,7 @@ public class TemplateInterfaceBuilder {
                     } else {
                         CodeBlock.Builder returnBuilder = CodeBlock.builder()
                                 .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L) {\n",
-                                        ParameterizedTypeName.get(ClassName.get(JDBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
+                                        ParameterizedTypeName.get(ClassName.get(DefaultJDBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
                                         templateName,
                                         instanceName,
                                         ClassName.get(Transactional.TxType.class),
@@ -267,7 +267,7 @@ public class TemplateInterfaceBuilder {
                     if (typeUtils.isAssignable(returnTypeArgumentTypeElement.asType(), elementUtils.getTypeElement(Map.class.getCanonicalName()).asType())) {
                         CodeBlock.Builder returnBuilder = CodeBlock.builder()
                                 .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L).query();\n",
-                                        ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
+                                        ParameterizedTypeName.get(ClassName.get(DefaultR2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
                                         templateName,
                                         instanceName,
                                         ClassName.get(Transactional.TxType.class),
@@ -284,7 +284,7 @@ public class TemplateInterfaceBuilder {
                         if (typeUtils.isAssignable(returnTypeArgumentArgumentTypeElement.asType(), elementUtils.getTypeElement(Map.class.getCanonicalName()).asType())) {
                             CodeBlock.Builder returnBuilder = CodeBlock.builder()
                                     .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L).queryList();\n",
-                                            ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentArgumentTypeElement)),
+                                            ParameterizedTypeName.get(ClassName.get(DefaultR2DBCAdapter.class), ClassName.get(returnTypeArgumentArgumentTypeElement)),
                                             templateName,
                                             instanceName,
                                             ClassName.get(Transactional.TxType.class),
@@ -296,7 +296,7 @@ public class TemplateInterfaceBuilder {
                         } else {
                             CodeBlock.Builder returnBuilder = CodeBlock.builder()
                                     .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L) {\n",
-                                            ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentArgumentTypeElement)),
+                                            ParameterizedTypeName.get(ClassName.get(DefaultR2DBCAdapter.class), ClassName.get(returnTypeArgumentArgumentTypeElement)),
                                             templateName,
                                             instanceName,
                                             ClassName.get(Transactional.TxType.class),
@@ -323,7 +323,7 @@ public class TemplateInterfaceBuilder {
                         if (type.equals(InstanceType.QUERY)) {
                             returnBuilder = CodeBlock.builder()
                                     .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L) {\n",
-                                            ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
+                                            ParameterizedTypeName.get(ClassName.get(DefaultR2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
                                             templateName,
                                             instanceName,
                                             ClassName.get(Transactional.TxType.class),
@@ -346,7 +346,7 @@ public class TemplateInterfaceBuilder {
                         } else {
                             returnBuilder = CodeBlock.builder()
                                     .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L).update();\n",
-                                            ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
+                                            ParameterizedTypeName.get(ClassName.get(DefaultR2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
                                             templateName,
                                             instanceName,
                                             ClassName.get(Transactional.TxType.class),
@@ -361,7 +361,7 @@ public class TemplateInterfaceBuilder {
                     if (typeUtils.isAssignable(returnTypeArgumentTypeElement.asType(), elementUtils.getTypeElement(Map.class.getCanonicalName()).asType())) {
                         CodeBlock.Builder returnBuilder = CodeBlock.builder()
                                 .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L).queryFlux();\n",
-                                        ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
+                                        ParameterizedTypeName.get(ClassName.get(DefaultR2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
                                         templateName,
                                         instanceName,
                                         ClassName.get(Transactional.TxType.class),
@@ -373,7 +373,7 @@ public class TemplateInterfaceBuilder {
                     } else {
                         CodeBlock.Builder returnBuilder = CodeBlock.builder()
                                 .add("return new $T($S, $S, params, $T.$L, new Class<?>[]$L, new Class<?>[]$L) {\n",
-                                        ParameterizedTypeName.get(ClassName.get(R2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
+                                        ParameterizedTypeName.get(ClassName.get(DefaultR2DBCAdapter.class), ClassName.get(returnTypeArgumentTypeElement)),
                                         templateName,
                                         instanceName,
                                         ClassName.get(Transactional.TxType.class),

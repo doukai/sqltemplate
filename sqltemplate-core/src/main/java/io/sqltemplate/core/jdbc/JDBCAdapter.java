@@ -18,7 +18,7 @@ import java.util.*;
 
 import static io.sqltemplate.core.utils.TemplateInstanceUtil.TEMPLATE_INSTANCE_UTIL;
 
-public class JDBCAdapter<T> extends Adapter<T> {
+public abstract class JDBCAdapter<T> extends Adapter<T> {
 
     public JDBCAdapter() {
     }
@@ -45,18 +45,19 @@ public class JDBCAdapter<T> extends Adapter<T> {
             Connection connection = JDBCTransactionManager.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             ResultSet resultSet = setParams(preparedStatement, params).executeQuery();
-            JDBCTransactionManager.commit(tid);
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             int columnCount = resultSetMetaData.getColumnCount();
 
+            T result = null;
             if (resultSet.next()) {
                 Map<String, Object> row = new HashMap<>(columnCount);
                 for (int i = 1; i <= columnCount; ++i) {
                     row.put(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, resultSetMetaData.getColumnName(i)), resultSet.getObject(i));
                 }
-                return map(row);
+                result = map(row);
             }
-            return null;
+            JDBCTransactionManager.commit(tid);
+            return result;
         } catch (SQLException | TransactionRequiredException | InvalidTransactionException | NotSupportedException e) {
             JDBCTransactionManager.rollback(tid, e, getRollbackOn(), getDontRollbackOn());
             throw new RuntimeException(e);
@@ -73,7 +74,6 @@ public class JDBCAdapter<T> extends Adapter<T> {
             Connection connection = JDBCTransactionManager.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             ResultSet resultSet = setParams(preparedStatement, params).executeQuery();
-            JDBCTransactionManager.commit(tid);
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             int columnCount = resultSetMetaData.getColumnCount();
 
@@ -85,7 +85,9 @@ public class JDBCAdapter<T> extends Adapter<T> {
                 }
                 list.add(row);
             }
-            return mapList(list);
+            List<T> result = mapList(list);
+            JDBCTransactionManager.commit(tid);
+            return result;
         } catch (SQLException | TransactionRequiredException | InvalidTransactionException | NotSupportedException e) {
             JDBCTransactionManager.rollback(tid, e, getRollbackOn(), getDontRollbackOn());
             throw new RuntimeException(e);

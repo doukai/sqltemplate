@@ -97,10 +97,7 @@ public abstract class Adapter<T> {
         return this;
     }
 
-    @SuppressWarnings("unchecked")
-    protected T map(Map<String, Object> result) {
-        return (T) result;
-    }
+    protected abstract T map(Map<String, Object> result);
 
     protected List<T> mapList(List<Map<String, Object>> list) {
         return list.stream().map(this::map).collect(Collectors.toList());
