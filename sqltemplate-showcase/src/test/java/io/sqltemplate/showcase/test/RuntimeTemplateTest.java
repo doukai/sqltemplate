@@ -17,8 +17,7 @@ import static io.sqltemplate.showcase.test.Setup.tableClear;
 import static io.sqltemplate.showcase.test.Setup.tableInit;
 import static io.sqltemplate.showcase.test.Setup.tableInsert;
 import static io.sqltemplate.showcase.test.Setup.users;
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class RuntimeTemplateTest {
 
@@ -49,14 +48,14 @@ public class RuntimeTemplateTest {
         UserTemplate userTemplate = templateProvider.getTemplate(UserTemplate.class);
 
         StepVerifier.create(
-                        Flux.fromIterable(users)
-                                .flatMap(user -> userTemplate.insertUserMono((int) user.get("id"), (String) user.get("name"), (String) user.get("login"), (String) user.get("password"), (int) user.get("age")))
-                )
+                Flux.fromIterable(users)
+                        .flatMap(user -> userTemplate.insertUserMono((int) user.get("id"), (String) user.get("name"), (String) user.get("login"), (String) user.get("password"), (int) user.get("age")))
+        )
                 .expectNext(1L)
                 .expectNext(1L)
                 .expectNext(1L)
                 .expectNext(1L)
-                .expectError()
+                .expectComplete()
                 .verify();
     }
 

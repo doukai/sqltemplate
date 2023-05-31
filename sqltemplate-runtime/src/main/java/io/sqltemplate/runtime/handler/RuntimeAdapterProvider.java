@@ -12,11 +12,8 @@ import javax.lang.model.element.Modifier;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class RuntimeAdapterProvider {
-
-    private final Map<String, Object> adapterInstanceCache = new ConcurrentHashMap<>();
 
     private final ClassPool classPool = ClassPool.getDefault();
 
@@ -32,33 +29,19 @@ public class RuntimeAdapterProvider {
     }
 
     public <T> Adapter<?> getJDBCAdapter(Class<T> entityClass) {
-        Class<?> returnClass = entityClass.isPrimitive() ? Primitives.wrap(entityClass) : entityClass;
-        String entityAdapterName = returnClass.getCanonicalName() + JDBCAdapter.class.getSimpleName();
-        return (Adapter<?>) adapterInstanceCache
-                .computeIfAbsent(entityAdapterName,
-                        key -> {
-                            try {
-                                return getJDBCAdapterClass(entityClass).newInstance();
-                            } catch (InstantiationException | IllegalAccessException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                );
+        try {
+            return getJDBCAdapterClass(entityClass).newInstance();
+        } catch (InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public <T> Adapter<?> getR2DBCAdapter(Class<T> entityClass) {
-        Class<?> returnClass = entityClass.isPrimitive() ? Primitives.wrap(entityClass) : entityClass;
-        String entityAdapterName = returnClass.getCanonicalName() + R2DBCAdapter.class.getSimpleName();
-        return (Adapter<?>) adapterInstanceCache
-                .computeIfAbsent(entityAdapterName,
-                        key -> {
-                            try {
-                                return getR2DBCAdapterClass(entityClass).newInstance();
-                            } catch (InstantiationException | IllegalAccessException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                );
+        try {
+            return getR2DBCAdapterClass(entityClass).newInstance();
+        } catch (InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private <T> Class<? extends Adapter<?>> getJDBCAdapterClass(Class<T> entityClass) {
@@ -78,10 +61,10 @@ public class RuntimeAdapterProvider {
         try {
             CtClass adapterCtClass = classPool.getOrNull(entityAdapterName);
             if (adapterCtClass != null) {
-                return (Class<? extends Adapter<?>>) adapterCtClass.toClass();
+                return (Class<? extends Adapter<?>>) Class.forName(entityAdapterName);
             }
             return makeAdapterClass(returnClass, reactive);
-        } catch (CannotCompileException | NotFoundException e) {
+        } catch (CannotCompileException | NotFoundException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }

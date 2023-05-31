@@ -44,7 +44,8 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
                 (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
                 R2DBCTransactionManager::rollback
         ).flatMap(this::getMapFormSegment)
-                .map(this::map);
+                .map(this::map)
+                .contextWrite(R2DBCTransactionManager::init);
     }
 
     public Mono<List<T>> queryList() {
@@ -57,7 +58,8 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
                 R2DBCTransactionManager::rollback
         ).flatMap(this::getMapFormSegment)
                 .collectList()
-                .map(this::mapList);
+                .map(this::mapList)
+                .contextWrite(R2DBCTransactionManager::init);
     }
 
     public Flux<T> queryFlux() {
@@ -69,7 +71,8 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
                 (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
                 R2DBCTransactionManager::rollback
         ).flatMap(this::getMapFormSegment)
-                .map(this::map);
+                .map(this::map)
+                .contextWrite(R2DBCTransactionManager::init);
     }
 
     public Mono<Long> update() {
@@ -80,7 +83,8 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
                 R2DBCTransactionManager::commit,
                 (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
                 R2DBCTransactionManager::rollback
-        ).flatMap(this::getUpdateCountFromResult);
+        ).flatMap(this::getUpdateCountFromResult)
+                .contextWrite(R2DBCTransactionManager::init);
     }
 
     private Mono<Map<String, Object>> getMapFormSegment(Result result) {

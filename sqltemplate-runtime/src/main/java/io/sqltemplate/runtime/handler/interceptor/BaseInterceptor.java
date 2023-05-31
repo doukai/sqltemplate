@@ -8,12 +8,13 @@ import jakarta.transaction.Transactional;
 import java.util.AbstractMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public abstract class BaseInterceptor {
 
-    private final Adapter<?> adapter;
+    private final Supplier<Adapter<?>> adapterSupplier;
 
     private final String templateName;
     private final String instanceName;
@@ -23,15 +24,15 @@ public abstract class BaseInterceptor {
     private Class<?>[] rollbackOn = {};
     private Class<?>[] dontRollbackOn = {};
 
-    public BaseInterceptor(Adapter<?> adapter, String templateName, String instanceName, String[] argumentNames) {
-        this.adapter = adapter;
+    public BaseInterceptor(Supplier<Adapter<?>> adapterSupplier, String templateName, String instanceName, String[] argumentNames) {
+        this.adapterSupplier = adapterSupplier;
         this.templateName = templateName;
         this.instanceName = instanceName;
         this.argumentNames = argumentNames;
     }
 
-    public BaseInterceptor(Adapter<?> adapter, String templateName, String instanceName, String[] argumentNames, Transactional.TxType txType, Class<?>[] rollbackOn, Class<?>[] dontRollbackOn) {
-        this.adapter = adapter;
+    public BaseInterceptor(Supplier<Adapter<?>> adapterSupplier, String templateName, String instanceName, String[] argumentNames, Transactional.TxType txType, Class<?>[] rollbackOn, Class<?>[] dontRollbackOn) {
+        this.adapterSupplier = adapterSupplier;
         this.templateName = templateName;
         this.instanceName = instanceName;
         this.argumentNames = argumentNames;
@@ -40,8 +41,8 @@ public abstract class BaseInterceptor {
         this.dontRollbackOn = dontRollbackOn;
     }
 
-    public BaseInterceptor(Adapter<?> adapter, String templateName, String instanceName, String[] argumentNames, Transactional transactional) {
-        this.adapter = adapter;
+    public BaseInterceptor(Supplier<Adapter<?>> adapterSupplier, String templateName, String instanceName, String[] argumentNames, Transactional transactional) {
+        this.adapterSupplier = adapterSupplier;
         this.templateName = templateName;
         this.instanceName = instanceName;
         this.argumentNames = argumentNames;
@@ -50,12 +51,12 @@ public abstract class BaseInterceptor {
         this.dontRollbackOn = transactional.dontRollbackOn();
     }
 
-    public Adapter<?> getAdapter() {
-        return adapter;
+    public Supplier<Adapter<?>> getAdapterSupplier() {
+        return adapterSupplier;
     }
 
     public R2DBCAdapter<?> getR2DBCAdapter(Object[] args) {
-        return (R2DBCAdapter<?>) adapter.setTemplateName(templateName)
+        return (R2DBCAdapter<?>) getAdapterSupplier().get().setTemplateName(templateName)
                 .setInstanceName(instanceName)
                 .setParams(getParams(args))
                 .setTxType(txType)
@@ -64,7 +65,7 @@ public abstract class BaseInterceptor {
     }
 
     public JDBCAdapter<?> getJDBCAdapter(Object[] args) {
-        return (JDBCAdapter<?>) adapter.setTemplateName(templateName)
+        return (JDBCAdapter<?>) getAdapterSupplier().get().setTemplateName(templateName)
                 .setInstanceName(instanceName)
                 .setParams(getParams(args))
                 .setTxType(txType)
