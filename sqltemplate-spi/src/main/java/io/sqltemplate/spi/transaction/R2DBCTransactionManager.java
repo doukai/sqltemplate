@@ -115,14 +115,12 @@ public class R2DBCTransactionManager {
                             R2DBCTransactionConnection transactionConnection = transactionConnectionList.get(transactionConnectionList.size() - 1);
                             if (transactionConnection.getConnection().isAutoCommit()) {
                                 return Mono.from(transactionConnection.getConnection().close())
-                                        .thenReturn(transactionConnectionList.remove(transactionConnection))
-                                        .then();
+                                        .doOnSuccess(v -> transactionConnectionList.remove(transactionConnection));
                             } else {
                                 if (transactionConnection.getId().equals(id)) {
                                     return Mono.from(transactionConnection.getConnection().commitTransaction())
                                             .then(Mono.from(transactionConnection.getConnection().close()))
-                                            .thenReturn(transactionConnectionList.remove(transactionConnection))
-                                            .then();
+                                            .doOnSuccess(v -> transactionConnectionList.remove(transactionConnection));
                                 }
                                 return Mono.empty();
                             }
@@ -136,14 +134,12 @@ public class R2DBCTransactionManager {
                             R2DBCTransactionConnection transactionConnection = transactionConnectionList.get(transactionConnectionList.size() - 1);
                             if (transactionConnection.getConnection().isAutoCommit()) {
                                 return Mono.from(transactionConnection.getConnection().close())
-                                        .thenReturn(transactionConnectionList.remove(transactionConnection))
-                                        .then();
+                                        .doOnSuccess(v -> transactionConnectionList.remove(transactionConnection));
                             } else {
                                 if (transactionConnection.getId().equals(id)) {
                                     return Mono.from(transactionConnection.getConnection().rollbackTransaction())
                                             .then(Mono.from(transactionConnection.getConnection().close()))
-                                            .thenReturn(transactionConnectionList.remove(transactionConnection))
-                                            .then();
+                                            .doOnSuccess(v -> transactionConnectionList.remove(transactionConnection));
                                 }
                                 return Mono.empty();
                             }
@@ -162,7 +158,7 @@ public class R2DBCTransactionManager {
                                 if (Arrays.stream(rollbackOn).anyMatch(exception -> exception.equals(throwable.getClass()))) {
                                     return Mono.from(transactionConnection.getConnection().rollbackTransaction())
                                             .then(Mono.from(transactionConnection.getConnection().close()))
-                                            .thenReturn(transactionConnectionList.remove(transactionConnection))
+                                            .doOnSuccess(v -> transactionConnectionList.remove(transactionConnection))
                                             .then(Mono.error(throwable));
                                 } else {
                                     return commit(id);
@@ -173,13 +169,13 @@ public class R2DBCTransactionManager {
                                 } else {
                                     return Mono.from(transactionConnection.getConnection().rollbackTransaction())
                                             .then(Mono.from(transactionConnection.getConnection().close()))
-                                            .thenReturn(transactionConnectionList.remove(transactionConnection))
+                                            .doOnSuccess(v -> transactionConnectionList.remove(transactionConnection))
                                             .then(Mono.error(throwable));
                                 }
                             }
                             return Mono.from(transactionConnection.getConnection().rollbackTransaction())
                                     .then(Mono.from(transactionConnection.getConnection().close()))
-                                    .thenReturn(transactionConnectionList.remove(transactionConnection))
+                                    .doOnSuccess(v -> transactionConnectionList.remove(transactionConnection))
                                     .then(Mono.error(throwable));
                         }
                 );
