@@ -47,6 +47,8 @@ dependencies {
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    testImplementation 'io.projectreactor:reactor-test:3.4.16'
+    testRuntimeOnly 'io.projectreactor:reactor-test:3.4.16'
     testCompile 'com.ninja-squad:DbSetup:2.1.0'
 
 }

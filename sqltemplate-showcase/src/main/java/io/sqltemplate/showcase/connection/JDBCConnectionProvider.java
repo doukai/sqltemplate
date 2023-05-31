@@ -14,7 +14,9 @@ import java.util.Properties;
 @AutoService(io.sqltemplate.spi.connection.JDBCConnectionProvider.class)
 public class JDBCConnectionProvider implements io.sqltemplate.spi.connection.JDBCConnectionProvider {
 
-    public static DataSource createDataSource() {
+    public static DataSource dataSource = createDataSource();
+
+    private static DataSource createDataSource() {
         InputStream resourceStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("jdbc.properties");
         Properties jdbcProperties = new Properties();
         try {
@@ -35,7 +37,7 @@ public class JDBCConnectionProvider implements io.sqltemplate.spi.connection.JDB
     @Override
     public Connection createConnection() {
         try {
-            return createDataSource().getConnection();
+            return dataSource.getConnection();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

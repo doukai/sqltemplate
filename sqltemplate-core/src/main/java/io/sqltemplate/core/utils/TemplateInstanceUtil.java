@@ -7,6 +7,7 @@ import org.stringtemplate.v4.STGroupFile;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -34,18 +35,18 @@ public enum TemplateInstanceUtil {
                 instance = stGroup.getInstanceOf(file + "/" + instanceName);
             }
         }
-        List<String> attributeKeyList = new ArrayList<>(instance.getAttributes().keySet());
+        List<String> attributeKeyList = new ArrayList<>(instance.impl.formalArguments.keySet());
         if (paramsMap.keySet().stream().anyMatch(key -> attributeKeyList.stream().noneMatch(attrName -> attrName.equals(key)))) {
+            Map<String, Object> namedParamsMap = new HashMap<>();
             List<Object> params = new ArrayList<>(paramsMap.values());
             for (int index = 0; index < attributeKeyList.size(); index++) {
                 String key = attributeKeyList.get(index);
-                instance.add(key, params.get(index));
+                namedParamsMap.put(key, params.get(index));
             }
-        } else {
-            for (String key : attributeKeyList) {
-                instance.add(key, paramsMap.get(key));
-            }
+            paramsMap.clear();
+            paramsMap.putAll(namedParamsMap);
         }
+        paramsMap.forEach(instance::add);
         return instance.render();
     }
 }

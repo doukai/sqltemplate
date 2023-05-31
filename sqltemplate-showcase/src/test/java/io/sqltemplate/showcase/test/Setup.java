@@ -93,7 +93,7 @@ public class Setup {
                 sequenceOf(
                         CREATE_TABLES
                 );
-        DbSetup dbSetup = new DbSetup(new DataSourceDestination(JDBCConnectionProvider.createDataSource()), operation);
+        DbSetup dbSetup = new DbSetup(new DataSourceDestination(JDBCConnectionProvider.dataSource), operation);
         dbSetup.launch();
     }
 
@@ -102,7 +102,7 @@ public class Setup {
                 sequenceOf(
                         DELETE_ALL
                 );
-        DbSetup dbSetup = new DbSetup(new DataSourceDestination(JDBCConnectionProvider.createDataSource()), operation);
+        DbSetup dbSetup = new DbSetup(new DataSourceDestination(JDBCConnectionProvider.dataSource), operation);
         dbSetup.launch();
     }
 
@@ -111,7 +111,7 @@ public class Setup {
                 sequenceOf(
                         INSERT_USERS
                 );
-        DbSetup dbSetup = new DbSetup(new DataSourceDestination(JDBCConnectionProvider.createDataSource()), operation);
+        DbSetup dbSetup = new DbSetup(new DataSourceDestination(JDBCConnectionProvider.dataSource), operation);
         dbSetup.launch();
     }
 }

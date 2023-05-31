@@ -42,7 +42,7 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
                 tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(setParams(connection.createStatement(sql), getParams()).execute())),
                 R2DBCTransactionManager::commit,
                 (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
-                R2DBCTransactionManager::commit
+                R2DBCTransactionManager::rollback
         ).flatMap(this::getMapFormSegment)
                 .map(this::map);
     }
@@ -54,7 +54,7 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
                 tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(setParams(connection.createStatement(sql), getParams()).execute())),
                 R2DBCTransactionManager::commit,
                 (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
-                R2DBCTransactionManager::commit
+                R2DBCTransactionManager::rollback
         ).flatMap(this::getMapFormSegment)
                 .collectList()
                 .map(this::mapList);
@@ -67,7 +67,7 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
                 tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(setParams(connection.createStatement(sql), getParams()).execute())),
                 R2DBCTransactionManager::commit,
                 (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
-                R2DBCTransactionManager::commit
+                R2DBCTransactionManager::rollback
         ).flatMap(this::getMapFormSegment)
                 .map(this::map);
     }
@@ -79,7 +79,7 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
                 tid -> R2DBCTransactionManager.getConnection().flatMap(connection -> Mono.from(setParams(connection.createStatement(sql), getParams()).execute())),
                 R2DBCTransactionManager::commit,
                 (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
-                R2DBCTransactionManager::commit
+                R2DBCTransactionManager::rollback
         ).flatMap(this::getUpdateCountFromResult);
     }
 

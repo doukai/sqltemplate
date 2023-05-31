@@ -99,7 +99,6 @@ public class RuntimeAdapterProvider {
 
     private <T> MethodSpec buildMapMethod(Class<T> entityClass) {
         MethodSpec.Builder builder = MethodSpec.methodBuilder("map")
-//                .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(Map.class, "result")
                 .returns(Object.class);

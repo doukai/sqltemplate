@@ -7,6 +7,8 @@ import io.sqltemplate.spi.handler.TemplateProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
 
 import java.util.List;
 import java.util.Map;
@@ -37,9 +39,25 @@ public class RuntimeTemplateTest {
         UserTemplate userTemplate = templateProvider.getTemplate(UserTemplate.class);
         int rows = 0;
         for (Map<String, Object> user : users) {
-            rows += userTemplate.insertUser((String) user.get("name"), (String) user.get("login"), (String) user.get("password"), (int) user.get("age"));
+            rows += userTemplate.insertUser((int) user.get("id"), (String) user.get("name"), (String) user.get("login"), (String) user.get("password"), (int) user.get("age"));
         }
         assertEquals(rows, 4);
+    }
+
+    @Test
+    void insertMono() {
+        UserTemplate userTemplate = templateProvider.getTemplate(UserTemplate.class);
+
+        StepVerifier.create(
+                        Flux.fromIterable(users)
+                                .flatMap(user -> userTemplate.insertUserMono((int) user.get("id"), (String) user.get("name"), (String) user.get("login"), (String) user.get("password"), (int) user.get("age")))
+                )
+                .expectNext(1L)
+                .expectNext(1L)
+                .expectNext(1L)
+                .expectNext(1L)
+                .expectError()
+                .verify();
     }
 
     @Test
