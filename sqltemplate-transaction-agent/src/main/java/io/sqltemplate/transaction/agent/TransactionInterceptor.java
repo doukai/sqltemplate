@@ -1,7 +1,6 @@
 package io.sqltemplate.transaction.agent;
 
 import io.sqltemplate.spi.transaction.JDBCTransactionManager;
-import io.sqltemplate.spi.transaction.R2DBCTransactionConnection;
 import io.sqltemplate.spi.transaction.R2DBCTransactionManager;
 import jakarta.transaction.Transactional;
 import net.bytebuddy.implementation.bind.annotation.Origin;
@@ -9,10 +8,8 @@ import net.bytebuddy.implementation.bind.annotation.RuntimeType;
 import net.bytebuddy.implementation.bind.annotation.SuperCall;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.context.Context;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
 public class TransactionInterceptor {

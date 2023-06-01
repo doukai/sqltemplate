@@ -1,13 +1,13 @@
 package io.sqltemplate.active.record.model.conditional;
 
-import io.sqltemplate.core.expression.Expression;
+import io.sqltemplate.core.utils.Parameter;
 
 import static io.sqltemplate.active.record.TableRecord.DEFAULT_ALIAS;
 
 public class EQ extends Compare {
 
-    public EQ(String tableAlias, String columnName, Expression expression) {
-        super(tableAlias, columnName, expression);
+    public EQ(String tableAlias, String columnName, Parameter parameter) {
+        super(tableAlias, columnName, parameter);
     }
 
     @Override
@@ -15,11 +15,11 @@ public class EQ extends Compare {
         return "=";
     }
 
-    public static EQ eq(String tableAlias, String columnName, Object expression) {
-        return new EQ(tableAlias, columnName, Expression.of(expression));
+    public static EQ eq(String tableAlias, String columnName, Object parameter) {
+        return new EQ(tableAlias, columnName, new Parameter(parameter));
     }
 
-    public static EQ eq(String columnName, Object expression) {
-        return new EQ(DEFAULT_ALIAS, columnName, Expression.of(expression));
+    public static EQ eq(String columnName, Object parameter) {
+        return new EQ(DEFAULT_ALIAS, columnName, new Parameter(parameter));
     }
 }

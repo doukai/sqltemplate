@@ -1,7 +1,7 @@
 package io.sqltemplate.active.record.model.conditional;
 
 import com.google.common.base.CaseFormat;
-import io.sqltemplate.core.expression.Expression;
+import io.sqltemplate.active.record.model.expression.Expression;
 
 import java.util.Arrays;
 import java.util.Collection;

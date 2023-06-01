@@ -35,6 +35,9 @@ public enum TemplateInstanceUtil {
                 instance = stGroup.getInstanceOf(file + "/" + instanceName);
             }
         }
+        Map<String, Object> dbParamsMap = new HashMap<>();
+        ParameterRenderer parameterRenderer = new ParameterRenderer(dbParamsMap);
+        stGroup.registerRenderer(Parameter.class, parameterRenderer);
         List<String> attributeKeyList = new ArrayList<>(instance.impl.formalArguments.keySet());
         if (paramsMap.keySet().stream().anyMatch(key -> attributeKeyList.stream().noneMatch(attrName -> attrName.equals(key)))) {
             Map<String, Object> namedParamsMap = new HashMap<>();
@@ -47,6 +50,10 @@ public enum TemplateInstanceUtil {
             paramsMap.putAll(namedParamsMap);
         }
         paramsMap.forEach(instance::add);
-        return instance.render();
+        String sql = instance.render();
+        if (dbParamsMap.size() > 0) {
+            paramsMap.putAll(dbParamsMap);
+        }
+        return sql;
     }
 }

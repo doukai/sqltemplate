@@ -30,7 +30,7 @@ public class AND implements Conditional {
     }
 
     @Override
-    public String toString() {
-        return conditionals.stream().map(Object::toString).collect(Collectors.joining(" AND ", "(", ")"));
+    public boolean isAnd() {
+        return true;
     }
 }

@@ -4,7 +4,7 @@ import com.google.common.base.CaseFormat;
 import io.sqltemplate.active.record.model.conditional.Conditional;
 import io.sqltemplate.active.record.model.conditional.EQ;
 import io.sqltemplate.active.record.model.conditional.OR;
-import io.sqltemplate.core.expression.NullValue;
+import io.sqltemplate.active.record.model.expression.NullValue;
 import io.sqltemplate.active.record.model.join.JoinColumns;
 import io.sqltemplate.active.record.model.join.JoinTable;
 import io.sqltemplate.active.record.model.sort.DESC;
@@ -193,7 +193,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
             put("columns", getColumnNames());
-            put("values", getValueExpressions());
+            put("values", getValueParameters());
         }};
         return new R2DBCAdapter<T>("stg/record/insert.stg", "insert", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
             @Override

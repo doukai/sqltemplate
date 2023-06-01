@@ -1,0 +1,4 @@
+import "conditional.stg"
+andDef(conditional) ::= <<
+(<conditional.conditionals:{conditional|<conditionalDef(conditional)>};separator=" AND ">)
+>>

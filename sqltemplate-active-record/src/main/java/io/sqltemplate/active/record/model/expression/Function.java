@@ -1,4 +1,4 @@
-package io.sqltemplate.core.expression;
+package io.sqltemplate.active.record.model.expression;
 
 import java.util.ArrayList;
 import java.util.Arrays;

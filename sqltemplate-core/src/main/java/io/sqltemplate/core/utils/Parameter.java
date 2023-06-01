@@ -1,6 +1,6 @@
-package io.sqltemplate.core.expression;
+package io.sqltemplate.core.utils;
 
-public class Parameter implements Expression {
+public class Parameter {
 
     private final Object value;
 

@@ -1,24 +1,35 @@
 package io.sqltemplate.active.record.model.conditional;
 
-import com.google.common.base.CaseFormat;
-import io.sqltemplate.core.expression.Expression;
+import io.sqltemplate.core.utils.Parameter;
 
 public abstract class Compare implements Conditional {
 
     private final String tableAlias;
     private final String columnName;
-    private final Expression expression;
+    private final Parameter parameter;
 
-    public Compare(String tableAlias, String columnName, Expression expression) {
+    public Compare(String tableAlias, String columnName, Parameter parameter) {
         this.tableAlias = tableAlias;
         this.columnName = columnName;
-        this.expression = expression;
+        this.parameter = parameter;
     }
 
     protected abstract String sign();
 
+    public String getTableAlias() {
+        return tableAlias;
+    }
+
+    public String getColumnName() {
+        return columnName;
+    }
+
+    public Parameter getParameter() {
+        return parameter;
+    }
+
     @Override
-    public String toString() {
-        return tableAlias + "." + CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, columnName) + " " + sign() + " " + expression;
+    public boolean isCompare() {
+        return true;
     }
 }

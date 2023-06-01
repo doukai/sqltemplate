@@ -1,13 +1,13 @@
 package io.sqltemplate.active.record.model.conditional;
 
-import io.sqltemplate.core.expression.Expression;
+import io.sqltemplate.core.utils.Parameter;
 
 import static io.sqltemplate.active.record.TableRecord.DEFAULT_ALIAS;
 
 public class LTE extends Compare {
 
-    public LTE(String tableAlias, String columnName, Expression expression) {
-        super(tableAlias, columnName, expression);
+    public LTE(String tableAlias, String columnName, Parameter parameter) {
+        super(tableAlias, columnName, parameter);
     }
 
     @Override
@@ -15,11 +15,11 @@ public class LTE extends Compare {
         return "<=";
     }
 
-    public static LTE lte(String tableAlias, String columnName, Object expression) {
-        return new LTE(tableAlias, columnName, Expression.of(expression));
+    public static LTE lte(String tableAlias, String columnName, Object parameter) {
+        return new LTE(tableAlias, columnName, new Parameter(parameter));
     }
 
-    public static LTE lte(String columnName, Object expression) {
-        return new LTE(DEFAULT_ALIAS, columnName, Expression.of(expression));
+    public static LTE lte(String columnName, Object parameter) {
+        return new LTE(DEFAULT_ALIAS, columnName, new Parameter(parameter));
     }
 }

@@ -1,4 +1,5 @@
+import "conditional.stg"
 delete(table,conditionals) ::= <<
 DELETE FROM <table> t
-<if(conditionals)>WHERE <conditionals:{conditional|<conditional>};separator=" AND "><endif>
+<if(conditionals)>WHERE <conditionals:{conditional|<conditionalDef(conditional)>};separator=" AND "><endif>
 >>

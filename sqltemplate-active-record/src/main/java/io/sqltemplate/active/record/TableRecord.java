@@ -15,13 +15,14 @@ import io.sqltemplate.active.record.model.conditional.NIN;
 import io.sqltemplate.active.record.model.conditional.NLK;
 import io.sqltemplate.active.record.model.conditional.NNIL;
 import io.sqltemplate.active.record.model.conditional.OR;
-import io.sqltemplate.core.expression.Expression;
+import io.sqltemplate.active.record.model.expression.Expression;
 import io.sqltemplate.active.record.model.join.JoinColumns;
 import io.sqltemplate.active.record.model.join.JoinTable;
 import io.sqltemplate.active.record.model.sort.ASC;
 import io.sqltemplate.active.record.model.sort.DESC;
 import io.sqltemplate.active.record.model.sort.Sort;
 import io.sqltemplate.active.record.model.update.ValueSet;
+import io.sqltemplate.core.utils.Parameter;
 import jakarta.transaction.Transactional;
 
 import java.util.ArrayList;
@@ -34,7 +35,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.sqltemplate.core.expression.Function.LAST_INSERT_ID;
+import static io.sqltemplate.active.record.model.expression.Function.LAST_INSERT_ID;
 import static io.sqltemplate.active.record.model.update.ValueSet.set;
 
 public class TableRecord<T> {
@@ -224,8 +225,8 @@ public class TableRecord<T> {
         return Arrays.stream(getKeyNames()).map(this::getValue).collect(Collectors.toList());
     }
 
-    protected List<Expression> getValueExpressions() {
-        return Arrays.stream(getKeyNames()).map(this::getValue).map(Expression::of).collect(Collectors.toList());
+    protected List<Parameter> getValueParameters() {
+        return Arrays.stream(getKeyNames()).map(this::getValue).map(Parameter::new).collect(Collectors.toList());
     }
 
     protected List<ValueSet> getValueSets() {

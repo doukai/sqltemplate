@@ -1,5 +1,16 @@
 package io.sqltemplate.active.record.model.conditional;
 
 public interface Conditional {
-    String toString();
+
+    default boolean isAnd() {
+        return false;
+    }
+
+    default boolean isOr() {
+        return false;
+    }
+
+    default boolean isCompare() {
+        return false;
+    }
 }

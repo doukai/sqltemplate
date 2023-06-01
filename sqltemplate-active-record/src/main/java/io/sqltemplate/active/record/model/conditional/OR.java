@@ -30,7 +30,7 @@ public class OR implements Conditional {
     }
 
     @Override
-    public String toString() {
-        return conditionals.stream().map(Object::toString).collect(Collectors.joining(" OR ", "(", ")"));
+    public boolean isOr() {
+        return true;
     }
 }

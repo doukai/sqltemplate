@@ -1,0 +1,4 @@
+import "conditional.stg"
+orDef(conditional) ::= <<
+(<conditional.conditionals:{conditional|<conditionalDef(conditional)>};separator=" OR ">)
+>>

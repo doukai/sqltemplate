@@ -1,7 +1,9 @@
+import "set.stg"
+import "conditional.stg"
 update(table,sets,conditionals) ::= <<
 UPDATE <table> t
-SET (<sets:{set|<set.column> = <set.value>};separator=", ">)
-<if(conditionals)>WHERE <conditionals:{conditional|<conditional>};separator=" AND "><endif>
+SET (<sets:{set|<setDef(set)>};separator=", ">)
+<if(conditionals)>WHERE <conditionals:{conditional|<conditionalDef(conditional)>};separator=" AND "><endif>
 >>
 updateAll(records) ::= <<
 <records:{record|<update(record.tableName,record.valueSets,records.conditionals)>};separator=";">

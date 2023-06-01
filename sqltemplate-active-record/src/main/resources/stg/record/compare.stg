@@ -1,0 +1,3 @@
+compareDef(conditional) ::= <<
+<conditional.tableAlias>.<conditional.columnName> <conditional.sign> <conditional.parameter>
+>>

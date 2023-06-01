@@ -1,0 +1,3 @@
+setDef(tableAlias,columnName,parameter) ::= <<
+<tableAlias>.<columnName> = <parameter>
+>>
