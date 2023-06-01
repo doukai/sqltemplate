@@ -23,13 +23,13 @@ public interface UserTemplate {
     long updateUserNameById(String id, String name);
 
     @Instance("getUser")
-    Mono<User> getUserByNameMono(String id);
+    Mono<User> getUserMono(String id);
 
     @Instance("getUserListByName")
     Mono<List<User>> getUserListByNameMono(String name);
 
     @Instance("getUserListByName")
-    Flux<User> getUserByNameFlux(String name);
+    Flux<User> getUserListByNameFlux(String name);
 
     @Instance(value = "insertUser", type = InstanceType.UPDATE)
     Mono<Long> insertUserMono(int id, String name, String login, String password, int age);

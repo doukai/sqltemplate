@@ -46,11 +46,10 @@ public class RuntimeTemplateTest {
     @Test
     void insertMono() {
         UserTemplate userTemplate = templateProvider.getTemplate(UserTemplate.class);
-
         StepVerifier.create(
-                Flux.fromIterable(users)
-                        .flatMap(user -> userTemplate.insertUserMono((int) user.get("id"), (String) user.get("name"), (String) user.get("login"), (String) user.get("password"), (int) user.get("age")))
-        )
+                        Flux.fromIterable(users)
+                                .flatMap(user -> userTemplate.insertUserMono((int) user.get("id"), (String) user.get("name"), (String) user.get("login"), (String) user.get("password"), (int) user.get("age")))
+                )
                 .expectNext(1L)
                 .expectNext(1L)
                 .expectNext(1L)
@@ -85,6 +84,50 @@ public class RuntimeTemplateTest {
                 () -> assertEquals(user4.getPassword(), "47502"),
                 () -> assertEquals(user4.getAge(), 36)
         );
+    }
+
+    @Test
+    void selectMono() {
+        tableInsert();
+        UserTemplate userTemplate = templateProvider.getTemplate(UserTemplate.class);
+        StepVerifier.create(
+                        Flux.concat(
+                                userTemplate.getUserMono("1"),
+                                userTemplate.getUserMono("2"),
+                                userTemplate.getUserMono("3"),
+                                userTemplate.getUserMono("4")
+                        )
+                )
+                .assertNext(user -> assertAll(
+                                () -> assertEquals(user.getName(), "Robin Castillo"),
+                                () -> assertEquals(user.getLogin(), "castillo"),
+                                () -> assertEquals(user.getPassword(), "96954"),
+                                () -> assertEquals(user.getAge(), 9)
+                        )
+                )
+                .assertNext(user -> assertAll(
+                                () -> assertEquals(user.getName(), "Kelly Villarreal"),
+                                () -> assertEquals(user.getLogin(), "villarreal"),
+                                () -> assertEquals(user.getPassword(), "54368"),
+                                () -> assertEquals(user.getAge(), 18)
+                        )
+                )
+                .assertNext(user -> assertAll(
+                                () -> assertEquals(user.getName(), "Malia England"),
+                                () -> assertEquals(user.getLogin(), "england"),
+                                () -> assertEquals(user.getPassword(), "68925"),
+                                () -> assertEquals(user.getAge(), 27)
+                        )
+                )
+                .assertNext(user -> assertAll(
+                                () -> assertEquals(user.getName(), "Neha Chambers"),
+                                () -> assertEquals(user.getLogin(), "chambers"),
+                                () -> assertEquals(user.getPassword(), "47502"),
+                                () -> assertEquals(user.getAge(), 36)
+                        )
+                )
+                .expectComplete()
+                .verify();
     }
 
     @Test

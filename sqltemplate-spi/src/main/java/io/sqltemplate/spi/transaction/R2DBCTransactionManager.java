@@ -34,7 +34,7 @@ public class R2DBCTransactionManager {
         if (context.hasKey(transactionConnectionListKey)) {
             return context;
         }
-        return Context.of(transactionConnectionListKey, new ArrayList<R2DBCTransactionConnection>());
+        return Context.of(context).put(transactionConnectionListKey, new ArrayList<R2DBCTransactionConnection>());
     }
 
     public static Mono<R2DBCTransactionConnection> getTransactionConnection() {

@@ -49,7 +49,7 @@ public class GenerateRecord extends DefaultTask {
         generatorConfig = getProject().getExtensions().findByType(GeneratorConfig.class);
         try (Connection connection = createConnection()) {
             databaseMetaData = connection.getMetaData();
-            List<Map<String, Object>> tableMapList = getTableMapList();
+            List<Map<String, Object>> tableMapList = buildTableMapList();
             for (TypeSpec typeSpec : generateTables(tableMapList)) {
                 JavaFile.builder(Objects.requireNonNull(generatorConfig).getPackageName(), typeSpec).build().writeTo(new File(javaPath));
             }
@@ -66,7 +66,7 @@ public class GenerateRecord extends DefaultTask {
         }
     }
 
-    protected List<Map<String, Object>> getTableMapList() {
+    protected List<Map<String, Object>> buildTableMapList() {
         try (ResultSet tables = databaseMetaData.getTables(generatorConfig.getSchemaName(), null, null, new String[]{"TABLE"})) {
             List<Map<String, Object>> tableMapList = new ArrayList<>();
             while (tables.next()) {
@@ -102,10 +102,10 @@ public class GenerateRecord extends DefaultTask {
                     .addField(getKeyNamesField(tableName))
                     .addField(getColumnNamesField(columnMapList))
                     .addField(isAutoIncrementField(columnMapList))
-                    .addMethod(getTableNameMethod())
-                    .addMethod(getKeyNamesMethod())
-                    .addMethod(getColumnNamesMethod())
-                    .addMethod(getValueMethod(columnMapList))
+                    .addMethod(buildTableNameMethod())
+                    .addMethod(buildKeyNamesMethod())
+                    .addMethod(buildColumnNamesMethod())
+                    .addMethod(buildValueMethod(columnMapList))
                     .addMethod(mapToEntityMethod(typeName, columnMapList))
                     .addMethod(isAutoIncrementMethod());
             fieldSpecList.forEach(fieldSpec -> addGetterAndSetter(fieldSpec, typeBuilder, typeName));
@@ -254,7 +254,7 @@ public class GenerateRecord extends DefaultTask {
                 .build();
     }
 
-    public MethodSpec getTableNameMethod() {
+    public MethodSpec buildTableNameMethod() {
         return MethodSpec.methodBuilder("getTableName").returns(String.class).addModifiers(Modifier.PROTECTED)
                 .addAnnotation(Override.class)
                 .addStatement("return tableName")
@@ -279,7 +279,7 @@ public class GenerateRecord extends DefaultTask {
         }
     }
 
-    public MethodSpec getKeyNamesMethod() {
+    public MethodSpec buildKeyNamesMethod() {
         return MethodSpec.methodBuilder("getKeyNames").returns(ArrayTypeName.of(String.class)).addModifiers(Modifier.PROTECTED)
                 .addAnnotation(Override.class)
                 .addStatement("return keyNames")
@@ -300,7 +300,7 @@ public class GenerateRecord extends DefaultTask {
                 .build();
     }
 
-    public MethodSpec getColumnNamesMethod() {
+    public MethodSpec buildColumnNamesMethod() {
         return MethodSpec.methodBuilder("getColumnNames").returns(ArrayTypeName.of(String.class)).addModifiers(Modifier.PROTECTED)
                 .addAnnotation(Override.class)
                 .addStatement("return columnNames")
@@ -321,7 +321,7 @@ public class GenerateRecord extends DefaultTask {
                 .build();
     }
 
-    public MethodSpec getValueMethod(List<Map<String, Object>> columnMapList) {
+    public MethodSpec buildValueMethod(List<Map<String, Object>> columnMapList) {
         MethodSpec.Builder builder = MethodSpec.methodBuilder("getValue").returns(Object.class).addModifiers(Modifier.PROTECTED)
                 .addParameter(ParameterSpec.builder(String.class, "columnName").build())
                 .addAnnotation(Override.class);
