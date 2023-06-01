@@ -140,6 +140,43 @@ public class RuntimeTemplateTest {
     }
 
     @Test
+    void selectListMono() {
+        tableInsert();
+        UserTemplate userTemplate = templateProvider.getTemplate(UserTemplate.class);
+        StepVerifier.create(
+                        userTemplate.getUserListByNameMono("%la%")
+                )
+                .assertNext(userList -> assertEquals(userList.size(), 2))
+                .expectComplete()
+                .verify();
+    }
+
+    @Test
+    void selectFlux() {
+        tableInsert();
+        UserTemplate userTemplate = templateProvider.getTemplate(UserTemplate.class);
+        StepVerifier.create(
+                        userTemplate.getUserListByNameFlux("%la%")
+                )
+                .assertNext(user -> assertAll(
+                                () -> assertEquals(user.getName(), "Kelly Villarreal"),
+                                () -> assertEquals(user.getLogin(), "villarreal"),
+                                () -> assertEquals(user.getPassword(), "54368"),
+                                () -> assertEquals(user.getAge(), 18)
+                        )
+                )
+                .assertNext(user -> assertAll(
+                                () -> assertEquals(user.getName(), "Malia England"),
+                                () -> assertEquals(user.getLogin(), "england"),
+                                () -> assertEquals(user.getPassword(), "68925"),
+                                () -> assertEquals(user.getAge(), 27)
+                        )
+                )
+                .expectComplete()
+                .verify();
+    }
+
+    @Test
     void update() {
         tableInsert();
         UserTemplate userTemplate = templateProvider.getTemplate(UserTemplate.class);
@@ -155,5 +192,33 @@ public class RuntimeTemplateTest {
                 () -> assertEquals(user1.getName(), "Robert Castillo"),
                 () -> assertEquals(user3.getName(), "Mary England")
         );
+    }
+
+    @Test
+    void updateMono() {
+        tableInsert();
+        UserTemplate userTemplate = templateProvider.getTemplate(UserTemplate.class);
+
+        StepVerifier.create(
+                        Flux.concat(
+                                userTemplate.updateUserNameByIdMono("1", "Robert Castillo"),
+                                userTemplate.updateUserNameByIdMono("3", "Mary England")
+                        )
+                )
+                .expectNext(1L)
+                .expectNext(1L)
+                .expectComplete()
+                .verify();
+
+        StepVerifier.create(
+                        Flux.concat(
+                                userTemplate.getUserMono("1"),
+                                userTemplate.getUserMono("3")
+                        )
+                )
+                .assertNext(user -> assertEquals(user.getName(), "Robert Castillo"))
+                .assertNext(user -> assertEquals(user.getName(), "Mary England"))
+                .expectComplete()
+                .verify();
     }
 }

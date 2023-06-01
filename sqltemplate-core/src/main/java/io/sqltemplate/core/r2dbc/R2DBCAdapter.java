@@ -37,36 +37,36 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
 
     public Mono<T> query() {
         String sql = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
-        return Flux.usingWhen(
+        return Mono.usingWhen(
                         R2DBCTransactionManager.begin(getTxType()),
                         tid -> R2DBCTransactionManager.getConnection()
-                                .flatMapMany(connection ->
+                                .flatMap(connection ->
                                         Flux.from(setParams(connection.createStatement(sql), getParams()).execute())
                                                 .flatMap(this::getMapFormSegment)
+                                                .last()
                                 ),
                         R2DBCTransactionManager::commit,
                         (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
                         R2DBCTransactionManager::rollback
                 )
-                .last()
                 .map(this::map)
                 .contextWrite(R2DBCTransactionManager::init);
     }
 
     public Mono<List<T>> queryList() {
         String sql = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
-        return Flux.usingWhen(
+        return Mono.usingWhen(
                         R2DBCTransactionManager.begin(getTxType()),
                         tid -> R2DBCTransactionManager.getConnection()
-                                .flatMapMany(connection ->
+                                .flatMap(connection ->
                                         Flux.from(setParams(connection.createStatement(sql), getParams()).execute())
                                                 .flatMap(this::getMapFormSegment)
+                                                .collectList()
                                 ),
                         R2DBCTransactionManager::commit,
                         (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
                         R2DBCTransactionManager::rollback
                 )
-                .collectList()
                 .map(this::mapList)
                 .contextWrite(R2DBCTransactionManager::init);
     }
@@ -90,18 +90,18 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
 
     public Mono<Long> update() {
         String sql = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
-        return Flux.usingWhen(
+        return Mono.usingWhen(
                         R2DBCTransactionManager.begin(getTxType()),
                         tid -> R2DBCTransactionManager.getConnection()
-                                .flatMapMany(connection ->
+                                .flatMap(connection ->
                                         Flux.from(setParams(connection.createStatement(sql), getParams()).execute())
                                                 .flatMap(this::getUpdateCountFromResult)
+                                                .last()
                                 ),
                         R2DBCTransactionManager::commit,
                         (tid, throwable) -> R2DBCTransactionManager.rollback(tid, throwable, getRollbackOn(), getDontRollbackOn()),
                         R2DBCTransactionManager::rollback
                 )
-                .last()
                 .contextWrite(R2DBCTransactionManager::init);
     }
 
@@ -114,8 +114,8 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
 //        );
 //    }
 
-    private Mono<Map<String, Object>> getMapFormSegment(Result result) {
-        return Mono.from(result.flatMap(this::getMapFormSegment));
+    private Flux<Map<String, Object>> getMapFormSegment(Result result) {
+        return Flux.from(result.flatMap(this::getMapFormSegment));
     }
 
     private Mono<Long> getUpdateCountFromResult(Result result) {
