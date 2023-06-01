@@ -1,8 +1,9 @@
-package io.sqltemplate.showcase.connection;
+package io.sqltemplate.showcase.test.connection;
 
 import com.google.auto.service.AutoService;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import io.sqltemplate.spi.connection.JDBCConnectionProvider;
 
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -11,8 +12,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Properties;
 
-@AutoService(io.sqltemplate.spi.connection.JDBCConnectionProvider.class)
-public class JDBCConnectionProvider implements io.sqltemplate.spi.connection.JDBCConnectionProvider {
+@AutoService(JDBCConnectionProvider.class)
+public class HikariCPJDBCConnectionProvider implements JDBCConnectionProvider {
 
     public static DataSource dataSource = createDataSource();
 

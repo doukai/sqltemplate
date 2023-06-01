@@ -3,7 +3,7 @@ package io.sqltemplate.showcase.test;
 import com.ninja_squad.dbsetup.DbSetup;
 import com.ninja_squad.dbsetup.destination.DataSourceDestination;
 import com.ninja_squad.dbsetup.operation.Operation;
-import io.sqltemplate.showcase.connection.JDBCConnectionProvider;
+import io.sqltemplate.showcase.test.connection.HikariCPJDBCConnectionProvider;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -93,7 +93,7 @@ public class Setup {
                 sequenceOf(
                         CREATE_TABLES
                 );
-        DbSetup dbSetup = new DbSetup(new DataSourceDestination(JDBCConnectionProvider.dataSource), operation);
+        DbSetup dbSetup = new DbSetup(new DataSourceDestination(HikariCPJDBCConnectionProvider.dataSource), operation);
         dbSetup.launch();
     }
 
@@ -102,7 +102,7 @@ public class Setup {
                 sequenceOf(
                         DELETE_ALL
                 );
-        DbSetup dbSetup = new DbSetup(new DataSourceDestination(JDBCConnectionProvider.dataSource), operation);
+        DbSetup dbSetup = new DbSetup(new DataSourceDestination(HikariCPJDBCConnectionProvider.dataSource), operation);
         dbSetup.launch();
     }
 
@@ -111,7 +111,7 @@ public class Setup {
                 sequenceOf(
                         INSERT_USERS
                 );
-        DbSetup dbSetup = new DbSetup(new DataSourceDestination(JDBCConnectionProvider.dataSource), operation);
+        DbSetup dbSetup = new DbSetup(new DataSourceDestination(HikariCPJDBCConnectionProvider.dataSource), operation);
         dbSetup.launch();
     }
 }

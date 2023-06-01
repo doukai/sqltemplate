@@ -50,7 +50,9 @@ dependencies {
     testImplementation 'io.projectreactor:reactor-test:3.5.4'
     testRuntimeOnly 'io.projectreactor:reactor-test:3.5.4'
     testCompile 'com.ninja-squad:DbSetup:2.1.0'
+    testCompile "com.google.auto.service:auto-service:1.0.1"
     testAnnotationProcessor project(':sqltemplate-annotation-processor')
+    testAnnotationProcessor "com.google.auto.service:auto-service:1.0.1"
 }
 
 test {

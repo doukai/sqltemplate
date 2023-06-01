@@ -1,10 +1,11 @@
-package io.sqltemplate.showcase.connection;
+package io.sqltemplate.showcase.test.connection;
 
 import com.google.auto.service.AutoService;
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactories;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
+import io.sqltemplate.spi.connection.R2DBCConnectionProvider;
 import org.mariadb.r2dbc.MariadbConnectionFactoryProvider;
 import reactor.core.publisher.Mono;
 
@@ -12,8 +13,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-@AutoService(io.sqltemplate.spi.connection.R2DBCConnectionProvider.class)
-public class R2DBCConnectionProvider implements io.sqltemplate.spi.connection.R2DBCConnectionProvider {
+@AutoService(R2DBCConnectionProvider.class)
+public class MariaDBR2DBCConnectionProvider implements R2DBCConnectionProvider {
 
     public static ConnectionFactory connectionFactory = createConnectionFactory();
 
