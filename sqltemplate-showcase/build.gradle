@@ -50,6 +50,7 @@ dependencies {
     testImplementation 'io.projectreactor:reactor-test:3.5.4'
     testRuntimeOnly 'io.projectreactor:reactor-test:3.5.4'
     testCompile 'com.ninja-squad:DbSetup:2.1.0'
+    testAnnotationProcessor project(':sqltemplate-annotation-processor')
 }
 
 test {
