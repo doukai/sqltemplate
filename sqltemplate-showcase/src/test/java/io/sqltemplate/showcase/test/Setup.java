@@ -18,6 +18,8 @@ import static com.ninja_squad.dbsetup.operation.CompositeOperation.sequenceOf;
 
 public class Setup {
 
+    private static final DataSourceDestination dataSourceDestination = new DataSourceDestination(HikariCPJDBCConnectionProvider.dataSource);
+
     public static final List<Map<String, Object>> users = new ArrayList<Map<String, Object>>() {{
         add(new HashMap<String, Object>() {{
             put("id", 1);
@@ -93,7 +95,7 @@ public class Setup {
                 sequenceOf(
                         CREATE_TABLES
                 );
-        DbSetup dbSetup = new DbSetup(new DataSourceDestination(HikariCPJDBCConnectionProvider.dataSource), operation);
+        DbSetup dbSetup = new DbSetup(dataSourceDestination, operation);
         dbSetup.launch();
     }
 
@@ -102,7 +104,7 @@ public class Setup {
                 sequenceOf(
                         DELETE_ALL
                 );
-        DbSetup dbSetup = new DbSetup(new DataSourceDestination(HikariCPJDBCConnectionProvider.dataSource), operation);
+        DbSetup dbSetup = new DbSetup(dataSourceDestination, operation);
         dbSetup.launch();
     }
 
@@ -111,7 +113,7 @@ public class Setup {
                 sequenceOf(
                         INSERT_USERS
                 );
-        DbSetup dbSetup = new DbSetup(new DataSourceDestination(HikariCPJDBCConnectionProvider.dataSource), operation);
+        DbSetup dbSetup = new DbSetup(dataSourceDestination, operation);
         dbSetup.launch();
     }
 }
