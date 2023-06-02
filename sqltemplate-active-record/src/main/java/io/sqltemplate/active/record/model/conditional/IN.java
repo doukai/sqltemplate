@@ -1,24 +1,23 @@
 package io.sqltemplate.active.record.model.conditional;
 
-import com.google.common.base.CaseFormat;
 import io.sqltemplate.active.record.model.expression.Expression;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static io.sqltemplate.active.record.TableRecord.DEFAULT_ALIAS;
 
-public class IN implements Conditional {
+public class IN extends Compare {
 
-    private final String tableAlias;
-    private final String columnName;
-    private final Collection<Expression> expressions;
+    public IN(String tableAlias, String columnName, List<Object> expressions) {
+        super(tableAlias, columnName, expressions);
+    }
 
-    public IN(String tableAlias, String columnName, Collection<Expression> expressions) {
-        this.tableAlias = tableAlias;
-        this.columnName = columnName;
-        this.expressions = expressions;
+    @Override
+    protected String getSign() {
+        return "IN";
     }
 
     public static IN in(String tableAlias, String columnName, Collection<Object> expressions) {
@@ -35,10 +34,5 @@ public class IN implements Conditional {
 
     public static IN in(String columnName, Object... expressions) {
         return new IN(DEFAULT_ALIAS, columnName, Arrays.stream(expressions).map(Expression::of).collect(Collectors.toList()));
-    }
-
-    @Override
-    public String toString() {
-        return tableAlias + "." + CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, columnName) + " IN " + expressions.stream().map(Object::toString).collect(Collectors.joining(", ", "(", ")"));
     }
 }

@@ -1,5 +1,6 @@
 package io.sqltemplate.active.record;
 
+import com.google.common.base.CaseFormat;
 import io.sqltemplate.active.record.model.conditional.AND;
 import io.sqltemplate.active.record.model.conditional.Conditional;
 import io.sqltemplate.active.record.model.conditional.EQ;
@@ -15,7 +16,6 @@ import io.sqltemplate.active.record.model.conditional.NIN;
 import io.sqltemplate.active.record.model.conditional.NLK;
 import io.sqltemplate.active.record.model.conditional.NNIL;
 import io.sqltemplate.active.record.model.conditional.OR;
-import io.sqltemplate.active.record.model.expression.Expression;
 import io.sqltemplate.active.record.model.join.JoinColumns;
 import io.sqltemplate.active.record.model.join.JoinTable;
 import io.sqltemplate.active.record.model.sort.ASC;
@@ -23,8 +23,19 @@ import io.sqltemplate.active.record.model.sort.DESC;
 import io.sqltemplate.active.record.model.sort.Sort;
 import io.sqltemplate.active.record.model.update.ValueSet;
 import io.sqltemplate.core.utils.Parameter;
+import jakarta.persistence.Column;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import jakarta.transaction.Transactional;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,6 +67,115 @@ public class TableRecord<T> {
     public static void registerJoinTable(String tableName, String joinTableName, Function<JoinTable, JoinTable> joinTableBuilder) {
         joinTableMap.computeIfAbsent(tableName, k -> new ConcurrentHashMap<>());
         joinTableMap.get(tableName).put(joinTableName, joinTableBuilder.apply(joinTableMap.get(tableName).getOrDefault(joinTableName, new JoinTable())));
+    }
+
+    public static void registerEntityClass(Class<? extends TableRecord<?>> entityClass) {
+        if (entityClass.isAnnotationPresent(Table.class)) {
+            String tableName = entityClass.getAnnotation(Table.class).name();
+            List<Method> joinColumnsMethods = Arrays.stream(entityClass.getMethods())
+                    .filter(method ->
+                            method.isAnnotationPresent(OneToOne.class) ||
+                                    method.isAnnotationPresent(OneToMany.class) ||
+                                    method.isAnnotationPresent(ManyToOne.class)
+                    )
+                    .collect(Collectors.toList());
+            for (Method method : joinColumnsMethods) {
+                String joinTableName = method.getReturnType().getAnnotation(Table.class).name();
+                registerJoinColumn(tableName, joinTableName, joinColumns -> {
+                    for (JoinColumn joinColumn : method.getAnnotationsByType(JoinColumn.class)) {
+                        joinColumns.addJoinColumn(joinColumn);
+                    }
+                    return joinColumns;
+                });
+                registerJoinColumn(joinTableName, tableName, joinColumns -> {
+                    for (JoinColumn joinColumn : method.getAnnotationsByType(JoinColumn.class)) {
+                        joinColumns.addReverseJoinColumn(joinColumn);
+                    }
+                    return joinColumns;
+                });
+            }
+
+            List<Field> joinColumnsFields = Arrays.stream(entityClass.getFields())
+                    .filter(field ->
+                            field.isAnnotationPresent(OneToOne.class) ||
+                                    field.isAnnotationPresent(OneToMany.class) ||
+                                    field.isAnnotationPresent(ManyToOne.class)
+                    )
+                    .collect(Collectors.toList());
+            for (Field field : joinColumnsFields) {
+                String joinTableName = field.getType().getAnnotation(Table.class).name();
+                registerJoinColumn(tableName, joinTableName, joinColumns -> {
+                    for (JoinColumn joinColumn : field.getAnnotationsByType(JoinColumn.class)) {
+                        joinColumns.addJoinColumn(joinColumn);
+                    }
+                    return joinColumns;
+                });
+                registerJoinColumn(joinTableName, tableName, joinColumns -> {
+                    for (JoinColumn joinColumn : field.getAnnotationsByType(JoinColumn.class)) {
+                        joinColumns.addReverseJoinColumn(joinColumn);
+                    }
+                    return joinColumns;
+                });
+            }
+
+            List<Method> joinTableMethods = Arrays.stream(entityClass.getMethods())
+                    .filter(method -> method.isAnnotationPresent(ManyToMany.class))
+                    .collect(Collectors.toList());
+            for (Method method : joinTableMethods) {
+                String joinTableName = method.getReturnType().getAnnotation(Table.class).name();
+                registerJoinTable(tableName, joinTableName, joinTable -> {
+                    jakarta.persistence.JoinTable joinTableAnnotation = method.getAnnotation(jakarta.persistence.JoinTable.class);
+                    joinTable.setName(joinTableAnnotation.name());
+                    for (JoinColumn joinColumn : joinTableAnnotation.joinColumns()) {
+                        joinTable.addJoinColumn(joinColumn);
+                    }
+                    for (JoinColumn joinColumn : joinTableAnnotation.inverseJoinColumns()) {
+                        joinTable.addInverseJoinColumn(joinColumn);
+                    }
+                    return joinTable;
+                });
+                registerJoinTable(joinTableName, tableName, joinTable -> {
+                    jakarta.persistence.JoinTable joinTableAnnotation = method.getAnnotation(jakarta.persistence.JoinTable.class);
+                    joinTable.setName(joinTableAnnotation.name());
+                    for (JoinColumn joinColumn : joinTableAnnotation.joinColumns()) {
+                        joinTable.addReverseJoinColumn(joinColumn);
+                    }
+                    for (JoinColumn joinColumn : joinTableAnnotation.inverseJoinColumns()) {
+                        joinTable.addReverseInverseJoinColumn(joinColumn);
+                    }
+                    return joinTable;
+                });
+            }
+
+            List<Field> joinTableFields = Arrays.stream(entityClass.getFields())
+                    .filter(field -> field.isAnnotationPresent(ManyToMany.class))
+                    .collect(Collectors.toList());
+            for (Field field : joinTableFields) {
+                String joinTableName = field.getType().getAnnotation(Table.class).name();
+                registerJoinTable(tableName, joinTableName, joinTable -> {
+                    jakarta.persistence.JoinTable joinTableAnnotation = field.getAnnotation(jakarta.persistence.JoinTable.class);
+                    joinTable.setName(joinTableAnnotation.name());
+                    for (JoinColumn joinColumn : joinTableAnnotation.joinColumns()) {
+                        joinTable.addJoinColumn(joinColumn);
+                    }
+                    for (JoinColumn joinColumn : joinTableAnnotation.inverseJoinColumns()) {
+                        joinTable.addInverseJoinColumn(joinColumn);
+                    }
+                    return joinTable;
+                });
+                registerJoinTable(joinTableName, tableName, joinTable -> {
+                    jakarta.persistence.JoinTable joinTableAnnotation = field.getAnnotation(jakarta.persistence.JoinTable.class);
+                    joinTable.setName(joinTableAnnotation.name());
+                    for (JoinColumn joinColumn : joinTableAnnotation.joinColumns()) {
+                        joinTable.addReverseJoinColumn(joinColumn);
+                    }
+                    for (JoinColumn joinColumn : joinTableAnnotation.inverseJoinColumns()) {
+                        joinTable.addReverseInverseJoinColumn(joinColumn);
+                    }
+                    return joinTable;
+                });
+            }
+        }
     }
 
     private Transactional.TxType txType = Transactional.TxType.REQUIRED;
@@ -174,23 +294,51 @@ public class TableRecord<T> {
     }
 
     protected String getTableName() {
-        throw new RuntimeException("table name undefined");
+        return this.getClass().getAnnotation(Table.class).name();
     }
 
     protected String[] getKeyNames() {
-        throw new RuntimeException("key name undefined");
+        return Arrays.stream(this.getClass().getFields())
+                .filter(field -> field.isAnnotationPresent(Id.class))
+                .map(field -> field.getAnnotation(Column.class).name())
+                .toArray(String[]::new);
     }
 
     protected String[] getColumnNames() {
-        throw new RuntimeException("column names undefined");
+        return Arrays.stream(this.getClass().getFields())
+                .map(field -> field.getAnnotation(Column.class).name())
+                .toArray(String[]::new);
     }
 
     protected Object getValue(String name) {
-        throw new RuntimeException("value undefined: " + name);
+        return Arrays.stream(this.getClass().getFields())
+                .filter(field -> field.getAnnotation(Column.class).name().equals(name))
+                .map(field -> {
+                    try {
+                        Method method = this.getClass().getMethod("get".concat(CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, field.getName())));
+                        return method.invoke(this);
+                    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .findFirst()
+                .orElse(null);
     }
 
+    @SuppressWarnings({"JavaReflectionInvocation", "unchecked"})
     protected T mapToEntity(Map<String, Object> result) {
-        throw new RuntimeException("map to entity undefined");
+        try {
+            TableRecord<?> tableRecord = recordIndex.getRecordSupplier(getTableName()).get();
+            for (Field field : Arrays.stream(this.getClass().getFields())
+                    .filter(field -> field.isAnnotationPresent(Column.class))
+                    .collect(Collectors.toList())) {
+                Method method = tableRecord.getClass().getMethod("set" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, field.getName()));
+                method.invoke(tableRecord, result.get(field.getName()) != null ? method.getParameters()[0].getType().cast(result.get(field.getName())) : null);
+            }
+            return (T) tableRecord;
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected EQ[] getKeyEQValues() {

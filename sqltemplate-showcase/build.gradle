@@ -15,12 +15,12 @@ plugins {
 
 apply plugin: 'io.sqltemplate'
 jdbc {
-    jdbcUrl = "jdbc:mysql://127.0.0.1:3306/user"
+    jdbcUrl = "jdbc:mysql://127.0.0.1:3306/sqltemplate"
     username = "root"
     password = "root"
 }
 generator {
-    schemaName = "user"
+    schemaName = "sqltemplate"
     packageName = "io.sqltemplate.showcase.dto"
 }
 

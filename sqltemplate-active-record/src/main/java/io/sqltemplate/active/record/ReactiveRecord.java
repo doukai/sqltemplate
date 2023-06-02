@@ -11,6 +11,7 @@ import io.sqltemplate.active.record.model.sort.DESC;
 import io.sqltemplate.active.record.model.sort.Sort;
 import io.sqltemplate.active.record.model.update.ValueSet;
 import io.sqltemplate.core.r2dbc.R2DBCAdapter;
+import jakarta.persistence.Table;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
@@ -34,11 +35,19 @@ public class ReactiveRecord<T> extends TableRecord<T> {
         return where(record).on(joinColumns).first();
     }
 
+    public <E> Mono<E> getOne(Class<E> entityClass) {
+        return getOne(entityClass.getAnnotation(Table.class).name());
+    }
+
     @SuppressWarnings("unchecked")
     public <E> Mono<List<E>> getMany(String tableName) {
         ReactiveRecord<E> record = (ReactiveRecord<E>) recordIndex.getRecordSupplier(tableName).get();
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
         return where(record).on(joinColumns).list();
+    }
+
+    public <E> Mono<List<E>> getMany(Class<E> entityClass) {
+        return getMany(entityClass.getAnnotation(Table.class).name());
     }
 
     @SuppressWarnings("unchecked")
@@ -48,9 +57,17 @@ public class ReactiveRecord<T> extends TableRecord<T> {
         return where(record).on(joinTable).list();
     }
 
+    public <E> Mono<List<E>> getManyByJoin(Class<E> entityClass) {
+        return getManyByJoin(entityClass.getAnnotation(Table.class).name());
+    }
+
     public <E> Mono<E> addOne(String tableName, ReactiveRecord<E> entityRecord) {
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
         return update(entityRecord, joinColumns.getJoinColumns().stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))).toArray(ValueSet[]::new));
+    }
+
+    public <E> Mono<E> addOne(Class<E> entityClass, ReactiveRecord<E> entityRecord) {
+        return addOne(entityClass.getAnnotation(Table.class).name(), entityRecord);
     }
 
     @SuppressWarnings("unchecked")
@@ -60,6 +77,10 @@ public class ReactiveRecord<T> extends TableRecord<T> {
         return where(record, getKeyEQValues(entityRecords))
                 .updateAll(joinColumns.getJoinColumns().stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))).toArray(ValueSet[]::new))
                 .then(record.list());
+    }
+
+    public <E> Mono<List<E>> addMany(Class<E> entityClass, ReactiveRecord<E>... entityRecords) {
+        return addMany(entityClass.getAnnotation(Table.class).name(), entityRecords);
     }
 
     @SuppressWarnings("unchecked")
@@ -79,9 +100,17 @@ public class ReactiveRecord<T> extends TableRecord<T> {
         return insertAll(joinRecords.toArray(new ReactiveRecord[]{})).then(getManyByJoin(tableName));
     }
 
+    public <E> Mono<List<E>> addManyByJoin(Class<E> entityClass, ReactiveRecord<E>... entityRecords) {
+        return addManyByJoin(entityClass.getAnnotation(Table.class).name(), entityRecords);
+    }
+
     public <E> Mono<E> removeOne(String tableName, ReactiveRecord<E> record) {
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
         return update(record, joinColumns.getJoinColumns().stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), new NullValue())).toArray(ValueSet[]::new));
+    }
+
+    public <E> Mono<E> removeOne(Class<E> entityClass, ReactiveRecord<E> entityRecord) {
+        return removeOne(entityClass.getAnnotation(Table.class).name(), entityRecord);
     }
 
     @SuppressWarnings("unchecked")
@@ -91,6 +120,10 @@ public class ReactiveRecord<T> extends TableRecord<T> {
         return where(record, getKeyEQValues(entityRecords))
                 .updateAll(joinColumns.getJoinColumns().stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), new NullValue())).toArray(ValueSet[]::new))
                 .then(record.list());
+    }
+
+    public <E> Mono<List<E>> removeMany(Class<E> entityClass, ReactiveRecord<E>... entityRecords) {
+        return removeMany(entityClass.getAnnotation(Table.class).name(), entityRecords);
     }
 
     public <E> Mono<Long> removeManyByJoin(String tableName, ReactiveRecord<E>... entityRecords) {
@@ -106,6 +139,10 @@ public class ReactiveRecord<T> extends TableRecord<T> {
                         ).collect(Collectors.toList())
                 )
         ).deleteAll();
+    }
+
+    public <E> Mono<Long> removeManyByJoin(Class<E> entityClass, ReactiveRecord<E>... entityRecords) {
+        return removeManyByJoin(entityClass.getAnnotation(Table.class).name(), entityRecords);
     }
 
     public static <T> Mono<List<T>> all() {

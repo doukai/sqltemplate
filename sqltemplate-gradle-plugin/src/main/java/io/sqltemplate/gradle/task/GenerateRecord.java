@@ -95,6 +95,8 @@ public class GenerateRecord extends DefaultTask {
             ParameterizedTypeName recordParameterizedTypeName = ParameterizedTypeName.get(recordClassName, ClassName.get(generatorConfig.getPackageName(), typeName));
             TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(typeName)
                     .addModifiers(Modifier.PUBLIC)
+                    .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.annotation", "Generated")).addMember("value", "$S", GenerateRecord.class.getCanonicalName()).build())
+                    .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.persistence", "Table")).addMember("name", "$S", tableName).build())
                     .superclass(recordParameterizedTypeName)
                     .addJavadoc(remarks)
                     .addFields(fieldSpecList)
@@ -118,8 +120,23 @@ public class GenerateRecord extends DefaultTask {
         return TypeSpec.classBuilder("TableRecordIndex")
                 .addModifiers(Modifier.PUBLIC)
                 .addSuperinterface(ClassName.get("io.sqltemplate.active.record", "RecordIndex"))
+                .addStaticBlock(getRegisterEntityClassCodeBlock(tableMapList))
                 .addMethod(getRecordSupplierMethod(tableMapList))
                 .build();
+    }
+
+    public CodeBlock getRegisterEntityClassCodeBlock(List<Map<String, Object>> tableMapList) {
+        return CodeBlock.join(
+                tableMapList.stream()
+                        .map(tableMap ->
+                                CodeBlock.of("$T.registerEntityClass($T.class);\r\n",
+                                        ClassName.get("io.sqltemplate.active.record", "TableRecord"),
+                                        ClassName.get(generatorConfig.getPackageName(), CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, ((String) tableMap.get("TABLE_NAME")).toLowerCase()))
+                                )
+                        )
+                        .collect(Collectors.toList()),
+                ""
+        );
     }
 
     public MethodSpec getRecordSupplierMethod(List<Map<String, Object>> tableMapList) {
@@ -174,6 +191,7 @@ public class GenerateRecord extends DefaultTask {
             String isAutoIncrement = (String) columnMap.get("IS_AUTOINCREMENT");
             String remarks = (String) columnMap.get("REMARKS");
             FieldSpec field = FieldSpec.builder(getClassName(JDBCType.valueOf(datatype)), CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, columnName.toLowerCase()), Modifier.PRIVATE)
+//                    .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.persistence", "Column")).addMember("name", "$S", columnName).addMember("nullable", "$L", isNullable.equals("YES")).build())
                     .addJavadoc(remarks)
                     .build();
             fieldSpecList.add(field);

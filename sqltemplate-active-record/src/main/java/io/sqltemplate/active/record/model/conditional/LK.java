@@ -1,25 +1,25 @@
 package io.sqltemplate.active.record.model.conditional;
 
-import io.sqltemplate.core.utils.Parameter;
+import io.sqltemplate.active.record.model.expression.Expression;
 
 import static io.sqltemplate.active.record.TableRecord.DEFAULT_ALIAS;
 
 public class LK extends Compare {
 
-    public LK(String tableAlias, String columnName, Parameter parameter) {
-        super(tableAlias, columnName, parameter);
+    public LK(String tableAlias, String columnName, Object expression) {
+        super(tableAlias, columnName, expression);
     }
 
     @Override
-    protected String sign() {
+    protected String getSign() {
         return "LIKE";
     }
 
-    public static LK lk(String tableAlias, String columnName, Object parameter) {
-        return new LK(tableAlias, columnName, new Parameter(parameter));
+    public static LK lk(String tableAlias, String columnName, Object expression) {
+        return new LK(tableAlias, columnName, Expression.of(expression));
     }
 
-    public static LK lk(String columnName, Object parameter) {
-        return new LK(DEFAULT_ALIAS, columnName, new Parameter(parameter));
+    public static LK lk(String columnName, Object expression) {
+        return new LK(DEFAULT_ALIAS, columnName, Expression.of(expression));
     }
 }

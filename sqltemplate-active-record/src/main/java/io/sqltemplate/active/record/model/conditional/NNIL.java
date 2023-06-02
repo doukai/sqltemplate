@@ -1,17 +1,15 @@
 package io.sqltemplate.active.record.model.conditional;
 
-import io.sqltemplate.active.record.model.expression.NullValue;
-
 import static io.sqltemplate.active.record.TableRecord.DEFAULT_ALIAS;
 
 public class NNIL extends Compare {
 
     public NNIL(String tableAlias, String columnName) {
-        super(tableAlias, columnName, new NullValue());
+        super(tableAlias, columnName);
     }
 
     @Override
-    protected String sign() {
+    protected String getSign() {
         return "IS NOT";
     }
 

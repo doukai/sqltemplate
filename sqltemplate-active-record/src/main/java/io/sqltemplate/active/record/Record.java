@@ -11,6 +11,7 @@ import io.sqltemplate.active.record.model.sort.DESC;
 import io.sqltemplate.active.record.model.sort.Sort;
 import io.sqltemplate.active.record.model.update.ValueSet;
 import io.sqltemplate.core.jdbc.JDBCAdapter;
+import jakarta.persistence.Table;
 
 import java.util.*;
 import java.util.function.Function;
@@ -33,11 +34,19 @@ public class Record<T> extends TableRecord<T> {
         return where(record).on(joinColumns).first();
     }
 
+    public <E> E getOne(Class<E> entityClass) {
+        return getOne(entityClass.getAnnotation(Table.class).name());
+    }
+
     @SuppressWarnings("unchecked")
     public <E> List<E> getMany(String tableName) {
         Record<E> record = (Record<E>) recordIndex.getRecordSupplier(tableName).get();
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
         return where(record).on(joinColumns).list();
+    }
+
+    public <E> List<E> getMany(Class<E> entityClass) {
+        return getMany(entityClass.getAnnotation(Table.class).name());
     }
 
     @SuppressWarnings("unchecked")
@@ -47,9 +56,17 @@ public class Record<T> extends TableRecord<T> {
         return where(record).on(joinTable).list();
     }
 
+    public <E> List<E> getManyByJoin(Class<E> entityClass) {
+        return getManyByJoin(entityClass.getAnnotation(Table.class).name());
+    }
+
     public <E> E addOne(String tableName, Record<E> entityRecord) {
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
         return update(entityRecord, joinColumns.getJoinColumns().stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))).toArray(ValueSet[]::new));
+    }
+
+    public <E> E addOne(Class<E> entityClass, Record<E> entityRecord) {
+        return addOne(entityClass.getAnnotation(Table.class).name(), entityRecord);
     }
 
     @SuppressWarnings("unchecked")
@@ -59,6 +76,10 @@ public class Record<T> extends TableRecord<T> {
         where(record, getKeyEQValues(entityRecords))
                 .updateAll(joinColumns.getJoinColumns().stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))).toArray(ValueSet[]::new));
         return record.list();
+    }
+
+    public <E> List<E> addMany(Class<E> entityClass, Record<E>... entityRecords) {
+        return addMany(entityClass.getAnnotation(Table.class).name(), entityRecords);
     }
 
     @SuppressWarnings("unchecked")
@@ -80,9 +101,17 @@ public class Record<T> extends TableRecord<T> {
         return getManyByJoin(tableName);
     }
 
+    public <E> List<E> addManyByJoin(Class<E> entityClass, Record<E>... entityRecords) {
+        return addManyByJoin(entityClass.getAnnotation(Table.class).name(), entityRecords);
+    }
+
     public <E> E removeOne(String tableName, Record<E> entityRecord) {
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
         return update(entityRecord, joinColumns.getJoinColumns().stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), new NullValue())).toArray(ValueSet[]::new));
+    }
+
+    public <E> E removeOne(Class<E> entityClass, Record<E> entityRecord) {
+        return removeOne(entityClass.getAnnotation(Table.class).name(), entityRecord);
     }
 
     @SuppressWarnings("unchecked")
@@ -92,6 +121,10 @@ public class Record<T> extends TableRecord<T> {
         where(record, getKeyEQValues(entityRecords))
                 .updateAll(joinColumns.getJoinColumns().stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), new NullValue())).toArray(ValueSet[]::new));
         return record.list();
+    }
+
+    public <E> List<E> removeMany(Class<E> entityClass, Record<E>... entityRecords) {
+        return removeMany(entityClass.getAnnotation(Table.class).name(), entityRecords);
     }
 
     @SuppressWarnings("unchecked")
@@ -109,6 +142,10 @@ public class Record<T> extends TableRecord<T> {
                         ).collect(Collectors.toList())
                 )
         ).deleteAll();
+    }
+
+    public <E> long removeManyByJoin(Class<E> entityClass, Record<E>... entityRecords) {
+        return removeManyByJoin(entityClass.getAnnotation(Table.class).name(), entityRecords);
     }
 
     public static <T> List<T> all() {

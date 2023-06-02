@@ -1,14 +1,15 @@
 package io.sqltemplate.active.record.model.join;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class JoinTable {
 
     private String name;
 
-    private List<JoinColumn> joinColumns;
+    private final List<JoinColumn> joinColumns = new ArrayList<>();
 
-    private List<JoinColumn> inverseJoinColumns;
+    private final List<JoinColumn> inverseJoinColumns = new ArrayList<>();
 
     public JoinTable() {
     }
@@ -23,8 +24,28 @@ public class JoinTable {
         return this;
     }
 
+    public JoinTable addJoinColumn(jakarta.persistence.JoinColumn joinColumn) {
+        this.joinColumns.add(new JoinColumn(joinColumn.name(), joinColumn.referencedColumnName()));
+        return this;
+    }
+
+    public JoinTable addReverseJoinColumn(jakarta.persistence.JoinColumn joinColumn) {
+        this.joinColumns.add(new JoinColumn(joinColumn.referencedColumnName(), joinColumn.name()));
+        return this;
+    }
+
     public JoinTable addInverseJoinColumn(String name, String referencedColumnName) {
         this.inverseJoinColumns.add(new JoinColumn(name, referencedColumnName));
+        return this;
+    }
+
+    public JoinTable addInverseJoinColumn(jakarta.persistence.JoinColumn joinColumn) {
+        this.inverseJoinColumns.add(new JoinColumn(joinColumn.name(), joinColumn.referencedColumnName()));
+        return this;
+    }
+
+    public JoinTable addReverseInverseJoinColumn(jakarta.persistence.JoinColumn joinColumn) {
+        this.inverseJoinColumns.add(new JoinColumn(joinColumn.referencedColumnName(), joinColumn.name()));
         return this;
     }
 
