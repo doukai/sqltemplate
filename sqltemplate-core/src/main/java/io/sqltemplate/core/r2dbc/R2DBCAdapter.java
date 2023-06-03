@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static io.sqltemplate.core.utils.TemplateInstanceUtil.TEMPLATE_INSTANCE_UTIL;
+import static io.sqltemplate.core.template.TemplateInstance.TEMPLATE_INSTANCE;
 
 public abstract class R2DBCAdapter<T> extends Adapter<T> {
 
@@ -36,7 +36,7 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
     }
 
     public Mono<T> query() {
-        String sql = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
+        String sql = TEMPLATE_INSTANCE.render(getTemplateName(), getInstanceName(), getParams());
         return Mono.usingWhen(
                         R2DBCTransactionManager.begin(getTxType()),
                         tid -> R2DBCTransactionManager.getConnection()
@@ -54,7 +54,7 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
     }
 
     public Mono<List<T>> queryList() {
-        String sql = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
+        String sql = TEMPLATE_INSTANCE.render(getTemplateName(), getInstanceName(), getParams());
         return Mono.usingWhen(
                         R2DBCTransactionManager.begin(getTxType()),
                         tid -> R2DBCTransactionManager.getConnection()
@@ -72,7 +72,7 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
     }
 
     public Flux<T> queryFlux() {
-        String sql = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
+        String sql = TEMPLATE_INSTANCE.render(getTemplateName(), getInstanceName(), getParams());
         return Flux.usingWhen(
                         R2DBCTransactionManager.begin(getTxType()),
                         tid -> R2DBCTransactionManager.getConnection()
@@ -89,7 +89,7 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
     }
 
     public Mono<Long> update() {
-        String sql = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
+        String sql = TEMPLATE_INSTANCE.render(getTemplateName(), getInstanceName(), getParams());
         return Mono.usingWhen(
                         R2DBCTransactionManager.begin(getTxType()),
                         tid -> R2DBCTransactionManager.getConnection()

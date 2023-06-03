@@ -22,7 +22,7 @@ import io.sqltemplate.active.record.model.sort.ASC;
 import io.sqltemplate.active.record.model.sort.DESC;
 import io.sqltemplate.active.record.model.sort.Sort;
 import io.sqltemplate.active.record.model.update.ValueSet;
-import io.sqltemplate.core.utils.Parameter;
+import io.sqltemplate.core.template.Parameter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;

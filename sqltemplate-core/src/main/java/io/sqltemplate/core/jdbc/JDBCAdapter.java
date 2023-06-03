@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 
-import static io.sqltemplate.core.utils.TemplateInstanceUtil.TEMPLATE_INSTANCE_UTIL;
+import static io.sqltemplate.core.template.TemplateInstance.TEMPLATE_INSTANCE;
 
 public abstract class JDBCAdapter<T> extends Adapter<T> {
 
@@ -36,7 +36,7 @@ public abstract class JDBCAdapter<T> extends Adapter<T> {
     }
 
     public T query() {
-        String sql = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
+        String sql = TEMPLATE_INSTANCE.render(getTemplateName(), getInstanceName(), getParams());
         String tid = null;
         try {
             tid = JDBCTransactionManager.begin(getTxType());
@@ -63,7 +63,7 @@ public abstract class JDBCAdapter<T> extends Adapter<T> {
     }
 
     public List<T> queryList() {
-        String sql = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
+        String sql = TEMPLATE_INSTANCE.render(getTemplateName(), getInstanceName(), getParams());
         String tid = null;
         try {
             tid = JDBCTransactionManager.begin(getTxType());
@@ -91,7 +91,7 @@ public abstract class JDBCAdapter<T> extends Adapter<T> {
     }
 
     public Long update() {
-        String sql = TEMPLATE_INSTANCE_UTIL.getSQLWithParams(getTemplateName(), getInstanceName(), getParams());
+        String sql = TEMPLATE_INSTANCE.render(getTemplateName(), getInstanceName(), getParams());
         String tid = null;
         try {
             tid = JDBCTransactionManager.begin(getTxType());

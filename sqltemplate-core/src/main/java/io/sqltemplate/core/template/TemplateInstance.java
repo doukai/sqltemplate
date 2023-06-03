@@ -1,4 +1,4 @@
-package io.sqltemplate.core.utils;
+package io.sqltemplate.core.template;
 
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.STGroup;
@@ -11,10 +11,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public enum TemplateInstanceUtil {
-    TEMPLATE_INSTANCE_UTIL;
+public enum TemplateInstance {
+    TEMPLATE_INSTANCE;
 
-    public String getSQLWithParams(String templateName, String instanceName, Map<String, Object> paramsMap) {
+    public String render(String templateName, String instanceName, Map<String, Object> paramsMap) {
         STGroup stGroup;
         ST instance;
         if (templateName.endsWith(".stg")) {
@@ -36,8 +36,8 @@ public enum TemplateInstanceUtil {
             }
         }
         Map<String, Object> dbParamsMap = new HashMap<>();
-        ParameterRenderer parameterRenderer = new ParameterRenderer(dbParamsMap);
-        stGroup.registerRenderer(Parameter.class, parameterRenderer);
+        ObjectRenderer objectRenderer = new ObjectRenderer(dbParamsMap);
+        stGroup.registerRenderer(Object.class, objectRenderer);
         List<String> attributeKeyList = new ArrayList<>(instance.impl.formalArguments.keySet());
         if (paramsMap.keySet().stream().anyMatch(key -> attributeKeyList.stream().noneMatch(attrName -> attrName.equals(key)))) {
             Map<String, Object> namedParamsMap = new HashMap<>();
@@ -51,6 +51,7 @@ public enum TemplateInstanceUtil {
         }
         paramsMap.forEach(instance::add);
         String sql = instance.render();
+        paramsMap.clear();
         if (dbParamsMap.size() > 0) {
             paramsMap.putAll(dbParamsMap);
         }

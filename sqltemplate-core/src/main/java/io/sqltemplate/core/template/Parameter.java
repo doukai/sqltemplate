@@ -1,4 +1,4 @@
-package io.sqltemplate.core.utils;
+package io.sqltemplate.core.template;
 
 public class Parameter {
 

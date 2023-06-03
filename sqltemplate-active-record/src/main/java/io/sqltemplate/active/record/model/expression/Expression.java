@@ -1,6 +1,6 @@
 package io.sqltemplate.active.record.model.expression;
 
-import io.sqltemplate.core.utils.Parameter;
+import io.sqltemplate.core.template.Parameter;
 
 public interface Expression {
 
