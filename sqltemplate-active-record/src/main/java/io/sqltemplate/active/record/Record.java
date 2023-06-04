@@ -233,7 +233,7 @@ public class Record<T> extends TableRecord<T> {
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
             put("columns", getColumnNames());
-            put("values", getValueParameters());
+            put("values", getValues());
         }};
         new JDBCAdapter<T>("stg/record/insert.stg", "insert", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
             @Override
@@ -248,7 +248,14 @@ public class Record<T> extends TableRecord<T> {
     public static <T> List<T> insertAll(Record<T>... records) {
         Record<T> record = new Record<>();
         Map<String, Object> params = new HashMap<String, Object>() {{
-            put("records", records);
+            put("records", Arrays.stream(records)
+                    .map(record -> new HashMap<String, Object>() {{
+                        put("table", record.getTableName());
+                        put("columns", record.getColumnNames());
+                        put("values", record.getValues());
+                    }})
+                    .collect(Collectors.toList())
+            );
         }};
         new JDBCAdapter<T>("stg/record/insert.stg", "insertAll", params, record.getTxType(), record.getRollbackOn(), record.getDontRollbackOn()) {
             @Override

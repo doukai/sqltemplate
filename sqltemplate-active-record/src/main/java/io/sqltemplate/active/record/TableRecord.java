@@ -53,11 +53,11 @@ public class TableRecord<T> {
 
     public static String DEFAULT_ALIAS = "t";
 
-    protected static final Map<String, Map<String, JoinColumns>> joinColumnsMap = new ConcurrentHashMap<>();
+    public static final Map<String, Map<String, JoinColumns>> joinColumnsMap = new ConcurrentHashMap<>();
 
-    protected static final Map<String, Map<String, JoinTable>> joinTableMap = new ConcurrentHashMap<>();
+    public static final Map<String, Map<String, JoinTable>> joinTableMap = new ConcurrentHashMap<>();
 
-    protected static final RecordIndex recordIndex = RecordIndex.provider();
+    public static final RecordIndex recordIndex = RecordIndex.provider();
 
     public static void registerJoinColumn(String tableName, String joinTableName, Function<JoinColumns, JoinColumns> JoinColumnsBuilder) {
         joinColumnsMap.computeIfAbsent(tableName, k -> new ConcurrentHashMap<>());
@@ -221,96 +221,96 @@ public class TableRecord<T> {
         return this;
     }
 
-    protected String getAlias() {
+    public String getAlias() {
         return alias;
     }
 
-    protected TableRecord<T> setAlias(String alias) {
+    public TableRecord<T> setAlias(String alias) {
         this.alias = alias;
         return this;
     }
 
-    protected String getJoinAlias() {
+    public String getJoinAlias() {
         return joinAlias;
     }
 
-    protected TableRecord<T> setJoinAlias(String joinAlias) {
+    public TableRecord<T> setJoinAlias(String joinAlias) {
         this.joinAlias = joinAlias;
         return this;
     }
 
-    protected JoinTable getJoinTable() {
+    public JoinTable getJoinTable() {
         return joinTable;
     }
 
-    protected TableRecord<T> setJoinTable(JoinTable joinTable) {
+    public TableRecord<T> setJoinTable(JoinTable joinTable) {
         this.joinTable = joinTable;
         return this;
     }
 
-    protected List<Conditional> getConditionals() {
+    public List<Conditional> getConditionals() {
         return conditionals;
     }
 
-    protected TableRecord<T> setConditionals(List<Conditional> conditionals) {
+    public TableRecord<T> setConditionals(List<Conditional> conditionals) {
         this.conditionals = conditionals;
         return this;
     }
 
-    protected List<Sort> getSorts() {
+    public List<Sort> getSorts() {
         return sorts;
     }
 
-    protected TableRecord<T> setSorts(List<Sort> sorts) {
+    public TableRecord<T> setSorts(List<Sort> sorts) {
         this.sorts = sorts;
         return this;
     }
 
-    protected Integer getLimit() {
+    public Integer getLimit() {
         return limit;
     }
 
-    protected TableRecord<T> setLimit(Integer limit) {
+    public TableRecord<T> setLimit(Integer limit) {
         this.limit = limit;
         return this;
     }
 
-    protected Integer getOffset() {
+    public Integer getOffset() {
         return offset;
     }
 
-    protected TableRecord<T> setOffset(Integer offset) {
+    public TableRecord<T> setOffset(Integer offset) {
         this.offset = offset;
         return this;
     }
 
-    protected Boolean isAutoIncrement() {
+    public Boolean isAutoIncrement() {
         return autoIncrement;
     }
 
-    protected TableRecord<T> setAutoIncrement(boolean autoIncrement) {
+    public TableRecord<T> setAutoIncrement(boolean autoIncrement) {
         this.autoIncrement = autoIncrement;
         return this;
     }
 
-    protected String getTableName() {
+    public String getTableName() {
         return this.getClass().getAnnotation(Table.class).name();
     }
 
-    protected String[] getKeyNames() {
+    public String[] getKeyNames() {
         return Arrays.stream(this.getClass().getFields())
                 .filter(field -> field.isAnnotationPresent(Id.class))
                 .map(field -> field.getAnnotation(Column.class).name())
                 .toArray(String[]::new);
     }
 
-    protected String[] getColumnNames() {
+    public String[] getColumnNames() {
         return Arrays.stream(this.getClass().getFields())
                 .map(field -> field.getAnnotation(Column.class).name())
                 .toArray(String[]::new);
     }
 
-    protected Object getValue(String name) {
+    public Object getValue(String name) {
         return Arrays.stream(this.getClass().getFields())
                 .filter(field -> field.getAnnotation(Column.class).name().equals(name))
                 .map(field -> {
@@ -326,7 +326,7 @@ public class TableRecord<T> {
     }
 
     @SuppressWarnings({"JavaReflectionInvocation", "unchecked"})
-    protected T mapToEntity(Map<String, Object> result) {
+    public T mapToEntity(Map<String, Object> result) {
         try {
             TableRecord<?> tableRecord = recordIndex.getRecordSupplier(getTableName()).get();
             for (Field field : Arrays.stream(this.getClass().getFields())
@@ -341,15 +341,15 @@ public class TableRecord<T> {
         }
     }
 
-    protected EQ[] getKeyEQValues() {
+    public EQ[] getKeyEQValues() {
         return Arrays.stream(getKeyNames()).map(name -> EQ.eq(name, getValue(name))).toArray(EQ[]::new);
     }
 
-    protected Conditional getKeyEQValues(TableRecord<?>... records) {
+    public Conditional getKeyEQValues(TableRecord<?>... records) {
         return OR.or(Arrays.stream(records).map(TableRecord::getKeyEQValues).map(AND::and).toArray(AND[]::new));
     }
 
-    protected EQ[] getInsertKeyEQValues() {
+    public EQ[] getInsertKeyEQValues() {
         if (isAutoIncrement()) {
             return new EQ[]{EQ.eq(getKeyNames()[0], LAST_INSERT_ID)};
         } else {
@@ -357,7 +357,7 @@ public class TableRecord<T> {
         }
     }
 
-    protected Conditional getInsertKeyEQValues(TableRecord<?>... records) {
+    public Conditional getInsertKeyEQValues(TableRecord<?>... records) {
         if (isAutoIncrement()) {
             return GTE.gte(getKeyNames()[0], LAST_INSERT_ID);
         } else {
@@ -365,19 +365,19 @@ public class TableRecord<T> {
         }
     }
 
-    protected EQ[] getKeyEQValues(Object... values) {
+    public EQ[] getKeyEQValues(Object... values) {
         return IntStream.range(0, getKeyNames().length).mapToObj(index -> EQ.eq(getKeyNames()[index], values[index])).toArray(EQ[]::new);
     }
 
-    protected List<Object> getKeyValues() {
+    public List<Object> getKeyValues() {
         return Arrays.stream(getKeyNames()).map(this::getValue).collect(Collectors.toList());
     }
 
-    protected List<Parameter> getValueParameters() {
-        return Arrays.stream(getKeyNames()).map(this::getValue).map(Parameter::new).collect(Collectors.toList());
+    public List<Parameter> getValues() {
+        return Arrays.stream(getColumnNames()).map(this::getValue).map(Parameter::new).collect(Collectors.toList());
     }
 
-    protected List<ValueSet> getValueSets() {
+    public List<ValueSet> getValueSets() {
         return Arrays.stream(getColumnNames()).map(name -> set(name, getValue(name))).collect(Collectors.toList());
     }
 

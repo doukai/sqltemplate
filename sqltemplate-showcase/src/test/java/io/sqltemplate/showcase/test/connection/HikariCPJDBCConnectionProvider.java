@@ -29,6 +29,7 @@ public class HikariCPJDBCConnectionProvider implements JDBCConnectionProvider {
             config.addDataSourceProperty("cachePrepStmts", "true");
             config.addDataSourceProperty("prepStmtCacheSize", "250");
             config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+            config.addDataSourceProperty("allowMultiQueries", "true");
             return new HikariDataSource(config);
         } catch (IOException e) {
             throw new RuntimeException(e);

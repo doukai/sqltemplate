@@ -17,7 +17,7 @@ public class ObjectRenderer implements AttributeRenderer<Object> {
     public String toString(Object value, String formatString, Locale locale) {
         if (value instanceof Parameter) {
             String name = "p" + dbParamsMap.size();
-            dbParamsMap.put(name, value);
+            dbParamsMap.put(name, ((Parameter) value).getValue());
             return ":" + name;
         }
         if (formatString != null) {

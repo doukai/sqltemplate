@@ -34,22 +34,22 @@ public class Organization extends Record<Organization> {
   private final Boolean autoIncrement = false;
 
   @Override
-  protected String getTableName() {
+  public String getTableName() {
     return tableName;
   }
 
   @Override
-  protected String[] getKeyNames() {
+  public String[] getKeyNames() {
     return keyNames;
   }
 
   @Override
-  protected String[] getColumnNames() {
+  public String[] getColumnNames() {
     return columnNames;
   }
 
   @Override
-  protected Object getValue(String columnName) {
+  public Object getValue(String columnName) {
     if (columnName.equals("id")) {
       return getId();
     } else if (columnName.equals("above_id")) {
@@ -65,7 +65,7 @@ public class Organization extends Record<Organization> {
   }
 
   @Override
-  protected Organization mapToEntity(Map<String, Object> result) {
+  public Organization mapToEntity(Map<String, Object> result) {
     Organization entity = new Organization();
     entity.setId(result.get("id") != null ? (Integer) result.get("id") : null);
     entity.setAboveId(result.get("aboveId") != null ? (Integer) result.get("aboveId") : null);
@@ -76,7 +76,7 @@ public class Organization extends Record<Organization> {
   }
 
   @Override
-  protected Boolean isAutoIncrement() {
+  public Boolean isAutoIncrement() {
     return autoIncrement;
   }
 
