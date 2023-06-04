@@ -22,9 +22,14 @@ import static io.sqltemplate.active.record.model.update.ValueSet.set;
 
 public class Record<T> extends TableRecord<T> {
 
-    public static <T> T get(Object... values) {
-        Record<T> record = new Record<>();
+    @SuppressWarnings("unchecked")
+    public static <T> T get(String tableName, Object... values) {
+        Record<T> record = (Record<T>) recordIndex.getRecordSupplier(tableName).get();
         return where(record, record.getKeyEQValues(values)).first();
+    }
+
+    public static <T> T get(Class<T> recordClass, Object... values) {
+        return get(recordClass.getAnnotation(Table.class).name(), values);
     }
 
     @SuppressWarnings("unchecked")
@@ -97,7 +102,7 @@ public class Record<T> extends TableRecord<T> {
                         )
                 )
                 .collect(Collectors.toList());
-        insertAll(joinRecords.toArray(new Record[]{}));
+        insertAll(tableName, joinRecords.toArray(new Record[]{}));
         return getManyByJoin(tableName);
     }
 
@@ -148,9 +153,14 @@ public class Record<T> extends TableRecord<T> {
         return removeManyByJoin(entityClass.getAnnotation(Table.class).name(), entityRecords);
     }
 
-    public static <T> List<T> all() {
-        Record<T> record = new Record<>();
+    @SuppressWarnings("unchecked")
+    public static <T> List<T> all(String tableName) {
+        Record<T> record = (Record<T>) recordIndex.getRecordSupplier(tableName).get();
         return record.list();
+    }
+
+    public static <T> List<T> all(Class<T> recordClass) {
+        return all(recordClass.getAnnotation(Table.class).name());
     }
 
     public List<T> list() {
@@ -171,14 +181,24 @@ public class Record<T> extends TableRecord<T> {
         }.queryList();
     }
 
-    public static <T> T firstOfAll() {
-        Record<T> record = new Record<>();
+    @SuppressWarnings("unchecked")
+    public static <T> T firstOfAll(String tableName) {
+        Record<T> record = (Record<T>) recordIndex.getRecordSupplier(tableName).get();
         return record.first();
     }
 
-    public static <T> T lastOfAll(String... fileNames) {
-        Record<T> record = new Record<>();
+    public static <T> T firstOfAll(Class<T> recordClass) {
+        return firstOfAll(recordClass.getAnnotation(Table.class).name());
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T lastOfAll(String tableName, String... fileNames) {
+        Record<T> record = (Record<T>) recordIndex.getRecordSupplier(tableName).get();
         return record.last(fileNames);
+    }
+
+    public static <T> T lastOfAll(Class<T> recordClass, String... fileNames) {
+        return lastOfAll(recordClass.getAnnotation(Table.class).name(), fileNames);
     }
 
     public T first() {
@@ -198,9 +218,14 @@ public class Record<T> extends TableRecord<T> {
         return list != null ? list.get(0) : null;
     }
 
-    public static <T> int allCount() {
-        Record<T> record = new Record<>();
+    @SuppressWarnings("unchecked")
+    public static <T> int allCount(String tableName) {
+        Record<T> record = (Record<T>) recordIndex.getRecordSupplier(tableName).get();
         return record.count();
+    }
+
+    public static <T> int allCount(Class<T> recordClass) {
+        return allCount(recordClass.getAnnotation(Table.class).name());
     }
 
     public int count() {
@@ -245,8 +270,9 @@ public class Record<T> extends TableRecord<T> {
         return where(this, getInsertKeyEQValues()).first();
     }
 
-    public static <T> List<T> insertAll(Record<T>... records) {
-        Record<T> record = new Record<>();
+    @SuppressWarnings("unchecked")
+    public static <T> List<T> insertAll(String tableName, Record<T>... records) {
+        Record<T> record = (Record<T>) recordIndex.getRecordSupplier(tableName).get();
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("records", Arrays.stream(records)
                     .map(record -> new HashMap<String, Object>() {{
@@ -265,6 +291,10 @@ public class Record<T> extends TableRecord<T> {
         }
                 .update();
         return where(record, record.getInsertKeyEQValues(records)).list();
+    }
+
+    public static <T> List<T> insertAll(Class<T> recordClass, Record<T>... records) {
+        return insertAll(recordClass.getAnnotation(Table.class).name(), records);
     }
 
     public T update() {
@@ -290,11 +320,12 @@ public class Record<T> extends TableRecord<T> {
         }.update() > 0;
     }
 
-    public static <T> List<T> updateAll(Record<T>... records) {
+    @SuppressWarnings("unchecked")
+    public static <T> List<T> updateAll(String tableName, Record<T>... records) {
         for (Record<T> record : records) {
             where(record, record.getKeyEQValues());
         }
-        Record<T> record = new Record<>();
+        Record<T> record = (Record<T>) recordIndex.getRecordSupplier(tableName).get();
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("records", records);
         }};
@@ -303,9 +334,12 @@ public class Record<T> extends TableRecord<T> {
             protected T map(Map<String, Object> result) {
                 return record.mapToEntity(result);
             }
-        }
-                .update();
+        }.update();
         return where(record, record.getKeyEQValues(records)).list();
+    }
+
+    public static <T> List<T> updateAll(Class<T> recordClass, Record<T>... records) {
+        return updateAll(recordClass.getAnnotation(Table.class).name(), records);
     }
 
     public boolean delete() {
@@ -329,12 +363,17 @@ public class Record<T> extends TableRecord<T> {
         }.update();
     }
 
-    public static <T> long deleteAll(Record<T>... records) {
+    @SuppressWarnings("unchecked")
+    public static <T> long deleteAll(String tableName, Record<T>... records) {
         for (Record<T> record : records) {
             where(record, record.getKeyEQValues());
         }
-        Record<T> record = new Record<>();
+        Record<T> record = (Record<T>) recordIndex.getRecordSupplier(tableName).get();
         return where(record, record.getKeyEQValues(records)).deleteAll();
+    }
+
+    public static <T> long deleteAll(Class<T> recordClass, Record<T>... records) {
+        return deleteAll(recordClass.getAnnotation(Table.class).name(), records);
     }
 
     public static <T> Record<T> where(Conditional conditional) {
