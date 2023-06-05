@@ -1,9 +1,0 @@
-import "and.stg"
-import "or.stg"
-import "compare.stg"
-conditionalDef(conditional) ::= <<
-<if(conditional.and)><andDef(conditional)>
-<elseif(conditional.or)><orDef(conditional)>
-<elseif(conditional.compare)><compareDef(conditional)>
-<endif>
->>

@@ -16,7 +16,7 @@ public class IN extends Compare {
     }
 
     @Override
-    protected String getSign() {
+    public String getSign() {
         return "IN";
     }
 

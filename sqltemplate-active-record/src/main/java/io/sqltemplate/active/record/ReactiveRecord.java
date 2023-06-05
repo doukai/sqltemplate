@@ -156,11 +156,16 @@ public class ReactiveRecord<T> extends TableRecord<T> {
         return record.list();
     }
 
+    @SuppressWarnings("unchecked")
+    public static <T> T record(String tableName) {
+        return (T) recordIndex.getRecordSupplier(tableName).get();
+    }
+
     public static <T> Mono<List<T>> all(Class<T> recordClass) {
         return all(recordClass.getAnnotation(Table.class).name());
     }
 
-    public Mono<List<T>> list() {
+    public <T> Mono<List<T>> list() {
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
             put("columns", getColumnNames());
@@ -171,9 +176,10 @@ public class ReactiveRecord<T> extends TableRecord<T> {
             put("joinTable", getJoinTable());
         }};
         return new R2DBCAdapter<T>("stg/record/select.stg", "select", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
+            @SuppressWarnings("unchecked")
             @Override
             protected T map(Map<String, Object> result) {
-                return mapToEntity(result);
+                return (T) mapToEntity(result);
             }
         }.queryList();
     }
@@ -189,9 +195,9 @@ public class ReactiveRecord<T> extends TableRecord<T> {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> Mono<T> lastOfAll(String tableName, String... fileNames) {
+    public static <T> Mono<T> lastOfAll(String tableName, String... columnNames) {
         ReactiveRecord<T> record = (ReactiveRecord<T>) recordIndex.getRecordSupplier(tableName).get();
-        return record.last(fileNames);
+        return record.last(columnNames);
     }
 
     public static <T> Mono<T> lastOfAll(Class<T> recordClass, String... fileNames) {
@@ -204,36 +210,36 @@ public class ReactiveRecord<T> extends TableRecord<T> {
         return list.flatMap(item -> Mono.justOrEmpty(item != null ? item.get(0) : null));
     }
 
-    public Mono<T> last(String... fileNames) {
+    public Mono<T> last(String... columnNames) {
         limit(1);
-        if (fileNames == null) {
+        if (columnNames == null) {
             orderBy(Arrays.stream(getKeyNames()).map(DESC::desc).collect(Collectors.toList()));
         } else {
-            orderBy(Arrays.stream(fileNames).map(DESC::desc).collect(Collectors.toList()));
+            orderBy(Arrays.stream(columnNames).map(DESC::desc).collect(Collectors.toList()));
         }
         Mono<List<T>> list = list();
         return list.flatMap(item -> Mono.justOrEmpty(item != null ? item.get(0) : null));
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> Mono<Integer> allCount(String tableName) {
+    public static <T> Mono<Long> allCount(String tableName) {
         ReactiveRecord<T> record = (ReactiveRecord<T>) recordIndex.getRecordSupplier(tableName).get();
         return record.count();
     }
 
-    public static <T> Mono<Integer> allCount(Class<T> recordClass) {
+    public static <T> Mono<Long> allCount(Class<T> recordClass) {
         return allCount(recordClass.getAnnotation(Table.class).name());
     }
 
-    public Mono<Integer> count() {
+    public Mono<Long> count() {
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
             put("conditionals", getConditionals());
         }};
-        return new R2DBCAdapter<Integer>("stg/record/select.stg", "selectCount", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
+        return new R2DBCAdapter<Long>("stg/record/select.stg", "selectCount", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
             @Override
-            protected Integer map(Map<String, Object> result) {
-                return (Integer) result.values().iterator().next();
+            protected Long map(Map<String, Object> result) {
+                return (Long) result.values().iterator().next();
             }
         }.query();
     }
@@ -320,7 +326,14 @@ public class ReactiveRecord<T> extends TableRecord<T> {
         }
         ReactiveRecord<T> record = (ReactiveRecord<T>) recordIndex.getRecordSupplier(tableName).get();
         Map<String, Object> params = new HashMap<String, Object>() {{
-            put("records", records);
+            put("records", Arrays.stream(records)
+                    .map(record -> new HashMap<String, Object>() {{
+                        put("table", record.getTableName());
+                        put("sets", record.getValueSets());
+                        put("conditionals", record.getConditionals());
+                    }})
+                    .collect(Collectors.toList())
+            );
         }};
         return new R2DBCAdapter<T>("stg/record/update.stg", "updateAll", params, record.getTxType(), record.getRollbackOn(), record.getDontRollbackOn()) {
             @Override
@@ -370,16 +383,31 @@ public class ReactiveRecord<T> extends TableRecord<T> {
         return deleteAll(recordClass.getAnnotation(Table.class).name(), records);
     }
 
-    public static <T> ReactiveRecord<T> where(Conditional conditional) {
-        return (ReactiveRecord<T>) TableRecord.where(conditional);
+    @SuppressWarnings("unchecked")
+    public static <T> T where(String tableName, Conditional conditional) {
+        return (T) TableRecord.where(recordIndex.getRecordSupplier(tableName).get(), conditional);
     }
 
-    public static <T> ReactiveRecord<T> where(Conditional... conditionals) {
-        return (ReactiveRecord<T>) TableRecord.where(conditionals);
+    public static <T> T where(Class<T> recordClass, Conditional conditional) {
+        return where(recordClass.getAnnotation(Table.class).name(), conditional);
     }
 
-    public static <T> ReactiveRecord<T> where() {
-        return (ReactiveRecord<T>) TableRecord.where();
+    @SuppressWarnings("unchecked")
+    public static <T> T where(String tableName, Conditional... conditionals) {
+        return (T) TableRecord.where(recordIndex.getRecordSupplier(tableName).get(), conditionals);
+    }
+
+    public static <T> T where(Class<T> recordClass, Conditional... conditionals) {
+        return where(recordClass.getAnnotation(Table.class).name(), conditionals);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T where(String tableName) {
+        return (T) TableRecord.where(recordIndex.getRecordSupplier(tableName).get());
+    }
+
+    public static <T> T where(Class<T> recordClass) {
+        return where(recordClass.getAnnotation(Table.class).name());
     }
 
     public static <T> ReactiveRecord<T> where(ReactiveRecord<T> record, Conditional conditional) {

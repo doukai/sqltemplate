@@ -21,6 +21,10 @@ public class AND implements Conditional {
         return this;
     }
 
+    public Collection<Conditional> getConditionals() {
+        return conditionals;
+    }
+
     public static AND and(Collection<Conditional> conditionals) {
         return new AND(conditionals);
     }

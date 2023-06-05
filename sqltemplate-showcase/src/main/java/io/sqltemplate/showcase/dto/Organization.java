@@ -1,6 +1,7 @@
 package io.sqltemplate.showcase.dto;
 
 import io.sqltemplate.active.record.Record;
+import io.sqltemplate.active.record.model.conditional.Conditional;
 import jakarta.annotation.Generated;
 import jakarta.persistence.Table;
 import java.lang.Boolean;
@@ -8,6 +9,7 @@ import java.lang.Integer;
 import java.lang.Object;
 import java.lang.Override;
 import java.lang.String;
+import java.util.List;
 import java.util.Map;
 
 @Generated("io.sqltemplate.gradle.task.GenerateRecord")
@@ -15,6 +17,14 @@ import java.util.Map;
     name = "organization"
 )
 public class Organization extends Record<Organization> {
+  private static final String tableName = "organization";
+
+  private static final String[] keyNames = new String[]{"id"};
+
+  private static final String[] columnNames = new String[]{"id", "above_id", "name", "is_deprecated", "version"};
+
+  private static final Boolean autoIncrement = false;
+
   private Integer id;
 
   private Integer aboveId;
@@ -24,14 +34,6 @@ public class Organization extends Record<Organization> {
   private Boolean isDeprecated;
 
   private Integer version;
-
-  private final String tableName = "organization";
-
-  private final String[] keyNames = new String[]{"id"};
-
-  private final String[] columnNames = new String[]{"id", "above_id", "name", "is_deprecated", "version"};
-
-  private final Boolean autoIncrement = false;
 
   @Override
   public String getTableName() {
@@ -78,6 +80,54 @@ public class Organization extends Record<Organization> {
   @Override
   public Boolean isAutoIncrement() {
     return autoIncrement;
+  }
+
+  public static Organization get(Object... values) {
+    return get(tableName, values);
+  }
+
+  public static List<Organization> all() {
+    return all(tableName);
+  }
+
+  public static Organization firstOfAll() {
+    return firstOfAll(tableName);
+  }
+
+  public static Organization lastOfAll(Object... columnNames) {
+    return lastOfAll(tableName, columnNames);
+  }
+
+  public static long allCount() {
+    return allCount(tableName);
+  }
+
+  public static List<Organization> insertAll(Organization... records) {
+    return insertAll(tableName, records);
+  }
+
+  public static List<Organization> updateAll(Organization... records) {
+    return updateAll(tableName, records);
+  }
+
+  public static long deleteAll(Organization... records) {
+    return deleteAll(tableName, records);
+  }
+
+  public static Organization where() {
+    return where(tableName);
+  }
+
+  public static Organization where(Conditional conditional) {
+    return where(tableName, conditional);
+  }
+
+  public static Organization where(Conditional... conditionals) {
+    return where(tableName, conditionals);
+  }
+
+  public static Organization record() {
+    return record(tableName);
   }
 
   public Integer getId() {

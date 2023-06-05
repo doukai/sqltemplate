@@ -11,7 +11,7 @@ public class NLK extends Compare {
     }
 
     @Override
-    protected String getSign() {
+    public String getSign() {
         return "NOT LIKE";
     }
 

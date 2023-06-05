@@ -1,8 +1,8 @@
 import "conditional.stg"
 select(table,columns,conditionals,sorts,limit,offset,joinTable) ::= <<
-SELECT <columns:{column|<column>};separator=", ">
-FROM <table> t
-<if(joinTable)>LEFT JOIN <joinTable.tableName> j ON <joinTable.inverseJoinColumns:{inverseJoinColumn|j.<inverseJoinColumn.name> = t.<inverseJoinColumn.referencedColumnName>};separator=" AND "><endif>
+SELECT <columns:{column|t.`<column>`};separator=", ">
+FROM `<table>` t
+<if(joinTable)>LEFT JOIN `<joinTable.tableName>` j ON <joinTable.inverseJoinColumns:{inverseJoinColumn|j.`<inverseJoinColumn.name>` = t.`<inverseJoinColumn.referencedColumnName>`};separator=" AND "><endif>
 <if(conditionals)>WHERE <conditionals:{conditional|<conditionalDef(conditional)>};separator=" AND "><endif>
 <if(sorts)>ORDER BY <sorts:{sort|<sort>};separator=", "><endif>
 <if(limit)>LIMIT <limit><endif>

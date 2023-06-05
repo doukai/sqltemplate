@@ -21,6 +21,10 @@ public class OR implements Conditional {
         return this;
     }
 
+    public Collection<Conditional> getConditionals() {
+        return conditionals;
+    }
+
     public static OR or(Collection<Conditional> conditionals) {
         return new OR(conditionals);
     }

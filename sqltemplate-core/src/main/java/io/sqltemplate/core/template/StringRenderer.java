@@ -5,21 +5,16 @@ import org.stringtemplate.v4.AttributeRenderer;
 import java.util.Locale;
 import java.util.Map;
 
-public class ObjectRenderer implements AttributeRenderer<Object> {
+public class StringRenderer implements AttributeRenderer<String> {
 
     private final Map<String, Object> dbParamsMap;
 
-    public ObjectRenderer(Map<String, Object> dbParamsMap) {
+    public StringRenderer(Map<String, Object> dbParamsMap) {
         this.dbParamsMap = dbParamsMap;
     }
 
     @Override
-    public String toString(Object value, String formatString, Locale locale) {
-        if (value instanceof Parameter) {
-            String name = "p" + dbParamsMap.size();
-            dbParamsMap.put(name, ((Parameter) value).getValue());
-            return ":" + name;
-        }
+    public String toString(String value, String formatString, Locale locale) {
         if (formatString != null) {
             if (formatString.equals(":")) {
                 String name = "p" + dbParamsMap.size();
@@ -27,6 +22,6 @@ public class ObjectRenderer implements AttributeRenderer<Object> {
                 return ":" + name;
             }
         }
-        return value.toString();
+        return value;
     }
 }

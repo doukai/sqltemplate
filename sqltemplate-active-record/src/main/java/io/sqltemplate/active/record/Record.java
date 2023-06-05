@@ -159,11 +159,16 @@ public class Record<T> extends TableRecord<T> {
         return record.list();
     }
 
+    @SuppressWarnings("unchecked")
+    public static <T> T record(String tableName) {
+        return (T) recordIndex.getRecordSupplier(tableName).get();
+    }
+
     public static <T> List<T> all(Class<T> recordClass) {
         return all(recordClass.getAnnotation(Table.class).name());
     }
 
-    public List<T> list() {
+    public <T> List<T> list() {
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
             put("columns", getColumnNames());
@@ -174,9 +179,10 @@ public class Record<T> extends TableRecord<T> {
             put("joinTable", getJoinTable());
         }};
         return new JDBCAdapter<T>("stg/record/select.stg", "select", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
+            @SuppressWarnings("unchecked")
             @Override
             protected T map(Map<String, Object> result) {
-                return mapToEntity(result);
+                return (T) mapToEntity(result);
             }
         }.queryList();
     }
@@ -192,9 +198,9 @@ public class Record<T> extends TableRecord<T> {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T lastOfAll(String tableName, String... fileNames) {
+    public static <T> T lastOfAll(String tableName, String... columnNames) {
         Record<T> record = (Record<T>) recordIndex.getRecordSupplier(tableName).get();
-        return record.last(fileNames);
+        return record.last(columnNames);
     }
 
     public static <T> T lastOfAll(Class<T> recordClass, String... fileNames) {
@@ -207,36 +213,36 @@ public class Record<T> extends TableRecord<T> {
         return list != null ? list.get(0) : null;
     }
 
-    public T last(String... fileNames) {
+    public T last(String... columnNames) {
         limit(1);
-        if (fileNames == null) {
+        if (columnNames == null) {
             orderBy(Arrays.stream(getKeyNames()).map(DESC::desc).collect(Collectors.toList()));
         } else {
-            orderBy(Arrays.stream(fileNames).map(DESC::desc).collect(Collectors.toList()));
+            orderBy(Arrays.stream(columnNames).map(DESC::desc).collect(Collectors.toList()));
         }
         List<T> list = list();
         return list != null ? list.get(0) : null;
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> int allCount(String tableName) {
+    public static <T> long allCount(String tableName) {
         Record<T> record = (Record<T>) recordIndex.getRecordSupplier(tableName).get();
         return record.count();
     }
 
-    public static <T> int allCount(Class<T> recordClass) {
+    public static <T> long allCount(Class<T> recordClass) {
         return allCount(recordClass.getAnnotation(Table.class).name());
     }
 
-    public int count() {
+    public long count() {
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
             put("conditionals", getConditionals());
         }};
-        return new JDBCAdapter<Integer>("stg/record/select.stg", "selectCount", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
+        return new JDBCAdapter<Long>("stg/record/select.stg", "selectCount", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
             @Override
-            protected Integer map(Map<String, Object> result) {
-                return (Integer) result.values().iterator().next();
+            protected Long map(Map<String, Object> result) {
+                return (Long) result.values().iterator().next();
             }
         }.query();
     }
@@ -327,7 +333,14 @@ public class Record<T> extends TableRecord<T> {
         }
         Record<T> record = (Record<T>) recordIndex.getRecordSupplier(tableName).get();
         Map<String, Object> params = new HashMap<String, Object>() {{
-            put("records", records);
+            put("records", Arrays.stream(records)
+                    .map(record -> new HashMap<String, Object>() {{
+                        put("table", record.getTableName());
+                        put("sets", record.getValueSets());
+                        put("conditionals", record.getConditionals());
+                    }})
+                    .collect(Collectors.toList())
+            );
         }};
         new JDBCAdapter<T>("stg/record/update.stg", "updateAll", params, record.getTxType(), record.getRollbackOn(), record.getDontRollbackOn()) {
             @Override
@@ -376,16 +389,31 @@ public class Record<T> extends TableRecord<T> {
         return deleteAll(recordClass.getAnnotation(Table.class).name(), records);
     }
 
-    public static <T> Record<T> where(Conditional conditional) {
-        return (Record<T>) TableRecord.where(conditional);
+    @SuppressWarnings("unchecked")
+    public static <T> T where(String tableName, Conditional conditional) {
+        return (T) TableRecord.where(recordIndex.getRecordSupplier(tableName).get(), conditional);
     }
 
-    public static <T> Record<T> where(Conditional... conditionals) {
-        return (Record<T>) TableRecord.where(conditionals);
+    public static <T> T where(Class<T> recordClass, Conditional conditional) {
+        return where(recordClass.getAnnotation(Table.class).name(), conditional);
     }
 
-    public static <T> Record<T> where() {
-        return (Record<T>) TableRecord.where();
+    @SuppressWarnings("unchecked")
+    public static <T> T where(String tableName, Conditional... conditionals) {
+        return (T) TableRecord.where(recordIndex.getRecordSupplier(tableName).get(), conditionals);
+    }
+
+    public static <T> T where(Class<T> recordClass, Conditional... conditionals) {
+        return where(recordClass.getAnnotation(Table.class).name(), conditionals);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T where(String tableName) {
+        return (T) TableRecord.where(recordIndex.getRecordSupplier(tableName).get());
+    }
+
+    public static <T> T where(Class<T> recordClass) {
+        return where(recordClass.getAnnotation(Table.class).name());
     }
 
     public static <T> Record<T> where(Record<T> record, Conditional conditional) {

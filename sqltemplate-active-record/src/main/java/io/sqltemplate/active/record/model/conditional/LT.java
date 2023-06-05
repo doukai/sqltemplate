@@ -11,7 +11,7 @@ public class LT extends Compare {
     }
 
     @Override
-    protected String getSign() {
+    public String getSign() {
         return "<";
     }
 

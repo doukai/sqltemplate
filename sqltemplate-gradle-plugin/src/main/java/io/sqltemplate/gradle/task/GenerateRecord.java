@@ -50,7 +50,7 @@ public class GenerateRecord extends DefaultTask {
         try (Connection connection = createConnection()) {
             databaseMetaData = connection.getMetaData();
             List<Map<String, Object>> tableMapList = buildTableMapList();
-            for (TypeSpec typeSpec : generateTables(tableMapList)) {
+            for (TypeSpec typeSpec : generateTables(tableMapList, generatorConfig.getBuildReactive())) {
                 JavaFile.builder(Objects.requireNonNull(generatorConfig).getPackageName(), typeSpec).build().writeTo(new File(javaPath));
             }
             JavaFile.builder(Objects.requireNonNull(generatorConfig).getPackageName(), generateTableRecordIndex(tableMapList)).build().writeTo(new File(javaPath));
@@ -81,7 +81,7 @@ public class GenerateRecord extends DefaultTask {
         }
     }
 
-    protected List<TypeSpec> generateTables(List<Map<String, Object>> tableMapList) {
+    protected List<TypeSpec> generateTables(List<Map<String, Object>> tableMapList, boolean reactive) {
         List<TypeSpec> typeSpecList = new ArrayList<>();
         for (Map<String, Object> tableMap : tableMapList) {
             String tableName = (String) tableMap.get("TABLE_NAME");
@@ -89,10 +89,11 @@ public class GenerateRecord extends DefaultTask {
             List<Map<String, Object>> columnMapList = getColumnMapList(tableName);
             List<FieldSpec> fieldSpecList = generateColumns(columnMapList);
             String typeName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, tableName.toLowerCase());
-            ClassName recordClassName = generatorConfig.getBuildReactive() ?
+            ClassName recordClassName = reactive ?
                     ClassName.get("io.sqltemplate.active.record", "ReactiveRecord") :
                     ClassName.get("io.sqltemplate.active.record", "Record");
-            ParameterizedTypeName recordParameterizedTypeName = ParameterizedTypeName.get(recordClassName, ClassName.get(generatorConfig.getPackageName(), typeName));
+            ClassName className = ClassName.get(generatorConfig.getPackageName(), typeName);
+            ParameterizedTypeName recordParameterizedTypeName = ParameterizedTypeName.get(recordClassName, className);
             TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(typeName)
                     .addModifiers(Modifier.PUBLIC)
                     .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.annotation", "Generated")).addMember("value", "$S", GenerateRecord.class.getCanonicalName()).build())
@@ -109,11 +110,149 @@ public class GenerateRecord extends DefaultTask {
                     .addMethod(buildColumnNamesMethod())
                     .addMethod(buildValueMethod(columnMapList))
                     .addMethod(mapToEntityMethod(typeName, columnMapList))
-                    .addMethod(isAutoIncrementMethod());
+                    .addMethod(isAutoIncrementMethod())
+                    .addMethod(buildGetMethod(className, reactive))
+                    .addMethod(buildAllMethod(className, reactive))
+                    .addMethod(buildFirstOfAllMethod(className, reactive))
+                    .addMethod(buildLastOfAllMethod(className, reactive))
+                    .addMethod(buildAllCountMethod(reactive))
+                    .addMethod(buildInsertAllMethod(className, reactive))
+                    .addMethod(buildUpdateAllMethod(className, reactive))
+                    .addMethod(buildDeleteAllMethod(className, reactive))
+                    .addMethod(buildWhereMethod(className, reactive))
+                    .addMethod(buildWhereConditionalMethod(className, reactive))
+                    .addMethod(buildWhereConditionalsMethod(className, reactive))
+                    .addMethod(buildRecordMethod(className));
             fieldSpecList.forEach(fieldSpec -> addGetterAndSetter(fieldSpec, typeBuilder, typeName));
             typeSpecList.add(typeBuilder.build());
         }
         return typeSpecList;
+    }
+
+    public MethodSpec buildGetMethod(ClassName className, boolean reactive) {
+        TypeName returnTypeName = reactive ? ParameterizedTypeName.get(ClassName.get("reactor.core.publisher", "Mono"), className) : className;
+        return MethodSpec.methodBuilder("get")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .varargs(true)
+                .addParameter(ParameterSpec.builder(ArrayTypeName.of(Object.class), "values").build())
+                .returns(returnTypeName)
+                .addStatement("return get(tableName, values)")
+                .build();
+    }
+
+    public MethodSpec buildAllMethod(ClassName className, boolean reactive) {
+        TypeName returnTypeName = reactive ?
+                ParameterizedTypeName.get(ClassName.get("reactor.core.publisher", "Mono"), ParameterizedTypeName.get(ClassName.get(List.class), className)) :
+                ParameterizedTypeName.get(ClassName.get(List.class), className);
+        return MethodSpec.methodBuilder("all")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .returns(returnTypeName)
+                .addStatement("return all(tableName)")
+                .build();
+    }
+
+    public MethodSpec buildFirstOfAllMethod(ClassName className, boolean reactive) {
+        TypeName returnTypeName = reactive ? ParameterizedTypeName.get(ClassName.get("reactor.core.publisher", "Mono"), className) : className;
+        return MethodSpec.methodBuilder("firstOfAll")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .returns(returnTypeName)
+                .addStatement("return firstOfAll(tableName)")
+                .build();
+    }
+
+    public MethodSpec buildLastOfAllMethod(ClassName className, boolean reactive) {
+        TypeName returnTypeName = reactive ? ParameterizedTypeName.get(ClassName.get("reactor.core.publisher", "Mono"), className) : className;
+        return MethodSpec.methodBuilder("lastOfAll")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .varargs(true)
+                .addParameter(ParameterSpec.builder(ArrayTypeName.of(Object.class), "columnNames").build())
+                .returns(returnTypeName)
+                .addStatement("return lastOfAll(tableName, columnNames)")
+                .build();
+    }
+
+    public MethodSpec buildAllCountMethod(boolean reactive) {
+        TypeName returnTypeName = reactive ? ParameterizedTypeName.get(ClassName.get("reactor.core.publisher", "Mono"), ClassName.get(Long.class)) : TypeName.LONG;
+        return MethodSpec.methodBuilder("allCount")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .returns(returnTypeName)
+                .addStatement("return allCount(tableName)")
+                .build();
+    }
+
+    public MethodSpec buildInsertAllMethod(ClassName className, boolean reactive) {
+        TypeName returnTypeName = reactive ?
+                ParameterizedTypeName.get(ClassName.get("reactor.core.publisher", "Mono"), ParameterizedTypeName.get(ClassName.get(List.class), className)) :
+                ParameterizedTypeName.get(ClassName.get(List.class), className);
+        return MethodSpec.methodBuilder("insertAll")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .varargs(true)
+                .addParameter(ParameterSpec.builder(ArrayTypeName.of(className), "records").build())
+                .returns(returnTypeName)
+                .addStatement("return insertAll(tableName, records)")
+                .build();
+    }
+
+    public MethodSpec buildUpdateAllMethod(ClassName className, boolean reactive) {
+        TypeName returnTypeName = reactive ?
+                ParameterizedTypeName.get(ClassName.get("reactor.core.publisher", "Mono"), ParameterizedTypeName.get(ClassName.get(List.class), className)) :
+                ParameterizedTypeName.get(ClassName.get(List.class), className);
+        return MethodSpec.methodBuilder("updateAll")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .varargs(true)
+                .addParameter(ParameterSpec.builder(ArrayTypeName.of(className), "records").build())
+                .returns(returnTypeName)
+                .addStatement("return updateAll(tableName, records)")
+                .build();
+    }
+
+    public MethodSpec buildDeleteAllMethod(ClassName className, boolean reactive) {
+        TypeName returnTypeName = reactive ? ParameterizedTypeName.get(ClassName.get("reactor.core.publisher", "Mono"), ClassName.get(Long.class)) : TypeName.LONG;
+        return MethodSpec.methodBuilder("deleteAll")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .varargs(true)
+                .addParameter(ParameterSpec.builder(ArrayTypeName.of(className), "records").build())
+                .returns(returnTypeName)
+                .addStatement("return deleteAll(tableName, records)")
+                .build();
+    }
+
+    public MethodSpec buildWhereMethod(ClassName className, boolean reactive) {
+        TypeName returnTypeName = reactive ? ParameterizedTypeName.get(ClassName.get("reactor.core.publisher", "Mono"), className) : className;
+        return MethodSpec.methodBuilder("where")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .returns(returnTypeName)
+                .addStatement("return where(tableName)")
+                .build();
+    }
+
+    public MethodSpec buildWhereConditionalMethod(ClassName className, boolean reactive) {
+        TypeName returnTypeName = reactive ? ParameterizedTypeName.get(ClassName.get("reactor.core.publisher", "Mono"), className) : className;
+        return MethodSpec.methodBuilder("where")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .addParameter(ParameterSpec.builder(ClassName.get("io.sqltemplate.active.record.model.conditional", "Conditional"), "conditional").build())
+                .returns(returnTypeName)
+                .addStatement("return where(tableName, conditional)")
+                .build();
+    }
+
+    public MethodSpec buildWhereConditionalsMethod(ClassName className, boolean reactive) {
+        TypeName returnTypeName = reactive ? ParameterizedTypeName.get(ClassName.get("reactor.core.publisher", "Mono"), className) : className;
+        return MethodSpec.methodBuilder("where")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .varargs(true)
+                .addParameter(ParameterSpec.builder(ArrayTypeName.of(ClassName.get("io.sqltemplate.active.record.model.conditional", "Conditional")), "conditionals").build())
+                .returns(returnTypeName)
+                .addStatement("return where(tableName, conditionals)")
+                .build();
+    }
+
+    public MethodSpec buildRecordMethod(ClassName className) {
+        return MethodSpec.methodBuilder("record")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .returns(className)
+                .addStatement("return record(tableName)")
+                .build();
     }
 
     protected TypeSpec generateTableRecordIndex(List<Map<String, Object>> tableMapList) {
@@ -267,7 +406,7 @@ public class GenerateRecord extends DefaultTask {
     }
 
     public FieldSpec getTableNameField(String tableName) {
-        return FieldSpec.builder(String.class, "tableName", Modifier.PRIVATE, Modifier.FINAL)
+        return FieldSpec.builder(String.class, "tableName", Modifier.PRIVATE, Modifier.FINAL, Modifier.STATIC)
                 .initializer("$S", tableName)
                 .build();
     }
@@ -286,7 +425,7 @@ public class GenerateRecord extends DefaultTask {
                 String primaryKeyColumnName = primaryKeys.getString("COLUMN_NAME");
                 primaryKeyColumnNameList.add(primaryKeyColumnName);
             }
-            return FieldSpec.builder(ArrayTypeName.of(String.class), "keyNames", Modifier.PRIVATE, Modifier.FINAL)
+            return FieldSpec.builder(ArrayTypeName.of(String.class), "keyNames", Modifier.PRIVATE, Modifier.FINAL, Modifier.STATIC)
                     .initializer("new $T{$L}",
                             ArrayTypeName.of(String.class),
                             CodeBlock.join(primaryKeyColumnNameList.stream().map(name -> CodeBlock.of("$S", name)).collect(Collectors.toList()), ", ")
@@ -310,7 +449,7 @@ public class GenerateRecord extends DefaultTask {
             String columnName = (String) columnMap.get("COLUMN_NAME");
             columnNameList.add(columnName);
         }
-        return FieldSpec.builder(ArrayTypeName.of(String.class), "columnNames", Modifier.PRIVATE, Modifier.FINAL)
+        return FieldSpec.builder(ArrayTypeName.of(String.class), "columnNames", Modifier.PRIVATE, Modifier.FINAL, Modifier.STATIC)
                 .initializer("new $T{$L}",
                         ArrayTypeName.of(String.class),
                         CodeBlock.join(columnNameList.stream().map(name -> CodeBlock.of("$S", name)).collect(Collectors.toList()), ", ")
@@ -327,7 +466,7 @@ public class GenerateRecord extends DefaultTask {
 
     public FieldSpec isAutoIncrementField(List<Map<String, Object>> columnMapList) {
         boolean autoIncrement = columnMapList.stream().anyMatch(columnMap -> columnMap.get("IS_AUTOINCREMENT").equals("YES"));
-        return FieldSpec.builder(Boolean.class, "autoIncrement", Modifier.PRIVATE, Modifier.FINAL)
+        return FieldSpec.builder(Boolean.class, "autoIncrement", Modifier.PRIVATE, Modifier.FINAL, Modifier.STATIC)
                 .initializer("$L", autoIncrement)
                 .build();
     }

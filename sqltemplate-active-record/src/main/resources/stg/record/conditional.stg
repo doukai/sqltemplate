@@ -1,0 +1,15 @@
+andDef(conditional) ::= <<
+(<conditional.conditionals:{conditional|<conditionalDef(conditional)>};separator=" AND ">)
+>>
+orDef(conditional) ::= <<
+(<conditional.conditionals:{conditional|<conditionalDef(conditional)>};separator=" OR ">)
+>>
+compareDef(conditional) ::= <<
+<conditional.tableAlias>.`<conditional.columnName>` <conditional.sign> <if(conditional.expression)><conditional.expression><elseif(conditional.expressions)>(<conditional.expressions:{expression|<expression>};separator=", ">)<else>NULL<endif>
+>>
+conditionalDef(conditional) ::= <<
+<if(conditional.and)><andDef(conditional)>
+<elseif(conditional.or)><orDef(conditional)>
+<elseif(conditional.compare)><compareDef(conditional)>
+<endif>
+>>

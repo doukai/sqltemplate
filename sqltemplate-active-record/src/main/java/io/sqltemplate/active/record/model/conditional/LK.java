@@ -11,7 +11,7 @@ public class LK extends Compare {
     }
 
     @Override
-    protected String getSign() {
+    public String getSign() {
         return "LIKE";
     }
 

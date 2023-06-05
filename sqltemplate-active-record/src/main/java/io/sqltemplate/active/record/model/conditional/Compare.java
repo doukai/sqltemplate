@@ -30,7 +30,7 @@ public abstract class Compare implements Conditional {
         this.expressions = null;
     }
 
-    protected abstract String getSign();
+    public abstract String getSign();
 
     public String getTableAlias() {
         return tableAlias;

@@ -9,7 +9,7 @@ public class NNIL extends Compare {
     }
 
     @Override
-    protected String getSign() {
+    public String getSign() {
         return "IS NOT";
     }
 

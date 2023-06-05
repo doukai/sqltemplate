@@ -5,6 +5,7 @@ import org.stringtemplate.v4.STGroup;
 import org.stringtemplate.v4.STGroupDir;
 import org.stringtemplate.v4.STGroupFile;
 
+import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -36,8 +37,16 @@ public enum TemplateInstance {
             }
         }
         Map<String, Object> dbParamsMap = new HashMap<>();
-        ObjectRenderer objectRenderer = new ObjectRenderer(dbParamsMap);
-        stGroup.registerRenderer(Object.class, objectRenderer);
+        ParameterRenderer parameterRenderer = new ParameterRenderer(dbParamsMap);
+        BooleanRenderer booleanRenderer = new BooleanRenderer(dbParamsMap);
+        StringRenderer stringRenderer = new StringRenderer(dbParamsMap);
+        NumberRenderer numberRenderer = new NumberRenderer(dbParamsMap);
+        TemporalAccessorRenderer temporalAccessorRenderer = new TemporalAccessorRenderer(dbParamsMap);
+        stGroup.registerRenderer(Parameter.class, parameterRenderer);
+        stGroup.registerRenderer(Boolean.class, booleanRenderer);
+        stGroup.registerRenderer(String.class, stringRenderer);
+        stGroup.registerRenderer(Number.class, numberRenderer);
+        stGroup.registerRenderer(TemporalAccessor.class, temporalAccessorRenderer);
         List<String> attributeKeyList = new ArrayList<>(instance.impl.formalArguments.keySet());
         if (paramsMap.keySet().stream().anyMatch(key -> attributeKeyList.stream().noneMatch(attrName -> attrName.equals(key)))) {
             Map<String, Object> namedParamsMap = new HashMap<>();

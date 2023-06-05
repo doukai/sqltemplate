@@ -361,7 +361,7 @@ public class TableRecord<T> {
         if (isAutoIncrement()) {
             return GTE.gte(getKeyNames()[0], LAST_INSERT_ID);
         } else {
-            return OR.or(Arrays.stream(records).map(TableRecord::getKeyEQValues).map(AND::and).toArray(AND[]::new));
+            return OR.or(Arrays.stream(records).map(TableRecord::getKeyEQValues).map(AND::and).collect(Collectors.toList()));
         }
     }
 
@@ -378,7 +378,7 @@ public class TableRecord<T> {
     }
 
     public List<ValueSet> getValueSets() {
-        return Arrays.stream(getColumnNames()).map(name -> set(name, getValue(name))).collect(Collectors.toList());
+        return Arrays.stream(getColumnNames()).filter(name -> Arrays.stream(getKeyNames()).noneMatch(keyName -> keyName.equals(name))).map(name -> set(name, getValue(name))).collect(Collectors.toList());
     }
 
     public TableRecord<T> and(Conditional conditional) {
@@ -424,21 +424,6 @@ public class TableRecord<T> {
         }
         this.sorts.addAll(sorts);
         return this;
-    }
-
-    public static <T> TableRecord<T> where(Conditional conditional) {
-        TableRecord<T> record = new TableRecord<>();
-        return where(record, conditional);
-    }
-
-    public static <T> TableRecord<T> where(Conditional... conditionals) {
-        TableRecord<T> record = new TableRecord<>();
-        return where(record, conditionals);
-    }
-
-    public static <T> TableRecord<T> where() {
-        TableRecord<T> record = new TableRecord<>();
-        return where(record);
     }
 
     public static <T> TableRecord<T> where(TableRecord<T> record, Conditional conditional) {
@@ -529,8 +514,7 @@ public class TableRecord<T> {
     }
 
     public TableRecord<T> or(Function<TableRecord<T>, TableRecord<T>> orConditionBuilder) {
-        TableRecord<T> record = new TableRecord<>();
-        TableRecord<T> result = orConditionBuilder.apply(record);
+        TableRecord<T> result = orConditionBuilder.apply(this);
         and(OR.or(result.getConditionals()));
         return this;
     }
