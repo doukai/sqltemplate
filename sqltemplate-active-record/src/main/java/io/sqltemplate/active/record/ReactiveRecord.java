@@ -95,8 +95,10 @@ public class ReactiveRecord<T> extends TableRecord<T> {
                 .map(entityRecord ->
                         (ReactiveRecord<?>) recordIndex.getRecordSupplier(joinTable.getName()).get().mapToEntity(
                                 Stream.concat(
-                                        joinTable.getJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, joinColumn.getReferencedColumnName()), getValue(joinColumn.getName()))),
-                                        joinTable.getInverseJoinColumns().stream().map(joinColumn -> new AbstractMap.SimpleEntry<>(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, joinColumn.getReferencedColumnName()), entityRecord.getValue(joinColumn.getName())))
+                                        joinTable.getJoinColumns().stream()
+                                                .map(joinColumn -> new AbstractMap.SimpleEntry<>(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, joinColumn.getReferencedColumnName()), getValue(joinColumn.getName()))),
+                                        joinTable.getInverseJoinColumns().stream()
+                                                .map(joinColumn -> new AbstractMap.SimpleEntry<>(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, joinColumn.getReferencedColumnName()), entityRecord.getValue(joinColumn.getName())))
                                 ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
 
                         )
@@ -138,8 +140,10 @@ public class ReactiveRecord<T> extends TableRecord<T> {
                 OR.or(Arrays.stream(entityRecords)
                         .flatMap(entityRecord ->
                                 Stream.concat(
-                                        joinTable.getJoinColumns().stream().map(joinColumn -> EQ.eq(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))),
-                                        joinTable.getInverseJoinColumns().stream().map(joinColumn -> EQ.eq(joinColumn.getReferencedColumnName(), entityRecord.getValue(joinColumn.getName())))
+                                        joinTable.getJoinColumns().stream()
+                                                .map(joinColumn -> EQ.eq(joinColumn.getName(), getValue(joinColumn.getReferencedColumnName()))),
+                                        joinTable.getInverseJoinColumns().stream()
+                                                .map(joinColumn -> EQ.eq(joinColumn.getName(), entityRecord.getValue(joinColumn.getReferencedColumnName())))
                                 )
                         ).collect(Collectors.toList())
                 )

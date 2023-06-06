@@ -246,7 +246,7 @@ public class RecordTest {
     }
 
     @Test
-    void AddOne() {
+    void addOne() {
         organizationTableInsert();
         Map<String, Object> user = users.get(0);
         User insertedUser = new User()
@@ -268,7 +268,7 @@ public class RecordTest {
     }
 
     @Test
-    void AddMany() {
+    void addMany() {
         organizationTableInsert();
         Map<String, Object> user1 = users.get(0);
         Map<String, Object> user2 = users.get(1);
@@ -299,6 +299,31 @@ public class RecordTest {
     }
 
     @Test
+    void addManyByJoin() {
+        userTableInsert();
+        Map<String, Object> role1 = roles.get(0);
+        Map<String, Object> role2 = roles.get(1);
+        Role insertedRole1 = new Role()
+                .setId((int) role1.get("id"))
+                .setName((String) role1.get("name"))
+                .insert();
+        Role insertedRole2 = new Role()
+                .setId((int) role2.get("id"))
+                .setName((String) role2.get("name"))
+                .insert();
+
+        User user = User.get(1);
+        user.addRoleList(Arrays.asList(insertedRole1, insertedRole2));
+        List<Role> roleList = user.getRoleList();
+
+        assertAll(
+                () -> assertEquals(roleList.size(), 2),
+                () -> assertEquals(roleList.get(0).getName(), "User"),
+                () -> assertEquals(roleList.get(1).getName(), "Admin")
+        );
+    }
+
+    @Test
     void removeOne() {
         tableInsert();
         Organization organization = Organization.get(3);
@@ -321,6 +346,19 @@ public class RecordTest {
 
         assertAll(
                 () -> assertEquals(userList.size(), 0)
+        );
+    }
+
+    @Test
+    void removeManyByJoin() {
+        tableInsert();
+        User user1 = User.get(1);
+        long deleteCount = user1.removeRoleList(Arrays.asList(Role.get(1), Role.get(2)));
+        List<Role> roleList = user1.getRoleList();
+
+        assertAll(
+                () -> assertEquals(deleteCount, 2),
+                () -> assertEquals(roleList.size(), 0)
         );
     }
 }

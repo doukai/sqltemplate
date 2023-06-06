@@ -262,7 +262,16 @@ public class User extends Record<User> {
             joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id")
     )
+
     public List<Role> getRoleList() {
         return getManyByJoin(Role.class);
+    }
+
+    public List<Role> addRoleList(List<Role> roleList) {
+        return addManyByJoin(Role.class, roleList.toArray(new Role[]{}));
+    }
+
+    public long removeRoleList(List<Role> roleList) {
+        return removeManyByJoin(Role.class, roleList.toArray(new Role[]{}));
     }
 }
