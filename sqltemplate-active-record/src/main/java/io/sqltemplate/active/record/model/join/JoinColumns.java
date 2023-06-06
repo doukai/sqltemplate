@@ -20,8 +20,22 @@ public class JoinColumns {
         return this;
     }
 
+    public JoinColumns addJoinColumns(jakarta.persistence.JoinColumns joinColumns) {
+        for (jakarta.persistence.JoinColumn joinColumn : joinColumns.value()) {
+            addJoinColumn(joinColumn);
+        }
+        return this;
+    }
+
     public JoinColumns addReverseJoinColumn(jakarta.persistence.JoinColumn joinColumn) {
         this.joinColumns.add(new JoinColumn(joinColumn.referencedColumnName(), joinColumn.name()));
+        return this;
+    }
+
+    public JoinColumns addReverseJoinColumns(jakarta.persistence.JoinColumns joinColumns) {
+        for (jakarta.persistence.JoinColumn joinColumn : joinColumns.value()) {
+            addReverseJoinColumn(joinColumn);
+        }
         return this;
     }
 

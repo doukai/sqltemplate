@@ -37,7 +37,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
     public <E> Mono<E> getOne(String tableName) {
         ReactiveRecord<E> record = (ReactiveRecord<E>) recordIndex.getRecordSupplier(tableName).get();
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
-        return where(record).on(joinColumns).first();
+        return where(record).on(joinColumns, this).first();
     }
 
     public <E> Mono<E> getOne(Class<E> entityClass) {
@@ -48,7 +48,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
     public <E> Mono<List<E>> getMany(String tableName) {
         ReactiveRecord<E> record = (ReactiveRecord<E>) recordIndex.getRecordSupplier(tableName).get();
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
-        return where(record).on(joinColumns).list();
+        return where(record).on(joinColumns, this).list();
     }
 
     public <E> Mono<List<E>> getMany(Class<E> entityClass) {
@@ -59,7 +59,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
     public <E> Mono<List<E>> getManyByJoin(String tableName) {
         ReactiveRecord<E> record = (ReactiveRecord<E>) recordIndex.getRecordSupplier(tableName).get();
         JoinTable joinTable = joinTableMap.get(getTableName()).get(tableName);
-        return where(record).on(joinTable).list();
+        return where(record).on(joinTable, this).list();
     }
 
     public <E> Mono<List<E>> getManyByJoin(Class<E> entityClass) {
@@ -428,13 +428,13 @@ public class ReactiveRecord<T> extends TableRecord<T> {
     }
 
     @Override
-    public ReactiveRecord<T> on(JoinColumns joinColumns) {
-        return (ReactiveRecord<T>) super.on(joinColumns);
+    public ReactiveRecord<T> on(JoinColumns joinColumns, TableRecord<?> record) {
+        return (ReactiveRecord<T>) super.on(joinColumns, record);
     }
 
     @Override
-    public <J> ReactiveRecord<T> on(JoinTable joinTable) {
-        return (ReactiveRecord<T>) super.on(joinTable);
+    public ReactiveRecord<T> on(JoinTable joinTable, TableRecord<?> record) {
+        return (ReactiveRecord<T>) super.on(joinTable, record);
     }
 
     @Override

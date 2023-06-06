@@ -1,10 +1,13 @@
 package io.sqltemplate.showcase.test;
 
+import io.sqltemplate.showcase.dto.Organization;
+import io.sqltemplate.showcase.dto.Role;
 import io.sqltemplate.showcase.dto.User;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -205,5 +208,119 @@ public class RecordTest {
         );
 
         assertEquals(count, 2);
+    }
+
+    @Test
+    void getManyToOne() {
+        tableInsert();
+        User user1 = User.get(2);
+        User user2 = User.get(3);
+
+        assertAll(
+                () -> assertEquals(user1.getOrganization().getName(), "Google"),
+                () -> assertEquals(user2.getOrganization().getName(), "Microsoft")
+        );
+    }
+
+    @Test
+    void getOneToMany() {
+        tableInsert();
+        Organization organization3 = Organization.get(3);
+        List<User> userList = organization3.getUserList();
+
+        assertAll(
+                () -> assertEquals(userList.get(0).getName(), "Robin Castillo"),
+                () -> assertEquals(userList.get(1).getName(), "Kelly Villarreal")
+        );
+    }
+
+    @Test
+    void getManyToMany() {
+        tableInsert();
+        List<Role> roleList = User.get(1).getRoleList();
+
+        assertAll(
+                () -> assertEquals(roleList.get(0).getName(), "User"),
+                () -> assertEquals(roleList.get(1).getName(), "Admin")
+        );
+    }
+
+    @Test
+    void AddOne() {
+        organizationTableInsert();
+        Map<String, Object> user = users.get(0);
+        User insertedUser = new User()
+                .setId((int) user.get("id"))
+                .setName((String) user.get("name"))
+                .setLogin((String) user.get("login"))
+                .setPassword((String) user.get("password"))
+                .setAge((int) user.get("age"))
+                .insert();
+
+        Organization organization = Organization.get(1);
+        organization.addUser(insertedUser);
+        List<User> userList = organization.getUserList();
+
+        assertAll(
+                () -> assertEquals(userList.get(0).getId(), 1),
+                () -> assertEquals(userList.get(0).getName(), "Robin Castillo")
+        );
+    }
+
+    @Test
+    void AddMany() {
+        organizationTableInsert();
+        Map<String, Object> user1 = users.get(0);
+        Map<String, Object> user2 = users.get(1);
+        User insertedUser1 = new User()
+                .setId((int) user1.get("id"))
+                .setName((String) user1.get("name"))
+                .setLogin((String) user1.get("login"))
+                .setPassword((String) user1.get("password"))
+                .setAge((int) user1.get("age"))
+                .insert();
+        User insertedUser2 = new User()
+                .setId((int) user2.get("id"))
+                .setName((String) user2.get("name"))
+                .setLogin((String) user2.get("login"))
+                .setPassword((String) user2.get("password"))
+                .setAge((int) user2.get("age"))
+                .insert();
+
+        Organization organization = Organization.get(1);
+        organization.addUserList(Arrays.asList(insertedUser1, insertedUser2));
+        List<User> userList = organization.getUserList();
+
+        assertAll(
+                () -> assertEquals(userList.size(), 2),
+                () -> assertEquals(userList.get(0).getName(), "Robin Castillo"),
+                () -> assertEquals(userList.get(1).getName(), "Kelly Villarreal")
+        );
+    }
+
+    @Test
+    void removeOne() {
+        tableInsert();
+        Organization organization = Organization.get(3);
+        organization.removeUser(User.get(1));
+        List<User> userList = organization.getUserList();
+
+        assertAll(
+                () -> assertEquals(userList.size(), 1),
+                () -> assertEquals(userList.get(0).getId(), 2),
+                () -> assertEquals(userList.get(0).getName(), "Kelly Villarreal")
+        );
+    }
+
+    @Test
+    void removeMany() {
+        tableInsert();
+        Organization organization = Organization.get(3);
+        organization.removeUserList(Arrays.asList(User.get(1), User.get(2)));
+        List<User> userList = organization.getUserList();
+
+        assertAll(
+                () -> assertEquals(userList.size(), 0)
+        );
     }
 }

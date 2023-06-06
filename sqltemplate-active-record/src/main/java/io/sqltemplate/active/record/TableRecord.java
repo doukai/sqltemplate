@@ -36,6 +36,8 @@ import jakarta.transaction.Transactional;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -80,16 +82,22 @@ public class TableRecord<T> {
                     )
                     .collect(Collectors.toList());
             for (Method method : joinColumnsMethods) {
-                String joinTableName = method.getReturnType().getAnnotation(Table.class).name();
+                String joinTableName = getTableName(method.getGenericReturnType());
                 registerJoinColumn(tableName, joinTableName, joinColumns -> {
                     for (JoinColumn joinColumn : method.getAnnotationsByType(JoinColumn.class)) {
                         joinColumns.addJoinColumn(joinColumn);
+                    }
+                    for (jakarta.persistence.JoinColumns joinColumnsAnnotation : method.getAnnotationsByType(jakarta.persistence.JoinColumns.class)) {
+                        joinColumns.addJoinColumns(joinColumnsAnnotation);
                     }
                     return joinColumns;
                 });
                 registerJoinColumn(joinTableName, tableName, joinColumns -> {
                     for (JoinColumn joinColumn : method.getAnnotationsByType(JoinColumn.class)) {
                         joinColumns.addReverseJoinColumn(joinColumn);
+                    }
+                    for (jakarta.persistence.JoinColumns joinColumnsAnnotation : method.getAnnotationsByType(jakarta.persistence.JoinColumns.class)) {
+                        joinColumns.addReverseJoinColumns(joinColumnsAnnotation);
                     }
                     return joinColumns;
                 });
@@ -103,16 +111,22 @@ public class TableRecord<T> {
                     )
                     .collect(Collectors.toList());
             for (Field field : joinColumnsFields) {
-                String joinTableName = field.getType().getAnnotation(Table.class).name();
+                String joinTableName = getTableName(field.getGenericType());
                 registerJoinColumn(tableName, joinTableName, joinColumns -> {
                     for (JoinColumn joinColumn : field.getAnnotationsByType(JoinColumn.class)) {
                         joinColumns.addJoinColumn(joinColumn);
+                    }
+                    for (jakarta.persistence.JoinColumns joinColumnsAnnotation : field.getAnnotationsByType(jakarta.persistence.JoinColumns.class)) {
+                        joinColumns.addJoinColumns(joinColumnsAnnotation);
                     }
                     return joinColumns;
                 });
                 registerJoinColumn(joinTableName, tableName, joinColumns -> {
                     for (JoinColumn joinColumn : field.getAnnotationsByType(JoinColumn.class)) {
                         joinColumns.addReverseJoinColumn(joinColumn);
+                    }
+                    for (jakarta.persistence.JoinColumns joinColumnsAnnotation : field.getAnnotationsByType(jakarta.persistence.JoinColumns.class)) {
+                        joinColumns.addReverseJoinColumns(joinColumnsAnnotation);
                     }
                     return joinColumns;
                 });
@@ -122,7 +136,7 @@ public class TableRecord<T> {
                     .filter(method -> method.isAnnotationPresent(ManyToMany.class))
                     .collect(Collectors.toList());
             for (Method method : joinTableMethods) {
-                String joinTableName = method.getReturnType().getAnnotation(Table.class).name();
+                String joinTableName = getTableName(method.getGenericReturnType());
                 registerJoinTable(tableName, joinTableName, joinTable -> {
                     jakarta.persistence.JoinTable joinTableAnnotation = method.getAnnotation(jakarta.persistence.JoinTable.class);
                     joinTable.setName(joinTableAnnotation.name());
@@ -151,7 +165,7 @@ public class TableRecord<T> {
                     .filter(field -> field.isAnnotationPresent(ManyToMany.class))
                     .collect(Collectors.toList());
             for (Field field : joinTableFields) {
-                String joinTableName = field.getType().getAnnotation(Table.class).name();
+                String joinTableName = getTableName(field.getGenericType());
                 registerJoinTable(tableName, joinTableName, joinTable -> {
                     jakarta.persistence.JoinTable joinTableAnnotation = field.getAnnotation(jakarta.persistence.JoinTable.class);
                     joinTable.setName(joinTableAnnotation.name());
@@ -175,6 +189,15 @@ public class TableRecord<T> {
                     return joinTable;
                 });
             }
+        }
+    }
+
+    private static String getTableName(Type type) {
+        if (type instanceof ParameterizedType) {
+            Type argumentType = ((ParameterizedType) type).getActualTypeArguments()[0];
+            return getTableName(argumentType);
+        } else {
+            return ((Class<?>) type).getAnnotation(Table.class).name();
         }
     }
 
@@ -389,14 +412,14 @@ public class TableRecord<T> {
         return this;
     }
 
-    public TableRecord<T> on(JoinColumns joinColumns) {
-        joinColumns.getJoinColumns().forEach(joinColumn -> this.and(EQ.eq(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))));
+    public TableRecord<T> on(JoinColumns joinColumns, TableRecord<?> tableRecord) {
+        joinColumns.getJoinColumns().forEach(joinColumn -> this.and(EQ.eq(joinColumn.getReferencedColumnName(), tableRecord.getValue(joinColumn.getName()))));
         return this;
     }
 
-    public <J> TableRecord<T> on(JoinTable joinTable) {
+    public TableRecord<T> on(JoinTable joinTable, TableRecord<?> tableRecord) {
         this.setJoinTable(joinTable);
-        joinTable.getInverseJoinColumns().forEach(joinColumn -> this.and(EQ.eq(getJoinAlias(), joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))));
+        joinTable.getJoinColumns().forEach(joinColumn -> this.and(EQ.eq(getJoinAlias(), joinColumn.getName(), tableRecord.getValue(joinColumn.getReferencedColumnName()))));
         return this;
     }
 

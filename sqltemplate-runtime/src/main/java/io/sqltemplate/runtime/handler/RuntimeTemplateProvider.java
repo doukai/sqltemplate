@@ -114,7 +114,7 @@ public class RuntimeTemplateProvider implements TemplateProvider {
                 }
             } else {
                 Type genericReturnType = method.getGenericReturnType();
-                if (!(genericReturnType instanceof ParameterizedType) || ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments().length == 0) {
+                if (!(genericReturnType instanceof ParameterizedType) || ((ParameterizedType) genericReturnType).getActualTypeArguments().length == 0) {
                     if (instanceType.equals(InstanceType.QUERY)) {
                         QueryInterceptor interceptor;
                         if (transactionalAnnotation != null) {
@@ -142,7 +142,7 @@ public class RuntimeTemplateProvider implements TemplateProvider {
                         }
                         builder = builder.define(method).intercept(MethodDelegation.to(interceptor));
                     } else if (returnType.isAssignableFrom(List.class)) {
-                        Type argumentType = ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0];
+                        Type argumentType = ((ParameterizedType) genericReturnType).getActualTypeArguments()[0];
                         if (argumentType instanceof ParameterizedType && ((Class<?>) ((ParameterizedType) argumentType).getRawType()).isAssignableFrom(Map.class)) {
                             QueryListInterceptor interceptor;
                             if (transactionalAnnotation != null) {
@@ -161,7 +161,7 @@ public class RuntimeTemplateProvider implements TemplateProvider {
                             builder = builder.define(method).intercept(MethodDelegation.to(interceptor));
                         }
                     } else if (returnType.isAssignableFrom(Mono.class)) {
-                        Type argumentType = ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0];
+                        Type argumentType = ((ParameterizedType) genericReturnType).getActualTypeArguments()[0];
                         if (argumentType instanceof ParameterizedType && ((Class<?>) ((ParameterizedType) argumentType).getRawType()).isAssignableFrom(Map.class)) {
                             QueryMonoInterceptor interceptor;
                             if (transactionalAnnotation != null) {
@@ -209,7 +209,7 @@ public class RuntimeTemplateProvider implements TemplateProvider {
                             }
                         }
                     } else if (returnType.isAssignableFrom(Flux.class)) {
-                        Type argumentType = ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0];
+                        Type argumentType = ((ParameterizedType) genericReturnType).getActualTypeArguments()[0];
                         if (argumentType instanceof ParameterizedType && ((Class<?>) ((ParameterizedType) argumentType).getRawType()).isAssignableFrom(Map.class)) {
                             QueryFluxInterceptor interceptor;
                             if (transactionalAnnotation != null) {

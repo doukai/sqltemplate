@@ -36,7 +36,7 @@ public class Record<T> extends TableRecord<T> {
     public <E> E getOne(String tableName) {
         Record<E> record = (Record<E>) recordIndex.getRecordSupplier(tableName).get();
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
-        return where(record).on(joinColumns).first();
+        return where(record).on(joinColumns, this).first();
     }
 
     public <E> E getOne(Class<E> entityClass) {
@@ -47,7 +47,7 @@ public class Record<T> extends TableRecord<T> {
     public <E> List<E> getMany(String tableName) {
         Record<E> record = (Record<E>) recordIndex.getRecordSupplier(tableName).get();
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
-        return where(record).on(joinColumns).list();
+        return where(record).on(joinColumns, this).list();
     }
 
     public <E> List<E> getMany(Class<E> entityClass) {
@@ -58,7 +58,7 @@ public class Record<T> extends TableRecord<T> {
     public <E> List<E> getManyByJoin(String tableName) {
         Record<E> record = (Record<E>) recordIndex.getRecordSupplier(tableName).get();
         JoinTable joinTable = joinTableMap.get(getTableName()).get(tableName);
-        return where(record).on(joinTable).list();
+        return where(record).on(joinTable, this).list();
     }
 
     public <E> List<E> getManyByJoin(Class<E> entityClass) {
@@ -271,8 +271,7 @@ public class Record<T> extends TableRecord<T> {
             protected T map(Map<String, Object> result) {
                 return mapToEntity(result);
             }
-        }
-                .update();
+        }.update();
         return where(this, getInsertKeyEQValues()).first();
     }
 
@@ -294,8 +293,7 @@ public class Record<T> extends TableRecord<T> {
             protected T map(Map<String, Object> result) {
                 return record.mapToEntity(result);
             }
-        }
-                .update();
+        }.update();
         return where(record, record.getInsertKeyEQValues(records)).list();
     }
 
@@ -434,13 +432,13 @@ public class Record<T> extends TableRecord<T> {
     }
 
     @Override
-    public Record<T> on(JoinColumns joinColumns) {
-        return (Record<T>) super.on(joinColumns);
+    public Record<T> on(JoinColumns joinColumns, TableRecord<?> record) {
+        return (Record<T>) super.on(joinColumns, record);
     }
 
     @Override
-    public <J> Record<T> on(JoinTable joinTable) {
-        return (Record<T>) super.on(joinTable);
+    public Record<T> on(JoinTable joinTable, TableRecord<?> record) {
+        return (Record<T>) super.on(joinTable, record);
     }
 
     @Override
