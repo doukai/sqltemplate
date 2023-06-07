@@ -47,19 +47,20 @@ public class GenerateRecord extends DefaultTask {
         String resourcePath = sourceSet.getResources().getSourceDirectories().filter(file -> file.getPath().contains(MAIN_RESOURCES_PATH)).getAsPath();
         String javaPath = sourceSet.getJava().getSourceDirectories().filter(file -> file.getPath().contains(MAIN_JAVA_PATH)).getAsPath();
         generatorConfig = getProject().getExtensions().findByType(GeneratorConfig.class);
+        Boolean reactive = Objects.requireNonNull(generatorConfig).getBuildReactive();
         try (Connection connection = createConnection()) {
             databaseMetaData = connection.getMetaData();
             List<Map<String, Object>> tableMapList = buildTableMapList();
-            for (TypeSpec typeSpec : generateTables(tableMapList, generatorConfig.getBuildReactive())) {
+            for (TypeSpec typeSpec : generateTables(tableMapList, reactive)) {
                 JavaFile.builder(Objects.requireNonNull(generatorConfig).getPackageName(), typeSpec).build().writeTo(new File(javaPath));
             }
-            JavaFile.builder(Objects.requireNonNull(generatorConfig).getPackageName(), generateTableRecordIndex(tableMapList)).build().writeTo(new File(javaPath));
+            JavaFile.builder(Objects.requireNonNull(generatorConfig).getPackageName(), generateTableRecordIndex(tableMapList, reactive)).build().writeTo(new File(javaPath));
             Path filePath = Paths.get(resourcePath).resolve("META-INF").resolve("services");
             if (Files.notExists(filePath)) {
                 Files.createDirectories(filePath);
             }
-            try (PrintWriter out = new PrintWriter(filePath.resolve("io.sqltemplate.active.record.RecordIndex").toFile())) {
-                out.println(Objects.requireNonNull(generatorConfig).getPackageName() + ".TableRecordIndex");
+            try (PrintWriter out = new PrintWriter(filePath.resolve(reactive ? "io.sqltemplate.active.record.ReactiveRecordIndex" : "io.sqltemplate.active.record.RecordIndex").toFile())) {
+                out.println(Objects.requireNonNull(generatorConfig).getPackageName() + (reactive ? ".ReactiveTableRecordIndex" : ".TableRecordIndex"));
             }
         } catch (IOException | SQLException e) {
             throw new TaskExecutionException(this, e);
@@ -88,7 +89,8 @@ public class GenerateRecord extends DefaultTask {
             String remarks = (String) tableMap.get("REMARKS");
             List<Map<String, Object>> columnMapList = getColumnMapList(tableName);
             List<FieldSpec> fieldSpecList = generateColumns(columnMapList);
-            String typeName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, tableName.toLowerCase());
+            String recordName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, tableName.toLowerCase());
+            String typeName = reactive ? "Reactive" + recordName : recordName;
             ClassName recordClassName = reactive ?
                     ClassName.get("io.sqltemplate.active.record", "ReactiveRecord") :
                     ClassName.get("io.sqltemplate.active.record", "Record");
@@ -119,9 +121,9 @@ public class GenerateRecord extends DefaultTask {
                     .addMethod(buildInsertAllMethod(className, reactive))
                     .addMethod(buildUpdateAllMethod(className, reactive))
                     .addMethod(buildDeleteAllMethod(className, reactive))
-                    .addMethod(buildWhereMethod(className, reactive))
-                    .addMethod(buildWhereConditionalMethod(className, reactive))
-                    .addMethod(buildWhereConditionalsMethod(className, reactive))
+                    .addMethod(buildWhereMethod(className))
+                    .addMethod(buildWhereConditionalMethod(className))
+                    .addMethod(buildWhereConditionalsMethod(className))
                     .addMethod(buildRecordMethod(className));
             fieldSpecList.forEach(fieldSpec -> addGetterAndSetter(fieldSpec, typeBuilder, typeName));
             typeSpecList.add(typeBuilder.build());
@@ -217,32 +219,29 @@ public class GenerateRecord extends DefaultTask {
                 .build();
     }
 
-    public MethodSpec buildWhereMethod(ClassName className, boolean reactive) {
-        TypeName returnTypeName = reactive ? ParameterizedTypeName.get(ClassName.get("reactor.core.publisher", "Mono"), className) : className;
+    public MethodSpec buildWhereMethod(ClassName className) {
         return MethodSpec.methodBuilder("where")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .returns(returnTypeName)
+                .returns(className)
                 .addStatement("return where(tableName)")
                 .build();
     }
 
-    public MethodSpec buildWhereConditionalMethod(ClassName className, boolean reactive) {
-        TypeName returnTypeName = reactive ? ParameterizedTypeName.get(ClassName.get("reactor.core.publisher", "Mono"), className) : className;
+    public MethodSpec buildWhereConditionalMethod(ClassName className) {
         return MethodSpec.methodBuilder("where")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                 .addParameter(ParameterSpec.builder(ClassName.get("io.sqltemplate.active.record.model.conditional", "Conditional"), "conditional").build())
-                .returns(returnTypeName)
+                .returns(className)
                 .addStatement("return where(tableName, conditional)")
                 .build();
     }
 
-    public MethodSpec buildWhereConditionalsMethod(ClassName className, boolean reactive) {
-        TypeName returnTypeName = reactive ? ParameterizedTypeName.get(ClassName.get("reactor.core.publisher", "Mono"), className) : className;
+    public MethodSpec buildWhereConditionalsMethod(ClassName className) {
         return MethodSpec.methodBuilder("where")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                 .varargs(true)
                 .addParameter(ParameterSpec.builder(ArrayTypeName.of(ClassName.get("io.sqltemplate.active.record.model.conditional", "Conditional")), "conditionals").build())
-                .returns(returnTypeName)
+                .returns(className)
                 .addStatement("return where(tableName, conditionals)")
                 .build();
     }
@@ -255,45 +254,47 @@ public class GenerateRecord extends DefaultTask {
                 .build();
     }
 
-    protected TypeSpec generateTableRecordIndex(List<Map<String, Object>> tableMapList) {
-        return TypeSpec.classBuilder("TableRecordIndex")
+    protected TypeSpec generateTableRecordIndex(List<Map<String, Object>> tableMapList, boolean reactive) {
+        return TypeSpec.classBuilder(reactive ? "ReactiveTableRecordIndex" : "TableRecordIndex")
                 .addModifiers(Modifier.PUBLIC)
-                .addSuperinterface(ClassName.get("io.sqltemplate.active.record", "RecordIndex"))
-                .addStaticBlock(getRegisterEntityClassCodeBlock(tableMapList))
-                .addMethod(getRecordSupplierMethod(tableMapList))
+                .addSuperinterface(ClassName.get("io.sqltemplate.active.record", reactive ? "ReactiveRecordIndex" : "RecordIndex"))
+                .addStaticBlock(getRegisterEntityClassCodeBlock(tableMapList, reactive))
+                .addMethod(getRecordSupplierMethod(tableMapList, reactive))
                 .build();
     }
 
-    public CodeBlock getRegisterEntityClassCodeBlock(List<Map<String, Object>> tableMapList) {
+    public CodeBlock getRegisterEntityClassCodeBlock(List<Map<String, Object>> tableMapList, boolean reactive) {
         return CodeBlock.join(
                 tableMapList.stream()
-                        .map(tableMap ->
-                                CodeBlock.of("$T.registerEntityClass($T.class);\r\n",
-                                        ClassName.get("io.sqltemplate.active.record", "TableRecord"),
-                                        ClassName.get(generatorConfig.getPackageName(), CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, ((String) tableMap.get("TABLE_NAME")).toLowerCase()))
-                                )
+                        .map(tableMap -> {
+                                    String recordName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, ((String) tableMap.get("TABLE_NAME")).toLowerCase());
+                                    return CodeBlock.of("$T.registerEntityClass($T.class);\r\n",
+                                            ClassName.get("io.sqltemplate.active.record", "TableRecord"),
+                                            ClassName.get(generatorConfig.getPackageName(), reactive ? "Reactive" + recordName : recordName)
+                                    );
+                                }
                         )
                         .collect(Collectors.toList()),
                 ""
         );
     }
 
-    public MethodSpec getRecordSupplierMethod(List<Map<String, Object>> tableMapList) {
+    public MethodSpec getRecordSupplierMethod(List<Map<String, Object>> tableMapList, boolean reactive) {
         MethodSpec.Builder builder = MethodSpec.methodBuilder("getRecordSupplier")
-                .returns(ParameterizedTypeName.get(ClassName.get(Supplier.class), ParameterizedTypeName.get(ClassName.get("io.sqltemplate.active.record", "TableRecord"), TypeVariableName.get("?"))))
+                .returns(ParameterizedTypeName.get(ClassName.get(Supplier.class), ParameterizedTypeName.get(ClassName.get("io.sqltemplate.active.record", reactive ? "ReactiveRecord" : "Record"), TypeVariableName.get("?"))))
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(ParameterSpec.builder(String.class, "tableName").build());
 
         int index = 0;
         for (Map<String, Object> tableMap : tableMapList) {
             String tableName = (String) tableMap.get("TABLE_NAME");
-            String typeName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, tableName.toLowerCase());
+            String recordName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, tableName.toLowerCase());
             if (index == 0) {
                 builder.beginControlFlow("if (tableName.equals($S))", tableName);
             } else {
                 builder.nextControlFlow("else if (tableName.equals($S))", tableName);
             }
-            builder.addStatement("return $T::new", ClassName.get(generatorConfig.getPackageName(), typeName));
+            builder.addStatement("return $T::new", ClassName.get(generatorConfig.getPackageName(), reactive ? "Reactive" + recordName : recordName));
             if (index == tableMapList.size() - 1) {
                 builder.endControlFlow();
             }

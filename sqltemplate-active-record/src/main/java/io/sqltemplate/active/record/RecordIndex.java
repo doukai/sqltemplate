@@ -6,7 +6,7 @@ import java.util.function.Supplier;
 
 public interface RecordIndex {
 
-    Supplier<TableRecord<?>> getRecordSupplier(String tableName);
+    Supplier<Record<?>> getRecordSupplier(String tableName);
 
     static RecordIndex provider() {
         ServiceLoader<RecordIndex> loader = ServiceLoader.load(RecordIndex.class);

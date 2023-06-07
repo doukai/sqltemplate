@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import static io.sqltemplate.active.record.model.conditional.LK.lk;
 import static io.sqltemplate.showcase.test.Setup.*;
@@ -31,20 +30,19 @@ public class RecordTest {
 
     @Test
     void insert() {
-        Map<String, Object> user = users.get(0);
-        User insertedUser = new User()
-                .setId((int) user.get("id"))
-                .setName((String) user.get("name"))
-                .setLogin((String) user.get("login"))
-                .setPassword((String) user.get("password"))
-                .setAge((int) user.get("age"))
+        User user = new User()
+                .setId((int) users.get(0).get("id"))
+                .setName((String) users.get(0).get("name"))
+                .setLogin((String) users.get(0).get("login"))
+                .setPassword((String) users.get(0).get("password"))
+                .setAge((int) users.get(0).get("age"))
                 .insert();
 
         assertAll(
-                () -> assertEquals(insertedUser.getName(), "Robin Castillo"),
-                () -> assertEquals(insertedUser.getLogin(), "castillo"),
-                () -> assertEquals(insertedUser.getPassword(), "96954"),
-                () -> assertEquals(insertedUser.getAge(), 9)
+                () -> assertEquals(user.getName(), "Robin Castillo"),
+                () -> assertEquals(user.getLogin(), "castillo"),
+                () -> assertEquals(user.getPassword(), "96954"),
+                () -> assertEquals(user.getAge(), 9)
         );
     }
 
@@ -127,42 +125,38 @@ public class RecordTest {
     @Test
     void update() {
         tableInsert();
-        Map<String, Object> user = users.get(0);
-        User insertedUser = new User()
-                .setId((int) user.get("id"))
+        User user = new User()
+                .setId((int) users.get(0).get("id"))
                 .setName("Robert Castillo")
-                .setLogin((String) user.get("login"))
-                .setPassword((String) user.get("password"))
-                .setAge((int) user.get("age"))
+                .setLogin((String) users.get(0).get("login"))
+                .setPassword((String) users.get(0).get("password"))
+                .setAge((int) users.get(0).get("age"))
                 .update();
 
         assertAll(
-                () -> assertEquals(insertedUser.getName(), "Robert Castillo"),
-                () -> assertEquals(insertedUser.getLogin(), "castillo"),
-                () -> assertEquals(insertedUser.getPassword(), "96954"),
-                () -> assertEquals(insertedUser.getAge(), 9)
+                () -> assertEquals(user.getName(), "Robert Castillo"),
+                () -> assertEquals(user.getLogin(), "castillo"),
+                () -> assertEquals(user.getPassword(), "96954"),
+                () -> assertEquals(user.getAge(), 9)
         );
     }
 
     @Test
     void updateAll() {
         tableInsert();
-        Map<String, Object> user1 = users.get(0);
-        Map<String, Object> user2 = users.get(2);
-
         List<User> userList = User.updateAll(
                 new User()
-                        .setId((int) user1.get("id"))
+                        .setId((int) users.get(0).get("id"))
                         .setName("Robert Castillo")
-                        .setLogin((String) user1.get("login"))
-                        .setPassword((String) user1.get("password"))
-                        .setAge((int) user1.get("age")),
+                        .setLogin((String) users.get(0).get("login"))
+                        .setPassword((String) users.get(0).get("password"))
+                        .setAge((int) users.get(0).get("age")),
                 new User()
-                        .setId((int) user2.get("id"))
+                        .setId((int) users.get(2).get("id"))
                         .setName("Mary England")
-                        .setLogin((String) user2.get("login"))
-                        .setPassword((String) user2.get("password"))
-                        .setAge((int) user2.get("age"))
+                        .setLogin((String) users.get(2).get("login"))
+                        .setPassword((String) users.get(2).get("password"))
+                        .setAge((int) users.get(2).get("age"))
         );
 
         assertAll(
@@ -174,13 +168,12 @@ public class RecordTest {
     @Test
     void delete() {
         tableInsert();
-        Map<String, Object> user = users.get(0);
         boolean delete = new User()
-                .setId((int) user.get("id"))
-                .setName((String) user.get("name"))
-                .setLogin((String) user.get("login"))
-                .setPassword((String) user.get("password"))
-                .setAge((int) user.get("age"))
+                .setId((int) users.get(0).get("id"))
+                .setName((String) users.get(0).get("name"))
+                .setLogin((String) users.get(0).get("login"))
+                .setPassword((String) users.get(0).get("password"))
+                .setAge((int) users.get(0).get("age"))
                 .delete();
 
         assertTrue(delete);
@@ -189,22 +182,19 @@ public class RecordTest {
     @Test
     void deleteAll() {
         tableInsert();
-        Map<String, Object> user1 = users.get(0);
-        Map<String, Object> user2 = users.get(2);
-
         long count = User.deleteAll(
                 new User()
-                        .setId((int) user1.get("id"))
-                        .setName((String) user1.get("name"))
-                        .setLogin((String) user1.get("login"))
-                        .setPassword((String) user1.get("password"))
-                        .setAge((int) user1.get("age")),
+                        .setId((int) users.get(0).get("id"))
+                        .setName((String) users.get(0).get("name"))
+                        .setLogin((String) users.get(0).get("login"))
+                        .setPassword((String) users.get(0).get("password"))
+                        .setAge((int) users.get(0).get("age")),
                 new User()
-                        .setId((int) user2.get("id"))
-                        .setName((String) user2.get("name"))
-                        .setLogin((String) user2.get("login"))
-                        .setPassword((String) user2.get("password"))
-                        .setAge((int) user2.get("age"))
+                        .setId((int) users.get(2).get("id"))
+                        .setName((String) users.get(2).get("name"))
+                        .setLogin((String) users.get(2).get("login"))
+                        .setPassword((String) users.get(2).get("password"))
+                        .setAge((int) users.get(2).get("age"))
         );
 
         assertEquals(count, 2);
@@ -248,17 +238,16 @@ public class RecordTest {
     @Test
     void addOne() {
         organizationTableInsert();
-        Map<String, Object> user = users.get(0);
-        User insertedUser = new User()
-                .setId((int) user.get("id"))
-                .setName((String) user.get("name"))
-                .setLogin((String) user.get("login"))
-                .setPassword((String) user.get("password"))
-                .setAge((int) user.get("age"))
+        User user = new User()
+                .setId((int) users.get(0).get("id"))
+                .setName((String) users.get(0).get("name"))
+                .setLogin((String) users.get(0).get("login"))
+                .setPassword((String) users.get(0).get("password"))
+                .setAge((int) users.get(0).get("age"))
                 .insert();
 
         Organization organization = Organization.get(1);
-        organization.addUser(insertedUser);
+        organization.addUser(user);
         List<User> userList = organization.getUserList();
 
         assertAll(
@@ -270,25 +259,23 @@ public class RecordTest {
     @Test
     void addMany() {
         organizationTableInsert();
-        Map<String, Object> user1 = users.get(0);
-        Map<String, Object> user2 = users.get(1);
-        User insertedUser1 = new User()
-                .setId((int) user1.get("id"))
-                .setName((String) user1.get("name"))
-                .setLogin((String) user1.get("login"))
-                .setPassword((String) user1.get("password"))
-                .setAge((int) user1.get("age"))
+        User user1 = new User()
+                .setId((int) users.get(0).get("id"))
+                .setName((String) users.get(0).get("name"))
+                .setLogin((String) users.get(0).get("login"))
+                .setPassword((String) users.get(0).get("password"))
+                .setAge((int) users.get(0).get("age"))
                 .insert();
-        User insertedUser2 = new User()
-                .setId((int) user2.get("id"))
-                .setName((String) user2.get("name"))
-                .setLogin((String) user2.get("login"))
-                .setPassword((String) user2.get("password"))
-                .setAge((int) user2.get("age"))
+        User user2 = new User()
+                .setId((int) users.get(1).get("id"))
+                .setName((String) users.get(1).get("name"))
+                .setLogin((String) users.get(1).get("login"))
+                .setPassword((String) users.get(1).get("password"))
+                .setAge((int) users.get(1).get("age"))
                 .insert();
 
         Organization organization = Organization.get(1);
-        organization.addUserList(Arrays.asList(insertedUser1, insertedUser2));
+        organization.addUserList(Arrays.asList(user1, user2));
         List<User> userList = organization.getUserList();
 
         assertAll(
@@ -301,19 +288,17 @@ public class RecordTest {
     @Test
     void addManyByJoin() {
         userTableInsert();
-        Map<String, Object> role1 = roles.get(0);
-        Map<String, Object> role2 = roles.get(1);
-        Role insertedRole1 = new Role()
-                .setId((int) role1.get("id"))
-                .setName((String) role1.get("name"))
+        Role role1 = new Role()
+                .setId((int) roles.get(0).get("id"))
+                .setName((String) roles.get(0).get("name"))
                 .insert();
-        Role insertedRole2 = new Role()
-                .setId((int) role2.get("id"))
-                .setName((String) role2.get("name"))
+        Role role2 = new Role()
+                .setId((int) roles.get(1).get("id"))
+                .setName((String) roles.get(1).get("name"))
                 .insert();
 
         User user = User.get(1);
-        user.addRoleList(Arrays.asList(insertedRole1, insertedRole2));
+        user.addRoleList(Arrays.asList(role1, role2));
         List<Role> roleList = user.getRoleList();
 
         assertAll(

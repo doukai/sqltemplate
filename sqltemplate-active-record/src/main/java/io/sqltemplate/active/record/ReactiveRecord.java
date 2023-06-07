@@ -11,9 +11,13 @@ import io.sqltemplate.active.record.model.sort.DESC;
 import io.sqltemplate.active.record.model.sort.Sort;
 import io.sqltemplate.active.record.model.update.ValueSet;
 import io.sqltemplate.core.r2dbc.R2DBCAdapter;
+import jakarta.persistence.Column;
 import jakarta.persistence.Table;
 import reactor.core.publisher.Mono;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -23,9 +27,11 @@ import static io.sqltemplate.active.record.model.update.ValueSet.set;
 
 public class ReactiveRecord<T> extends TableRecord<T> {
 
+    public static final ReactiveRecordIndex reactiveRecordIndex = ReactiveRecordIndex.provider();
+
     @SuppressWarnings("unchecked")
     public static <T> Mono<T> get(String tableName, Object... values) {
-        ReactiveRecord<T> record = (ReactiveRecord<T>) recordIndex.getRecordSupplier(tableName).get();
+        ReactiveRecord<T> record = (ReactiveRecord<T>) reactiveRecordIndex.getRecordSupplier(tableName).get();
         return where(record, record.getKeyEQValues(values)).first();
     }
 
@@ -35,7 +41,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     @SuppressWarnings("unchecked")
     public <E> Mono<E> getOne(String tableName) {
-        ReactiveRecord<E> record = (ReactiveRecord<E>) recordIndex.getRecordSupplier(tableName).get();
+        ReactiveRecord<E> record = (ReactiveRecord<E>) reactiveRecordIndex.getRecordSupplier(tableName).get();
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
         return where(record).on(joinColumns, this).first();
     }
@@ -46,7 +52,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     @SuppressWarnings("unchecked")
     public <E> Mono<List<E>> getMany(String tableName) {
-        ReactiveRecord<E> record = (ReactiveRecord<E>) recordIndex.getRecordSupplier(tableName).get();
+        ReactiveRecord<E> record = (ReactiveRecord<E>) reactiveRecordIndex.getRecordSupplier(tableName).get();
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
         return where(record).on(joinColumns, this).list();
     }
@@ -57,7 +63,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     @SuppressWarnings("unchecked")
     public <E> Mono<List<E>> getManyByJoin(String tableName) {
-        ReactiveRecord<E> record = (ReactiveRecord<E>) recordIndex.getRecordSupplier(tableName).get();
+        ReactiveRecord<E> record = (ReactiveRecord<E>) reactiveRecordIndex.getRecordSupplier(tableName).get();
         JoinTable joinTable = joinTableMap.get(getTableName()).get(tableName);
         return where(record).on(joinTable, this).list();
     }
@@ -77,7 +83,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     @SuppressWarnings("unchecked")
     public <E> Mono<List<E>> addMany(String tableName, ReactiveRecord<E>... entityRecords) {
-        ReactiveRecord<E> record = (ReactiveRecord<E>) recordIndex.getRecordSupplier(tableName).get();
+        ReactiveRecord<E> record = (ReactiveRecord<E>) reactiveRecordIndex.getRecordSupplier(tableName).get();
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
         return where(record, getKeyEQValues(entityRecords))
                 .updateAll(joinColumns.getJoinColumns().stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), getValue(joinColumn.getName()))).toArray(ValueSet[]::new))
@@ -93,14 +99,13 @@ public class ReactiveRecord<T> extends TableRecord<T> {
         JoinTable joinTable = joinTableMap.get(getTableName()).get(tableName);
         List<ReactiveRecord<?>> joinRecords = Arrays.stream(entityRecords)
                 .map(entityRecord ->
-                        (ReactiveRecord<?>) recordIndex.getRecordSupplier(joinTable.getName()).get().mapToEntity(
+                        (ReactiveRecord<?>) reactiveRecordIndex.getRecordSupplier(joinTable.getName()).get().mapToEntity(
                                 Stream.concat(
                                         joinTable.getJoinColumns().stream()
-                                                .map(joinColumn -> new AbstractMap.SimpleEntry<>(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, joinColumn.getReferencedColumnName()), getValue(joinColumn.getName()))),
+                                                .map(joinColumn -> new AbstractMap.SimpleEntry<>(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, joinColumn.getName()), getValue(joinColumn.getReferencedColumnName()))),
                                         joinTable.getInverseJoinColumns().stream()
-                                                .map(joinColumn -> new AbstractMap.SimpleEntry<>(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, joinColumn.getReferencedColumnName()), entityRecord.getValue(joinColumn.getName())))
-                                ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
-
+                                                .map(joinColumn -> new AbstractMap.SimpleEntry<>(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, joinColumn.getName()), entityRecord.getValue(joinColumn.getReferencedColumnName())))
+                                ).collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll)
                         )
                 )
                 .collect(Collectors.toList());
@@ -122,7 +127,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     @SuppressWarnings("unchecked")
     public <E> Mono<List<E>> removeMany(String tableName, ReactiveRecord<E>... entityRecords) {
-        ReactiveRecord<E> record = (ReactiveRecord<E>) recordIndex.getRecordSupplier(tableName).get();
+        ReactiveRecord<E> record = (ReactiveRecord<E>) reactiveRecordIndex.getRecordSupplier(tableName).get();
         JoinColumns joinColumns = joinColumnsMap.get(getTableName()).get(tableName);
         return where(record, getKeyEQValues(entityRecords))
                 .updateAll(joinColumns.getJoinColumns().stream().map(joinColumn -> set(joinColumn.getReferencedColumnName(), new NullValue())).toArray(ValueSet[]::new))
@@ -135,7 +140,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     public <E> Mono<Long> removeManyByJoin(String tableName, ReactiveRecord<E>... entityRecords) {
         JoinTable joinTable = joinTableMap.get(getTableName()).get(tableName);
-        ReactiveRecord<?> joinRecord = (ReactiveRecord<?>) recordIndex.getRecordSupplier(joinTable.getName()).get();
+        ReactiveRecord<?> joinRecord = (ReactiveRecord<?>) reactiveRecordIndex.getRecordSupplier(joinTable.getName()).get();
         return where(joinRecord,
                 OR.or(Arrays.stream(entityRecords)
                         .flatMap(entityRecord ->
@@ -156,20 +161,36 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     @SuppressWarnings("unchecked")
     public static <T> Mono<List<T>> all(String tableName) {
-        ReactiveRecord<T> record = (ReactiveRecord<T>) recordIndex.getRecordSupplier(tableName).get();
+        ReactiveRecord<T> record = (ReactiveRecord<T>) reactiveRecordIndex.getRecordSupplier(tableName).get();
         return record.list();
     }
 
     @SuppressWarnings("unchecked")
     public static <T> T record(String tableName) {
-        return (T) recordIndex.getRecordSupplier(tableName).get();
+        return (T) reactiveRecordIndex.getRecordSupplier(tableName).get();
+    }
+
+    @SuppressWarnings({"JavaReflectionInvocation", "unchecked"})
+    public T mapToEntity(Map<String, Object> result) {
+        try {
+            TableRecord<?> tableRecord = reactiveRecordIndex.getRecordSupplier(getTableName()).get();
+            for (Field field : Arrays.stream(this.getClass().getFields())
+                    .filter(field -> field.isAnnotationPresent(Column.class))
+                    .collect(Collectors.toList())) {
+                Method method = tableRecord.getClass().getMethod("set" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, field.getName()));
+                method.invoke(tableRecord, result.get(field.getName()) != null ? method.getParameters()[0].getType().cast(result.get(field.getName())) : null);
+            }
+            return (T) tableRecord;
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static <T> Mono<List<T>> all(Class<T> recordClass) {
         return all(recordClass.getAnnotation(Table.class).name());
     }
 
-    public <T> Mono<List<T>> list() {
+    public Mono<List<T>> list() {
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
             put("columns", getColumnNames());
@@ -180,17 +201,16 @@ public class ReactiveRecord<T> extends TableRecord<T> {
             put("joinTable", getJoinTable());
         }};
         return new R2DBCAdapter<T>("stg/record/select.stg", "select", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
-            @SuppressWarnings("unchecked")
             @Override
             protected T map(Map<String, Object> result) {
-                return (T) mapToEntity(result);
+                return mapToEntity(result);
             }
         }.queryList();
     }
 
     @SuppressWarnings("unchecked")
     public static <T> Mono<T> firstOfAll(String tableName) {
-        ReactiveRecord<T> record = (ReactiveRecord<T>) recordIndex.getRecordSupplier(tableName).get();
+        ReactiveRecord<T> record = (ReactiveRecord<T>) reactiveRecordIndex.getRecordSupplier(tableName).get();
         return record.first();
     }
 
@@ -200,7 +220,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     @SuppressWarnings("unchecked")
     public static <T> Mono<T> lastOfAll(String tableName, String... columnNames) {
-        ReactiveRecord<T> record = (ReactiveRecord<T>) recordIndex.getRecordSupplier(tableName).get();
+        ReactiveRecord<T> record = (ReactiveRecord<T>) reactiveRecordIndex.getRecordSupplier(tableName).get();
         return record.last(columnNames);
     }
 
@@ -227,7 +247,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     @SuppressWarnings("unchecked")
     public static <T> Mono<Long> allCount(String tableName) {
-        ReactiveRecord<T> record = (ReactiveRecord<T>) recordIndex.getRecordSupplier(tableName).get();
+        ReactiveRecord<T> record = (ReactiveRecord<T>) reactiveRecordIndex.getRecordSupplier(tableName).get();
         return record.count();
     }
 
@@ -277,7 +297,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     @SuppressWarnings("unchecked")
     public static <T> Mono<List<T>> insertAll(String tableName, ReactiveRecord<T>... records) {
-        ReactiveRecord<T> record = (ReactiveRecord<T>) recordIndex.getRecordSupplier(tableName).get();
+        ReactiveRecord<T> record = (ReactiveRecord<T>) reactiveRecordIndex.getRecordSupplier(tableName).get();
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("records", Arrays.stream(records)
                     .map(record -> new HashMap<String, Object>() {{
@@ -328,7 +348,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
         for (ReactiveRecord<T> record : records) {
             where(record, record.getKeyEQValues());
         }
-        ReactiveRecord<T> record = (ReactiveRecord<T>) recordIndex.getRecordSupplier(tableName).get();
+        ReactiveRecord<T> record = (ReactiveRecord<T>) reactiveRecordIndex.getRecordSupplier(tableName).get();
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("records", Arrays.stream(records)
                     .map(record -> new HashMap<String, Object>() {{
@@ -378,7 +398,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
         for (ReactiveRecord<T> record : records) {
             where(record, record.getKeyEQValues());
         }
-        ReactiveRecord<T> record = (ReactiveRecord<T>) recordIndex.getRecordSupplier(tableName).get();
+        ReactiveRecord<T> record = (ReactiveRecord<T>) reactiveRecordIndex.getRecordSupplier(tableName).get();
         where(record, record.getKeyEQValues(records));
         return record.deleteAll();
     }
@@ -389,7 +409,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     @SuppressWarnings("unchecked")
     public static <T> T where(String tableName, Conditional conditional) {
-        return (T) TableRecord.where(recordIndex.getRecordSupplier(tableName).get(), conditional);
+        return (T) TableRecord.where(reactiveRecordIndex.getRecordSupplier(tableName).get(), conditional);
     }
 
     public static <T> T where(Class<T> recordClass, Conditional conditional) {
@@ -398,7 +418,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     @SuppressWarnings("unchecked")
     public static <T> T where(String tableName, Conditional... conditionals) {
-        return (T) TableRecord.where(recordIndex.getRecordSupplier(tableName).get(), conditionals);
+        return (T) TableRecord.where(reactiveRecordIndex.getRecordSupplier(tableName).get(), conditionals);
     }
 
     public static <T> T where(Class<T> recordClass, Conditional... conditionals) {
@@ -407,7 +427,7 @@ public class ReactiveRecord<T> extends TableRecord<T> {
 
     @SuppressWarnings("unchecked")
     public static <T> T where(String tableName) {
-        return (T) TableRecord.where(recordIndex.getRecordSupplier(tableName).get());
+        return (T) TableRecord.where(reactiveRecordIndex.getRecordSupplier(tableName).get());
     }
 
     public static <T> T where(Class<T> recordClass) {

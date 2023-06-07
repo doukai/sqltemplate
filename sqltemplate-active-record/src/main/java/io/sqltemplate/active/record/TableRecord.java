@@ -59,8 +59,6 @@ public class TableRecord<T> {
 
     public static final Map<String, Map<String, JoinTable>> joinTableMap = new ConcurrentHashMap<>();
 
-    public static final RecordIndex recordIndex = RecordIndex.provider();
-
     public static void registerJoinColumn(String tableName, String joinTableName, Function<JoinColumns, JoinColumns> JoinColumnsBuilder) {
         joinColumnsMap.computeIfAbsent(tableName, k -> new ConcurrentHashMap<>());
         joinColumnsMap.get(tableName).put(joinTableName, JoinColumnsBuilder.apply(joinColumnsMap.get(tableName).getOrDefault(joinTableName, new JoinColumns())));
@@ -346,22 +344,6 @@ public class TableRecord<T> {
                 })
                 .findFirst()
                 .orElse(null);
-    }
-
-    @SuppressWarnings({"JavaReflectionInvocation", "unchecked"})
-    public T mapToEntity(Map<String, Object> result) {
-        try {
-            TableRecord<?> tableRecord = recordIndex.getRecordSupplier(getTableName()).get();
-            for (Field field : Arrays.stream(this.getClass().getFields())
-                    .filter(field -> field.isAnnotationPresent(Column.class))
-                    .collect(Collectors.toList())) {
-                Method method = tableRecord.getClass().getMethod("set" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, field.getName()));
-                method.invoke(tableRecord, result.get(field.getName()) != null ? method.getParameters()[0].getType().cast(result.get(field.getName())) : null);
-            }
-            return (T) tableRecord;
-        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public EQ[] getKeyEQValues() {

@@ -11,8 +11,12 @@ import io.sqltemplate.active.record.model.sort.DESC;
 import io.sqltemplate.active.record.model.sort.Sort;
 import io.sqltemplate.active.record.model.update.ValueSet;
 import io.sqltemplate.core.jdbc.JDBCAdapter;
+import jakarta.persistence.Column;
 import jakarta.persistence.Table;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -21,6 +25,8 @@ import java.util.stream.Stream;
 import static io.sqltemplate.active.record.model.update.ValueSet.set;
 
 public class Record<T> extends TableRecord<T> {
+
+    public static final RecordIndex recordIndex = RecordIndex.provider();
 
     @SuppressWarnings("unchecked")
     public static <T> T get(String tableName, Object... values) {
@@ -98,7 +104,7 @@ public class Record<T> extends TableRecord<T> {
                                                 .map(joinColumn -> new AbstractMap.SimpleEntry<>(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, joinColumn.getName()), getValue(joinColumn.getReferencedColumnName()))),
                                         joinTable.getInverseJoinColumns().stream()
                                                 .map(joinColumn -> new AbstractMap.SimpleEntry<>(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, joinColumn.getName()), entityRecord.getValue(joinColumn.getReferencedColumnName())))
-                                ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+                                ).collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll)
                         )
                 )
                 .collect(Collectors.toList());
@@ -166,11 +172,27 @@ public class Record<T> extends TableRecord<T> {
         return (T) recordIndex.getRecordSupplier(tableName).get();
     }
 
+    @SuppressWarnings({"JavaReflectionInvocation", "unchecked"})
+    public T mapToEntity(Map<String, Object> result) {
+        try {
+            TableRecord<?> tableRecord = recordIndex.getRecordSupplier(getTableName()).get();
+            for (Field field : Arrays.stream(this.getClass().getFields())
+                    .filter(field -> field.isAnnotationPresent(Column.class))
+                    .collect(Collectors.toList())) {
+                Method method = tableRecord.getClass().getMethod("set" + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, field.getName()));
+                method.invoke(tableRecord, result.get(field.getName()) != null ? method.getParameters()[0].getType().cast(result.get(field.getName())) : null);
+            }
+            return (T) tableRecord;
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static <T> List<T> all(Class<T> recordClass) {
         return all(recordClass.getAnnotation(Table.class).name());
     }
 
-    public <T> List<T> list() {
+    public List<T> list() {
         Map<String, Object> params = new HashMap<String, Object>() {{
             put("table", getTableName());
             put("columns", getColumnNames());
@@ -181,10 +203,9 @@ public class Record<T> extends TableRecord<T> {
             put("joinTable", getJoinTable());
         }};
         return new JDBCAdapter<T>("stg/record/select.stg", "select", params, getTxType(), getRollbackOn(), getDontRollbackOn()) {
-            @SuppressWarnings("unchecked")
             @Override
             protected T map(Map<String, Object> result) {
-                return (T) mapToEntity(result);
+                return mapToEntity(result);
             }
         }.queryList();
     }

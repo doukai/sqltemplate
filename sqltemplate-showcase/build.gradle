@@ -22,6 +22,7 @@ jdbc {
 generator {
     schemaName = "sqltemplate"
     packageName = "io.sqltemplate.showcase.dto"
+    buildReactive = true
 }
 
 group 'io.sqltemplate'

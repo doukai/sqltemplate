@@ -12,9 +12,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.AbstractMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static io.sqltemplate.core.template.TemplateInstance.TEMPLATE_INSTANCE;
 
@@ -132,7 +132,7 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
             return Mono.just(
                     metadata.getColumnMetadatas().stream()
                             .map(columnMetadata -> new AbstractMap.SimpleEntry<>(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, columnMetadata.getName()), row.get(columnMetadata.getName())))
-                            .collect(Collectors.toMap(Map.Entry<String, Object>::getKey, Map.Entry<String, Object>::getValue))
+                            .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll)
             );
         } else {
             return Mono.empty();
@@ -152,7 +152,7 @@ public abstract class R2DBCAdapter<T> extends Adapter<T> {
     protected Statement setParams(Statement statement, Map<String, Object> params) {
         for (Map.Entry<String, Object> entry : params.entrySet()) {
             if (entry.getValue() == null) {
-                statement.bindNull(entry.getKey(), Object.class);
+                statement.bindNull(entry.getKey(), String.class);
             } else {
                 statement.bind(entry.getKey(), entry.getValue());
             }

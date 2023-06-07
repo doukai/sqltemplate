@@ -1,5 +1,6 @@
 package io.sqltemplate.showcase.dto;
 
+import io.sqltemplate.active.record.Record;
 import io.sqltemplate.active.record.RecordIndex;
 import io.sqltemplate.active.record.TableRecord;
 import java.lang.String;
@@ -13,7 +14,7 @@ public class TableRecordIndex implements RecordIndex {
     TableRecord.registerEntityClass(UserRole.class);
   }
 
-  public Supplier<TableRecord<?>> getRecordSupplier(String tableName) {
+  public Supplier<Record<?>> getRecordSupplier(String tableName) {
     if (tableName.equals("organization")) {
       return Organization::new;
     } else if (tableName.equals("role")) {
